@@ -72,3 +72,22 @@
   animation: radar-sweep 4s linear infinite;
 }
 
+/* Ship Planetary Orbit Keyframes */
+@keyframes orbit-0 {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes orbit-1 {
+  from { transform: rotate(90deg); }
+  to { transform: rotate(450deg); }
+}
+@keyframes orbit-2 {
+  from { transform: rotate(180deg); }
+  to { transform: rotate(540deg); }
+}
+@keyframes orbit-3 {
+  from { transform: rotate(270deg); }
+  to { transform: rotate(630deg); }
+}
+
+

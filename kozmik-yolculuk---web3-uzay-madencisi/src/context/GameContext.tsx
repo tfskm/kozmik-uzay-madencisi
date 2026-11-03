@@ -8,6 +8,7 @@ import {
   MarketItem,
   WheelPrize,
   AdminSystemStats,
+  SpaceBattle,
 } from '../types';
 import {
   INITIAL_PLANETS,
@@ -75,6 +76,11 @@ interface GameContextType {
   dismissAnnouncement: () => void;
   // Current Planet Info
   currentPlanet: Planet;
+  // Space Battle & Visual Interactive Command
+  currentBattle: SpaceBattle | null;
+  startBattle: () => void;
+  attackEnemy: (damage?: number) => { defeated: boolean; loot?: { usdt: number; stardust: number } };
+  manualClickMine: () => { usdtEarned: number; stardustEarned: number };
 }
 
 const STORAGE_KEYS = {
@@ -206,6 +212,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     expiresAt: number;
   } | null>(null);
 
+  // Active Space Battle
+  const [currentBattle, setCurrentBattle] = useState<SpaceBattle | null>(null);
+
   // Current planet
   const currentPlanet = planets.find((p) => p.id === user.currentPlanetId) || planets[0];
 
@@ -315,7 +324,116 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => clearTimeout(timer);
   }, [randomEvent]);
 
+  // Battle countdown ticker
+  useEffect(() => {
+    if (!currentBattle || currentBattle.isDefeated) return;
+    const bTimer = setInterval(() => {
+      setCurrentBattle((prev) => {
+        if (!prev) return null;
+        if (prev.timeRemainingSeconds <= 1) {
+          return null; // Battle timed out
+        }
+        return { ...prev, timeRemainingSeconds: prev.timeRemainingSeconds - 1 };
+      });
+    }, 1000);
+    return () => clearInterval(bTimer);
+  }, [currentBattle]);
+
   // Actions
+  const startBattle = () => {
+    if (currentBattle && !currentBattle.isDefeated) return;
+    sounds.playLaser();
+    sounds.triggerHaptic('heavy');
+    const enemies = [
+      { name: 'Kızıl Korsan Kruvazörü', type: 'pirate_frigate' as const, hp: 60, usdt: 0.75, dust: 120, avatar: '👾' },
+      { name: 'Gölge Antimadde Akıncısı', type: 'void_reaper' as const, hp: 100, usdt: 1.50, dust: 220, avatar: '🛸' },
+      { name: 'Siber Nebula Haydutu', type: 'plasma_corsair' as const, hp: 150, usdt: 2.25, dust: 350, avatar: '👹' },
+    ];
+    const picked = enemies[Math.floor(Math.random() * enemies.length)];
+    setCurrentBattle({
+      id: 'bat_' + Date.now(),
+      enemyName: picked.name,
+      enemyType: picked.type,
+      maxHp: picked.hp,
+      currentHp: picked.hp,
+      usdtBounty: picked.usdt,
+      stardustBounty: picked.dust,
+      timeRemainingSeconds: 30,
+      isDefeated: false,
+      avatar: picked.avatar,
+    });
+  };
+
+  const attackEnemy = (damage: number = 20) => {
+    if (!currentBattle || currentBattle.isDefeated) return { defeated: false };
+    sounds.playLaser();
+    sounds.triggerHaptic('medium');
+
+    // Extra damage boost from active fleet
+    const fleetBonus = userMiners.filter(m => m.isRunning && m.durability > 0).length * 4;
+    const totalDmg = damage + fleetBonus;
+
+    const nextHp = Math.max(0, currentBattle.currentHp - totalDmg);
+    if (nextHp <= 0) {
+      // Enemy defeated!
+      sounds.playWin();
+      sounds.triggerHaptic('success');
+      const usdt = currentBattle.usdtBounty;
+      const dust = currentBattle.stardustBounty;
+
+      setUser((prev) => ({
+        ...prev,
+        usdtBalance: Number((prev.usdtBalance + usdt).toFixed(4)),
+        stardustBalance: prev.stardustBalance + dust,
+        exp: prev.exp + 35,
+      }));
+
+      const newTx: Transaction = {
+        id: 'tx_battle_' + Date.now(),
+        userId: user.id,
+        userName: user.telegramUsername,
+        type: 'spin_win',
+        amount: usdt,
+        currency: 'USDT',
+        status: 'completed',
+        timestamp: Date.now(),
+        note: `⚔️ ${currentBattle.enemyName} Yok Edildi (Ödül: $${usdt} USDT & ${dust} Toz)`,
+      };
+      setTransactions((prev) => [newTx, ...prev]);
+
+      setCurrentBattle((prev) => (prev ? { ...prev, currentHp: 0, isDefeated: true } : null));
+      setTimeout(() => setCurrentBattle(null), 2500);
+
+      return { defeated: true, loot: { usdt, stardust: dust } };
+    } else {
+      setCurrentBattle((prev) => (prev ? { ...prev, currentHp: nextHp } : null));
+      return { defeated: false };
+    }
+  };
+
+  const manualClickMine = () => {
+    sounds.playClick();
+    sounds.triggerHaptic('light');
+
+    // Calculate small instant mining gain
+    const usdtEarned = Number((0.005 * currentPlanet.miningMultiplier).toFixed(4));
+    const stardustEarned = Math.floor(1 + Math.random() * 2);
+
+    setUser((prev) => {
+      const newEnergy = Math.max(0, prev.energy - 1);
+      return {
+        ...prev,
+        usdtBalance: Number((prev.usdtBalance + usdtEarned).toFixed(4)),
+        stardustBalance: prev.stardustBalance + stardustEarned,
+        totalMined: Number((prev.totalMined + usdtEarned).toFixed(4)),
+        energy: newEnergy,
+        exp: prev.exp + 1,
+      };
+    });
+
+    return { usdtEarned, stardustEarned };
+  };
+
   const claimRandomEvent = () => {
     if (!randomEvent) return;
     sounds.playWin();
@@ -1026,6 +1144,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         resetToDefaults,
         dismissAnnouncement,
         currentPlanet,
+        currentBattle,
+        startBattle,
+        attackEnemy,
+        manualClickMine,
       }}
     >
       {children}

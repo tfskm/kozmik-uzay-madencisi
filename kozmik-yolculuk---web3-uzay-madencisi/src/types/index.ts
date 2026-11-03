@@ -144,3 +144,17 @@ export interface AdminSystemStats {
   telegramChannelUrl: string;
   telegramSupportUrl: string;
 }
+
+export interface SpaceBattle {
+  id: string;
+  enemyName: string;
+  enemyType: 'pirate_frigate' | 'alien_dreadnought' | 'void_reaper' | 'plasma_corsair';
+  maxHp: number;
+  currentHp: number;
+  usdtBounty: number;
+  stardustBounty: number;
+  timeRemainingSeconds: number;
+  isDefeated: boolean;
+  avatar: string;
+}
+

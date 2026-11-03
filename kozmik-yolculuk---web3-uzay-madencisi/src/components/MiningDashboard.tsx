@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+import { CosmicCommandArena } from './CosmicCommandArena';
+
 const ICON_MAP: Record<string, React.ElementType> = {
   Bot,
   Radio,
@@ -68,6 +70,9 @@ export const MiningDashboard: React.FC = () => {
 
   return (
     <div className="space-y-4 pb-20">
+      {/* 3D Visual Cosmic Command Arena with Planets, Orbiting Ships and Pirate Battles */}
+      <CosmicCommandArena />
+
       {/* Current Planet Hero Banner */}
       <div
         className={`relative overflow-hidden rounded-2xl border border-indigo-500/30 bg-gradient-to-br ${currentPlanet.gradient} p-4 sm:p-5 shadow-xl glow-purple`}

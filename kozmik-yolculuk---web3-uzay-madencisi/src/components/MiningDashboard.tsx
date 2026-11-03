@@ -69,115 +69,115 @@ export const MiningDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 pb-20">
+    <div className="space-y-4 pb-20 w-full max-w-full overflow-hidden">
       {/* 3D Visual Cosmic Command Arena with Planets, Orbiting Ships and Pirate Battles */}
       <CosmicCommandArena />
 
       {/* Current Planet Hero Banner */}
       <div
-        className={`relative overflow-hidden rounded-2xl border border-indigo-500/30 bg-gradient-to-br ${currentPlanet.gradient} p-4 sm:p-5 shadow-xl glow-purple`}
+        className={`relative overflow-hidden rounded-2xl border border-orange-500/35 bg-gradient-to-br ${currentPlanet.gradient} p-4 sm:p-5 shadow-xl glow-orange`}
       >
-        <div className="absolute -right-10 -bottom-10 w-44 h-44 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 rounded-full bg-orange-500/15 blur-3xl pointer-events-none" />
         <div className="absolute top-2 right-3 flex items-center gap-2">
-          <span className="bg-slate-950/70 border border-cyan-400/30 text-cyan-300 text-[11px] font-mono px-2.5 py-0.5 rounded-full flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-cyan-400 animate-spin" />
+          <span className="bg-slate-950/80 border border-amber-400/40 text-amber-300 text-[11px] font-mono px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+            <Sparkles className="w-3 h-3 text-amber-400 animate-spin" />
             {currentPlanet.codeName}
           </span>
           <button
             onClick={() => setActiveTab('planets')}
-            className="bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-400/40 text-indigo-200 text-xs px-2.5 py-1 rounded-xl flex items-center gap-1 transition"
+            className="bg-amber-950/80 hover:bg-amber-900 border border-amber-500/50 text-amber-200 text-xs px-2.5 py-1 rounded-xl flex items-center gap-1 transition shadow-md"
           >
-            <Globe2 className="w-3.5 h-3.5 text-cyan-400" />
+            <Globe2 className="w-3.5 h-3.5 text-amber-400" />
             <span className="hidden sm:inline">Gezegen Değiştir</span>
           </button>
         </div>
 
         <div className="max-w-md">
-          <div className="flex items-center gap-2 text-xs font-semibold text-cyan-300 uppercase tracking-wider">
+          <div className="flex items-center gap-2 text-xs font-semibold text-amber-300 uppercase tracking-wider">
             <span>Sektör #{currentPlanet.id}</span>
             <span>•</span>
-            <span className="text-emerald-400 font-mono">Çarpan: x{currentPlanet.miningMultiplier.toFixed(2)}</span>
+            <span className="text-emerald-400 font-mono font-bold">Çarpan: x{currentPlanet.miningMultiplier.toFixed(2)}</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-white font-display mt-0.5 tracking-wide">
             {currentPlanet.name}
           </h1>
-          <p className="text-xs sm:text-sm text-indigo-100/80 mt-1 line-clamp-2">
+          <p className="text-xs sm:text-sm text-amber-100/90 mt-1 line-clamp-2">
             {currentPlanet.tagline}
           </p>
 
-          <div className="flex flex-wrap items-center gap-3 mt-3 text-[11px] text-slate-300 font-mono">
-            <span className="bg-black/40 px-2 py-0.5 rounded border border-white/10">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 text-[11px] text-slate-200 font-mono">
+            <span className="bg-black/50 px-2 py-0.5 rounded border border-orange-400/30">
               💎 Cevher: <strong className="text-amber-300">{currentPlanet.specialOre}</strong>
             </span>
-            <span className="bg-black/40 px-2 py-0.5 rounded border border-white/10">
+            <span className="bg-black/50 px-2 py-0.5 rounded border border-white/10">
               🪐 Yerçekimi: {currentPlanet.gravity}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Fleet Stats Overview */}
+      {/* Fleet Stats Overview - Warm Solar Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {/* Daily Yield */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-3">
-          <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
+        <div className="bg-gradient-to-br from-[#241036]/90 to-[#150a24]/90 border border-orange-500/25 rounded-2xl p-3 shadow-md">
+          <div className="flex items-center justify-between text-slate-300 text-xs mb-1">
             <span>Günlük Getiri</span>
             <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
           </div>
           <div className="text-lg font-bold text-emerald-300 font-mono">
             +${totalDailyYield.toFixed(2)}
           </div>
-          <div className="text-[10px] text-slate-500 font-mono">24 Saatte USDT</div>
+          <div className="text-[10px] text-amber-400/80 font-mono">24 Saatte USDT</div>
         </div>
 
         {/* Active Miners */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-3">
-          <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
+        <div className="bg-gradient-to-br from-[#241036]/90 to-[#150a24]/90 border border-orange-500/25 rounded-2xl p-3 shadow-md">
+          <div className="flex items-center justify-between text-slate-300 text-xs mb-1">
             <span>Aktif Filo</span>
-            <Bot className="w-3.5 h-3.5 text-cyan-400" />
+            <Bot className="w-3.5 h-3.5 text-orange-400" />
           </div>
-          <div className="text-lg font-bold text-cyan-300 font-mono">
+          <div className="text-lg font-bold text-amber-300 font-mono">
             {userMiners.filter((m) => m.durability > 0).length} / {userMiners.length}
           </div>
-          <div className="text-[10px] text-slate-500 font-mono">Çalışan Madenci</div>
+          <div className="text-[10px] text-slate-400 font-mono">Çalışan Madenci</div>
         </div>
 
         {/* Fleet Durability */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-3">
-          <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
+        <div className="bg-gradient-to-br from-[#241036]/90 to-[#150a24]/90 border border-orange-500/25 rounded-2xl p-3 shadow-md">
+          <div className="flex items-center justify-between text-slate-300 text-xs mb-1">
             <span>Ort. Kondisyon</span>
             <Wrench className="w-3.5 h-3.5 text-amber-400" />
           </div>
           <div className={`text-lg font-bold font-mono ${avgDurability > 70 ? 'text-emerald-300' : avgDurability > 40 ? 'text-amber-300' : 'text-rose-400'}`}>
             %{avgDurability}
           </div>
-          <div className="text-[10px] text-slate-500 font-mono">Dayanıklılık</div>
+          <div className="text-[10px] text-slate-400 font-mono">Dayanıklılık</div>
         </div>
 
         {/* Total Mined */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-3">
-          <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
+        <div className="bg-gradient-to-br from-[#241036]/90 to-[#150a24]/90 border border-orange-500/25 rounded-2xl p-3 shadow-md">
+          <div className="flex items-center justify-between text-slate-300 text-xs mb-1">
             <span>Toplam Hasat</span>
-            <Pickaxe className="w-3.5 h-3.5 text-purple-400" />
+            <Pickaxe className="w-3.5 h-3.5 text-orange-400" />
           </div>
-          <div className="text-lg font-bold text-purple-300 font-mono">
+          <div className="text-lg font-bold text-orange-300 font-mono">
             ${user.totalMined.toFixed(2)}
           </div>
-          <div className="text-[10px] text-slate-500 font-mono">Kazanılan USDT</div>
+          <div className="text-[10px] text-slate-400 font-mono">Kazanılan USDT</div>
         </div>
       </div>
 
-      {/* Main Claim All Master Button */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg glow-cyan">
+      {/* Main Claim All Master Button - Warm Amber/Orange Energy */}
+      <div className="bg-gradient-to-r from-[#2a1138] via-[#200c2e] to-[#2a1138] border border-orange-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl glow-orange">
         <div className="flex items-center gap-3 text-center sm:text-left">
-          <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-inner">
-            <Flame className="w-6 h-6 animate-pulse text-cyan-300" />
+          <div className="w-12 h-12 rounded-2xl bg-orange-500/20 border border-orange-400/50 flex items-center justify-center text-orange-400 shadow-inner">
+            <Flame className="w-6 h-6 animate-pulse text-amber-400" />
           </div>
           <div>
-            <div className="text-xs text-indigo-300 font-semibold uppercase tracking-wider">
+            <div className="text-xs text-amber-300 font-semibold uppercase tracking-wider">
               Bekleyen Hasılat (Canlı Sayıyor)
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-200 to-emerald-400 font-mono">
+            <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-300 to-yellow-200 font-mono">
               ${totalUnclaimed.toFixed(4)} <span className="text-sm text-emerald-400 font-sans">USDT</span>
             </div>
           </div>
@@ -186,9 +186,9 @@ export const MiningDashboard: React.FC = () => {
         <button
           onClick={handleClaimAll}
           disabled={totalUnclaimed <= 0.001}
-          className={`w-full sm:w-auto px-6 py-3 rounded-xl font-display font-bold text-sm tracking-wide transition shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
+          className={`w-full sm:w-auto px-6 py-3 rounded-xl font-display font-black text-sm tracking-wide transition shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
             totalUnclaimed > 0.001
-              ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 shadow-emerald-500/30 animate-pulse'
+              ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 shadow-orange-500/30 animate-pulse'
               : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
           }`}
         >
@@ -200,14 +200,14 @@ export const MiningDashboard: React.FC = () => {
       {/* Fleet Miners List Header */}
       <div className="flex items-center justify-between pt-2">
         <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-indigo-400" />
+          <Bot className="w-5 h-5 text-orange-400" />
           <h2 className="text-base font-bold text-white font-display">
             Filo Birimleriniz ({userMiners.length})
           </h2>
         </div>
         <button
           onClick={() => setActiveTab('packages')}
-          className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition"
+          className="text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 transition"
         >
           <span>Yeni Paket Al</span>
           <ArrowRight className="w-3.5 h-3.5" />
@@ -216,8 +216,8 @@ export const MiningDashboard: React.FC = () => {
 
       {/* Miners Grid / List */}
       {userMiners.length === 0 ? (
-        <div className="bg-slate-900/60 border border-slate-800 border-dashed rounded-2xl p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-indigo-950 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mx-auto mb-3">
+        <div className="bg-[#1c0c29]/70 border border-orange-500/25 border-dashed rounded-2xl p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-orange-950/60 border border-orange-500/40 flex items-center justify-center text-orange-400 mx-auto mb-3">
             <Pickaxe className="w-8 h-8" />
           </div>
           <h3 className="text-base font-bold text-white font-display">
@@ -228,7 +228,7 @@ export const MiningDashboard: React.FC = () => {
           </p>
           <button
             onClick={() => setActiveTab('packages')}
-            className="bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg transition active:scale-95"
+            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black text-xs px-5 py-2.5 rounded-xl shadow-lg transition active:scale-95"
           >
             Madenci Paketlerini İncele
           </button>
@@ -243,12 +243,12 @@ export const MiningDashboard: React.FC = () => {
             return (
               <div
                 key={miner.instanceId}
-                className={`relative bg-slate-900/80 border rounded-xl p-3.5 transition-all ${
+                className={`relative bg-[#1f0e2d]/90 border rounded-2xl p-3.5 transition-all shadow-md ${
                   isDead
                     ? 'border-rose-900/60 bg-rose-950/20'
                     : isDamaged
-                    ? 'border-amber-600/40 bg-amber-950/10'
-                    : 'border-slate-800 hover:border-indigo-500/40'
+                    ? 'border-amber-600/40 bg-amber-950/20'
+                    : 'border-orange-500/25 hover:border-orange-500/60'
                 }`}
               >
                 {/* Header */}

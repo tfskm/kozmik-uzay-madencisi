@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GameProvider, useGame } from './context/GameContext';
 import { Header } from './components/Header';
 import { Navbar } from './components/Navbar';
@@ -25,20 +25,37 @@ const MainLayout: React.FC = () => {
   const { activeTab, isAdminMode } = useGame();
   const [isTelegramMobileFrame, setIsTelegramMobileFrame] = useState(false);
 
-  return (
-    <div className="min-h-screen bg-[#050714] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-slate-950">
-      {/* Background Starfield and Galactic Ambient Effects */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-indigo-600/10 blur-[140px] rounded-full" />
-        <div className="absolute bottom-1/3 left-1/4 w-[500px] h-[400px] bg-purple-600/10 blur-[130px] rounded-full" />
-        <div className="absolute top-2/3 right-1/4 w-[450px] h-[450px] bg-cyan-600/10 blur-[120px] rounded-full" />
+  // Auto-expand Telegram WebApp to 100% full mobile screen
+  useEffect(() => {
+    try {
+      const tg = (window as unknown as { Telegram?: { WebApp?: { expand: () => void; ready: () => void; enableClosingConfirmation: () => void } } }).Telegram?.WebApp;
+      if (tg) {
+        tg.ready();
+        tg.expand();
+        tg.enableClosingConfirmation();
+      }
+    } catch {
+      // safe fallback
+    }
+  }, []);
 
-        {/* Subtle grid pattern */}
+  return (
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-b from-[#180d2e] via-[#100722] to-[#080414] text-slate-100 flex flex-col relative selection:bg-orange-500 selection:text-slate-950">
+      {/* Background Solar Flares and Warm Galactic Lighting */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        {/* Warm Orange / Solar Flare Accent */}
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[600px] h-[450px] bg-gradient-to-b from-orange-500/20 via-amber-500/15 to-transparent blur-[120px] rounded-full" />
+        {/* Warm Sunset Magenta */}
+        <div className="absolute top-1/2 left-0 w-[450px] h-[450px] bg-pink-600/12 blur-[130px] rounded-full" />
+        {/* Radiant Cyan Deep Space Glow */}
+        <div className="absolute bottom-10 right-0 w-[500px] h-[500px] bg-cyan-500/14 blur-[130px] rounded-full" />
+
+        {/* Subtle Stardust texture */}
         <div
-          className="w-full h-full opacity-[0.03]"
+          className="w-full h-full opacity-[0.04]"
           style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)`,
-            backgroundSize: '32px 32px',
+            backgroundImage: `radial-gradient(circle at 1px 1px, #ffaa40 1px, transparent 0)`,
+            backgroundSize: '28px 28px',
           }}
         />
       </div>

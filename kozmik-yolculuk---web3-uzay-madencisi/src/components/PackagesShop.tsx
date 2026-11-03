@@ -73,42 +73,42 @@ export const PackagesShop: React.FC = () => {
   const estimatedYearly = estimatedDaily * 365;  // ~210% ROI
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6 pb-24 w-full max-w-full overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-950/80 via-slate-900/90 to-purple-950/80 border border-indigo-500/30 rounded-2xl p-4 sm:p-5">
+      <div className="bg-gradient-to-r from-[#2c123a] via-[#180927] to-[#2c123a] border border-orange-500/35 rounded-2xl p-4 sm:p-5 shadow-xl glow-orange">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-400 uppercase tracking-wider">
-              <PackageCheck className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 uppercase tracking-wider">
+              <PackageCheck className="w-4 h-4 text-orange-400" />
               <span>Uzay Filosu Teçhizat Pazarı</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white font-display mt-0.5">
               Madenci Paketleri (~6 Ay Amorti)
             </h2>
-            <p className="text-xs text-slate-300 mt-1 max-w-xl">
+            <p className="text-xs text-amber-100/80 mt-1 max-w-xl">
               Tüm madencilerimiz sürdürülebilir matematiksel ekonomiyle ortalama <strong>~180 günde (6 ayda)</strong> kendini tamamen amorti eder (cover). Sonrasında tamir kiti ile sınırsız net pasif gelir üretmeye devam eder.
             </p>
           </div>
 
-          <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-3 shrink-0">
-            <div className="text-[10px] text-emerald-400 font-semibold">Cüzdan USDT Bakiyeniz</div>
-            <div className="text-xl font-black text-emerald-300 font-mono">
+          <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-3 shrink-0 shadow-md">
+            <div className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Cüzdan USDT Bakiyeniz</div>
+            <div className="text-2xl font-black text-amber-300 font-mono">
               ${user.usdtBalance.toFixed(2)}
             </div>
           </div>
         </div>
 
         {/* Planet Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto mt-4 pt-3 border-t border-indigo-900/40 no-scrollbar">
+        <div className="flex items-center gap-1.5 overflow-x-auto mt-4 pt-3 border-t border-orange-500/20 max-w-full scrollbar-none">
           <button
             onClick={() => {
               sounds.playClick();
               setSelectedPlanetFilter('all');
             }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-black transition shrink-0 ${
               selectedPlanetFilter === 'all'
-                ? 'bg-cyan-500 text-slate-950 shadow-md'
-                : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300'
+                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 shadow-md glow-orange'
+                : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
             }`}
           >
             Tüm Gezegenler ({packages.length})
@@ -125,15 +125,15 @@ export const PackagesShop: React.FC = () => {
                   sounds.playClick();
                   setSelectedPlanetFilter(planet.id);
                 }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5 shrink-0 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 border ${
                   selectedPlanetFilter === planet.id
-                    ? 'bg-indigo-600 text-white font-bold'
-                    : 'bg-slate-800/60 hover:bg-slate-750 text-slate-400'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 border-orange-400 shadow-md'
+                    : 'bg-slate-900/60 hover:bg-slate-850 text-slate-400 border-slate-800'
                 }`}
               >
                 {!isUnlocked && <Lock className="w-3 h-3 text-amber-400" />}
                 <span>{planet.name.split(' ')[0]}</span>
-                <span className="text-[10px] opacity-70">({count})</span>
+                <span className="text-[10px] opacity-75">({count})</span>
               </button>
             );
           })}
@@ -217,12 +217,12 @@ export const PackagesShop: React.FC = () => {
               key={pkg.id}
               className={`relative overflow-hidden rounded-2xl border transition-all duration-300 flex flex-col justify-between ${
                 pkg.tier === 'quantum'
-                  ? 'border-pink-500/40 bg-gradient-to-br from-slate-900 via-pink-950/20 to-slate-950 glow-rose'
+                  ? 'border-pink-500/50 bg-gradient-to-br from-[#2e0f35] via-[#1a0824] to-[#0d0413] glow-rose'
                   : pkg.tier === 'neon'
-                  ? 'border-purple-500/40 bg-gradient-to-br from-slate-900 via-purple-950/20 to-slate-950 glow-purple'
+                  ? 'border-purple-500/50 bg-gradient-to-br from-[#280d3b] via-[#160726] to-[#0d0417] glow-purple'
                   : pkg.tier === 'gold'
-                  ? 'border-amber-500/40 bg-gradient-to-br from-slate-900 via-amber-950/20 to-slate-950 glow-gold'
-                  : 'border-cyan-500/30 bg-slate-900/80 hover:border-cyan-500/50'
+                  ? 'border-amber-500/50 bg-gradient-to-br from-[#30160d] via-[#1c0a1a] to-[#0e0413] glow-gold'
+                  : 'border-orange-500/35 bg-gradient-to-br from-[#260f33] via-[#150824] to-[#0c0415] hover:border-orange-500/60 shadow-lg'
               }`}
             >
               {/* Badge */}
@@ -230,25 +230,25 @@ export const PackagesShop: React.FC = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${
                         pkg.tier === 'quantum'
-                          ? 'bg-pink-500/20 text-pink-300 border border-pink-500/40'
+                          ? 'bg-pink-500/20 text-pink-300 border border-pink-500/50 shadow-pink-500/20'
                           : pkg.tier === 'neon'
-                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-purple-500/20'
                           : pkg.tier === 'gold'
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                          : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                          ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 shadow-amber-500/20'
+                          : 'bg-orange-500/25 text-orange-300 border border-orange-500/50 shadow-orange-500/20'
                       }`}
                     >
-                      <Icon className="w-6 h-6" />
+                      <Icon className="w-6 h-6 animate-pulse" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-cyan-300 font-mono">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-500/20 text-amber-300 border border-orange-500/30 font-mono">
                           {pkg.badge}
                         </span>
                         {planet && (
-                          <span className="text-[10px] text-slate-400 font-mono">
+                          <span className="text-[10px] text-amber-200/70 font-mono">
                             🪐 {planet.name.split(' ')[0]}
                           </span>
                         )}
@@ -260,61 +260,61 @@ export const PackagesShop: React.FC = () => {
                   </div>
 
                   <div className="text-right">
-                    <div className="text-xl sm:text-2xl font-black text-white font-mono leading-none">
+                    <div className="text-xl sm:text-2xl font-black text-amber-300 font-mono leading-none">
                       ${pkg.price}
                     </div>
-                    <div className="text-[10px] text-emerald-400 font-semibold font-mono">
+                    <div className="text-[10px] text-orange-400 font-bold font-mono">
                       USDT Fiyatı
                     </div>
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-300/90 mt-3 line-clamp-2">
+                <p className="text-xs text-slate-300 mt-3 line-clamp-2">
                   {pkg.description}
                 </p>
 
                 {/* Key Metrics Matrix */}
                 <div className="grid grid-cols-3 gap-2 mt-4 text-center">
-                  <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-2">
+                  <div className="bg-[#12071d]/80 border border-orange-500/20 rounded-xl p-2">
                     <div className="text-[10px] text-slate-400">Günlük Üretim</div>
                     <div className="text-xs font-bold text-emerald-400 font-mono mt-0.5">
                       +${pkg.dailyProduction.toFixed(2)}
                     </div>
                   </div>
 
-                  <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-2">
-                    <div className="text-[10px] text-slate-400">Amorti Süresi</div>
-                    <div className="text-xs font-bold text-amber-400 font-mono mt-0.5">
+                  <div className="bg-[#12071d]/80 border border-orange-500/20 rounded-xl p-2">
+                    <div className="text-[10px] text-amber-400/80">Amorti Süresi</div>
+                    <div className="text-xs font-black text-amber-300 font-mono mt-0.5">
                       ~{pkg.coverDays} Gün
                     </div>
                   </div>
 
-                  <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-2">
-                    <div className="text-[10px] text-slate-400">Günlük Getiri</div>
-                    <div className="text-xs font-bold text-cyan-400 font-mono mt-0.5">
+                  <div className="bg-[#12071d]/80 border border-orange-500/20 rounded-xl p-2">
+                    <div className="text-[10px] text-slate-400">Günlük Oran</div>
+                    <div className="text-xs font-bold text-orange-300 font-mono mt-0.5">
                       %{pkg.dailyReturnPercent}
                     </div>
                   </div>
                 </div>
 
                 {/* Durability info */}
-                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-3 pt-2.5 border-t border-white/5">
+                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-3 pt-2.5 border-t border-white/10">
                   <span className="flex items-center gap-1">
-                    <Wrench className="w-3.5 h-3.5 text-slate-400" />
+                    <Wrench className="w-3.5 h-3.5 text-amber-400" />
                     Aşınma: %{pkg.durabilityDecayPerDay}/gün (Tamir Edilebilir)
                   </span>
-                  <span className="font-mono text-indigo-300">
+                  <span className="font-mono text-amber-300">
                     {pkg.totalPurchased} Madenci Aktif
                   </span>
                 </div>
               </div>
 
               {/* Purchase Action Button */}
-              <div className="p-4 bg-slate-950/60 border-t border-white/5">
+              <div className="p-4 bg-[#140822]/90 border-t border-orange-500/20">
                 {isPlanetLocked ? (
                   <button
                     onClick={() => setActiveTab('planets')}
-                    className="w-full py-2.5 rounded-xl text-xs font-bold bg-amber-950/50 border border-amber-600/40 text-amber-300 hover:bg-amber-900/60 transition flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 rounded-xl text-xs font-bold bg-amber-950/60 border border-amber-500/50 text-amber-300 hover:bg-amber-900/60 transition flex items-center justify-center gap-1.5"
                   >
                     <Lock className="w-3.5 h-3.5" />
                     <span>Önce Bu Gezegenin Kilidini Açın</span>
@@ -322,7 +322,7 @@ export const PackagesShop: React.FC = () => {
                 ) : (
                   <button
                     onClick={() => handleBuy(pkg)}
-                    className="w-full py-2.5 rounded-xl text-xs font-bold font-display tracking-wider transition shadow-md active:scale-98 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black shadow-emerald-500/20"
+                    className="w-full py-2.5 rounded-xl text-xs font-display tracking-wider transition shadow-lg active:scale-95 flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black shadow-orange-500/30"
                   >
                     <PackageCheck className="w-4 h-4" />
                     <span>Hemen Filoya Kat (${pkg.price} USDT)</span>

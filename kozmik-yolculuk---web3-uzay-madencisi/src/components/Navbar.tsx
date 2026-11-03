@@ -61,8 +61,8 @@ export const Navbar: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-slate-950/90 backdrop-blur-lg border-t border-indigo-900/40 pb-safe">
-      <div className="max-w-xl mx-auto px-2 py-1.5 flex items-center justify-around">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-[#120824]/95 backdrop-blur-xl border-t border-orange-500/30 pb-safe">
+      <div className="max-w-xl mx-auto px-1.5 py-1.5 flex items-center justify-around">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = (activeTab === tab.id && !isAdminMode) || (tab.id === 'admin' && isAdminMode);
@@ -81,9 +81,9 @@ export const Navbar: React.FC = () => {
                   setActiveTab(tab.id);
                 }
               }}
-              className={`relative flex flex-col items-center justify-center py-1 px-2 rounded-xl transition duration-200 group ${
+              className={`relative flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition duration-200 group ${
                 isActive
-                  ? 'text-cyan-400 font-bold'
+                  ? 'text-amber-300 font-bold'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -91,13 +91,13 @@ export const Navbar: React.FC = () => {
                 <div
                   className={`p-1.5 rounded-xl transition duration-200 ${
                     isActive
-                      ? 'bg-gradient-to-tr from-cyan-500/20 to-indigo-500/20 text-cyan-300 ring-1 ring-cyan-400/40 shadow-sm shadow-cyan-500/30'
+                      ? 'bg-gradient-to-tr from-amber-500/25 via-orange-500/20 to-purple-600/20 text-amber-300 ring-1 ring-orange-400/60 shadow-md shadow-orange-500/30 glow-orange'
                       : 'group-hover:bg-slate-800/60'
                   }`}
                 >
                   <Icon
                     className={`w-5 h-5 transition-transform duration-200 ${
-                      isActive ? 'scale-110' : 'group-hover:scale-105'
+                      isActive ? 'scale-110 text-amber-300' : 'group-hover:scale-105'
                     } ${tab.accent && isActive ? 'animate-spin' : ''}`}
                   />
                 </div>
@@ -118,7 +118,7 @@ export const Navbar: React.FC = () => {
               <span className="text-[10px] mt-0.5 tracking-tight font-display">{tab.label}</span>
 
               {isActive && (
-                <div className="absolute -bottom-1 w-6 h-0.5 bg-gradient-to-r from-cyan-400 to-indigo-500 rounded-full" />
+                <div className="absolute -bottom-1 w-6 h-0.5 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-400 rounded-full" />
               )}
             </button>
           );

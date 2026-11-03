@@ -120,32 +120,32 @@ export const LuckyWheelAndBoxes: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6 pb-24 w-full max-w-full overflow-hidden">
       {/* Header and Sub Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/60 border border-indigo-900/40 rounded-2xl p-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#2c123a] via-[#1a0928] to-[#2c123a] border border-orange-500/35 rounded-2xl p-4 shadow-xl glow-orange">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 uppercase tracking-wider">
-            <Sparkles className="w-4 h-4 animate-spin text-amber-400" />
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
+            <Sparkles className="w-4 h-4 animate-spin text-orange-400" />
             <span>Kozmik Şans & Ödül Merkezi</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white font-display mt-0.5">
             Şans Çarkı ve Gizemli Sandıklar
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-amber-100/80 mt-1">
             Her gün şansınızı deneyin; anında nakit USDT, bedava tamir kitleri, yıldız tozu ve efsanevi bonuslar kazanın!
           </p>
         </div>
 
         {/* Tab switch buttons */}
-        <div className="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800 shrink-0">
+        <div className="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-orange-500/30 shrink-0">
           <button
             onClick={() => {
               sounds.playClick();
               setActiveSubTab('wheel');
             }}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black transition ${
               activeSubTab === 'wheel'
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-md'
+                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 shadow-md glow-orange'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -158,9 +158,9 @@ export const LuckyWheelAndBoxes: React.FC = () => {
               sounds.playClick();
               setActiveSubTab('boxes');
             }}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black transition ${
               activeSubTab === 'boxes'
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
+                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 shadow-md glow-orange'
                 : 'text-slate-400 hover:text-white'
             }`}
           >

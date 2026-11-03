@@ -162,9 +162,9 @@ export const CosmicCommandArena: React.FC = () => {
   const pVis = planetVisuals[currentPlanet.id] || planetVisuals[1];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full overflow-hidden">
       {/* Planetary Sector Navigator Strip */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none">
         {planets.map((planet) => {
           const isCurrent = planet.id === currentPlanet.id;
           const isUnlocked = user.unlockedPlanetIds.includes(planet.id);
@@ -181,9 +181,9 @@ export const CosmicCommandArena: React.FC = () => {
               }}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 border ${
                 isCurrent
-                  ? 'bg-gradient-to-r from-cyan-500/20 to-indigo-600/30 border-cyan-400 text-white shadow-lg glow-cyan'
+                  ? 'bg-gradient-to-r from-orange-500/25 via-amber-500/20 to-purple-600/30 border-orange-400 text-white shadow-lg glow-orange'
                   : isUnlocked
-                  ? 'bg-slate-900/80 border-slate-700 text-slate-300 hover:border-slate-500'
+                  ? 'bg-slate-900/80 border-slate-700/80 text-slate-300 hover:border-orange-500/50'
                   : 'bg-slate-950/60 border-slate-900 text-slate-600'
               }`}
             >
@@ -192,7 +192,7 @@ export const CosmicCommandArena: React.FC = () => {
                 style={{ backgroundColor: planet.color }}
               />
               <span className="font-display">S{planet.id}: {planet.name.split(' ')[0]}</span>
-              <span className="text-[10px] font-mono text-emerald-400 font-normal">
+              <span className="text-[10px] font-mono text-amber-400 font-bold">
                 x{planet.miningMultiplier.toFixed(1)}
               </span>
             </button>
@@ -204,26 +204,32 @@ export const CosmicCommandArena: React.FC = () => {
       <div
         ref={arenaRef}
         onClick={handlePlanetClick}
-        className="relative h-96 sm:h-[420px] w-full rounded-3xl overflow-hidden border border-indigo-500/40 bg-gradient-to-b from-[#060818] via-[#090d29] to-[#040614] select-none cursor-crosshair shadow-2xl glow-purple"
+        className="relative h-96 sm:h-[420px] w-full max-w-full rounded-3xl overflow-hidden border border-orange-500/35 bg-gradient-to-b from-[#1c0b29] via-[#120820] to-[#090412] select-none cursor-crosshair shadow-2xl glow-orange"
       >
+        {/* Warm Galactic Nebula Clouds */}
+        <div className="absolute -top-12 -left-12 w-56 h-56 rounded-full bg-orange-500/20 blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 -right-12 w-64 h-64 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-1/3 w-60 h-60 rounded-full bg-pink-600/15 blur-3xl pointer-events-none" />
+
         {/* Deep Space Starfield & Cosmic Dust */}
-        <div className="absolute inset-0 pointer-events-none opacity-60">
-          <div className="w-1.5 h-1.5 rounded-full bg-white absolute top-12 left-16 animate-ping" />
-          <div className="w-1 h-1 rounded-full bg-cyan-300 absolute top-28 right-24 animate-pulse" />
-          <div className="w-2 h-2 rounded-full bg-purple-400/80 absolute bottom-24 left-32 animate-pulse" />
-          <div className="w-1.5 h-1.5 rounded-full bg-amber-300 absolute top-1/2 right-12 animate-ping" />
+        <div className="absolute inset-0 pointer-events-none opacity-80">
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-200 absolute top-12 left-16 animate-ping" />
+          <div className="w-1 h-1 rounded-full bg-orange-300 absolute top-28 right-24 animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-pink-400/80 absolute bottom-24 left-32 animate-pulse" />
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute top-1/2 right-12 animate-ping" />
+          <div className="w-1 h-1 rounded-full bg-yellow-200 absolute bottom-12 right-28 animate-pulse" />
         </div>
 
         {/* Top HUD Bar */}
-        <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
-          <div className="flex items-center gap-2 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-indigo-500/30 pointer-events-auto">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none gap-2">
+          <div className="flex items-center gap-2 bg-slate-950/85 backdrop-blur-md px-2.5 sm:px-3 py-1.5 rounded-xl border border-orange-500/30 pointer-events-auto shrink-0">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
             <div className="text-xs">
               <span className="font-black text-white font-display uppercase tracking-wider">
                 {currentPlanet.name}
               </span>
-              <span className="text-cyan-400 font-mono ml-2 font-bold text-[11px]">
-                x{currentPlanet.miningMultiplier.toFixed(2)} Madencilik Çarpanı
+              <span className="text-amber-400 font-mono ml-1.5 font-bold text-[11px]">
+                x{currentPlanet.miningMultiplier.toFixed(2)}
               </span>
             </div>
           </div>
@@ -235,16 +241,16 @@ export const CosmicCommandArena: React.FC = () => {
                 e.stopPropagation();
                 startBattle();
               }}
-              className="pointer-events-auto flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-black font-display uppercase tracking-wider px-3 py-1.5 rounded-xl shadow-lg shadow-rose-950 transition active:scale-95 animate-pulse"
+              className="pointer-events-auto flex items-center gap-1.5 bg-gradient-to-r from-orange-500 via-amber-500 to-rose-600 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black font-display uppercase tracking-wider text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 rounded-xl shadow-lg shadow-orange-950 transition active:scale-95 animate-pulse"
             >
-              <Swords className="w-4 h-4" />
-              <span>Korsan Avı Başlat</span>
+              <Swords className="w-3.5 h-3.5" />
+              <span>Korsan Avı</span>
             </button>
           ) : (
-            <div className="bg-rose-950/80 border border-rose-500/60 px-3 py-1 rounded-xl flex items-center gap-2 animate-bounce">
-              <ShieldAlert className="w-4 h-4 text-rose-400 animate-spin" />
-              <span className="text-xs font-black text-rose-300 font-display">
-                KORSAN BASKINI! ({currentBattle.timeRemainingSeconds}s)
+            <div className="bg-rose-950/90 border border-rose-500/70 px-2 sm:px-3 py-1 rounded-xl flex items-center gap-1.5 animate-bounce">
+              <ShieldAlert className="w-3.5 h-3.5 text-rose-400 animate-spin" />
+              <span className="text-[11px] sm:text-xs font-black text-rose-300 font-display">
+                KORSAN! ({currentBattle.timeRemainingSeconds}s)
               </span>
             </div>
           )}
@@ -257,25 +263,25 @@ export const CosmicCommandArena: React.FC = () => {
               e.stopPropagation();
               handleAttackEnemy();
             }}
-            className="absolute top-14 left-1/2 -translate-x-1/2 z-30 cursor-pointer group transition-transform active:scale-95"
+            className="absolute top-14 left-1/2 -translate-x-1/2 z-30 cursor-pointer group transition-transform active:scale-95 w-[92%] max-w-sm"
           >
-            <div className="bg-slate-950/90 border border-rose-500/70 p-3 rounded-2xl flex items-center gap-3 shadow-2xl glow-rose">
-              <div className="w-14 h-14 rounded-xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-3xl shrink-0 group-hover:scale-110 transition animate-bounce">
+            <div className="bg-slate-950/95 border border-rose-500/70 p-2.5 sm:p-3 rounded-2xl flex items-center gap-2.5 sm:gap-3 shadow-2xl glow-rose">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-2xl sm:text-3xl shrink-0 group-hover:scale-110 transition animate-bounce">
                 {currentBattle.avatar}
               </div>
 
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-black text-white font-display">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-xs font-black text-white font-display truncate">
                     {currentBattle.enemyName}
                   </span>
-                  <span className="text-[10px] text-amber-300 font-mono font-bold">
-                    Ödül: ${currentBattle.usdtBounty} USDT
+                  <span className="text-[10px] text-amber-300 font-mono font-bold shrink-0">
+                    +${currentBattle.usdtBounty} USDT
                   </span>
                 </div>
 
                 {/* HP Bar */}
-                <div className="w-40 sm:w-56 bg-slate-800 rounded-full h-3 mt-1.5 overflow-hidden border border-white/10">
+                <div className="w-full bg-slate-800 rounded-full h-2.5 sm:h-3 mt-1.5 overflow-hidden border border-white/10">
                   <div
                     className="h-full bg-gradient-to-r from-rose-600 via-orange-500 to-amber-400 transition-all duration-200"
                     style={{
@@ -288,7 +294,7 @@ export const CosmicCommandArena: React.FC = () => {
                   <span>
                     HP: {currentBattle.currentHp}/{currentBattle.maxHp}
                   </span>
-                  <span className="text-cyan-400 font-bold animate-pulse">
+                  <span className="text-amber-400 font-bold animate-pulse">
                     🎯 VURMAK İÇİN TIKLA!
                   </span>
                 </div>
@@ -298,15 +304,15 @@ export const CosmicCommandArena: React.FC = () => {
         )}
 
         {/* THE CENTRAL GLOWING 3D PLANET */}
-        <div className="absolute inset-0 m-auto w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 m-auto w-36 h-36 sm:w-48 sm:h-48 flex items-center justify-center pointer-events-none">
           {/* Outer Atmosphere Glow */}
           <div
-            className={`absolute inset-0 rounded-full pointer-events-none ${pVis.glow} opacity-80 animate-pulse`}
+            className={`absolute inset-0 rounded-full pointer-events-none ${pVis.glow} opacity-90 animate-pulse`}
           />
 
           {/* Saturn-like Ring if Planet 4 */}
           {currentPlanet.id === 4 && (
-            <div className="absolute w-80 sm:w-96 h-20 rounded-full border-4 border-amber-400/40 rotate-[-25deg] shadow-lg pointer-events-none" />
+            <div className="absolute w-56 sm:w-72 h-14 sm:h-18 rounded-full border-4 border-amber-400/50 rotate-[-25deg] shadow-lg pointer-events-none" />
           )}
 
           {/* Planet Sphere Body */}
@@ -315,16 +321,16 @@ export const CosmicCommandArena: React.FC = () => {
             style={{ background: pVis.bg }}
           >
             {/* Crater & Texture shadows */}
-            <div className="absolute inset-0 rounded-full shadow-[inset_-30px_-30px_60px_rgba(0,0,0,0.85)] pointer-events-none" />
-            <div className="absolute inset-0 rounded-full shadow-[inset_15px_15px_30px_rgba(255,255,255,0.25)] pointer-events-none" />
+            <div className="absolute inset-0 rounded-full shadow-[inset_-25px_-25px_50px_rgba(0,0,0,0.85)] pointer-events-none" />
+            <div className="absolute inset-0 rounded-full shadow-[inset_12px_12px_24px_rgba(255,255,255,0.3)] pointer-events-none" />
 
             {/* Planet Center Label & Tap Hint */}
-            <div className="w-full h-full flex flex-col items-center justify-center text-center p-4">
+            <div className="w-full h-full flex flex-col items-center justify-center text-center p-2.5">
               <span className="text-xl sm:text-2xl drop-shadow-md">🪐</span>
-              <span className="text-xs font-black text-white font-display drop-shadow tracking-wider mt-1 uppercase">
+              <span className="text-[11px] sm:text-xs font-black text-white font-display drop-shadow tracking-wider mt-0.5 uppercase truncate max-w-full">
                 {currentPlanet.name.split(' ')[0]}
               </span>
-              <span className="text-[10px] font-bold text-cyan-200 drop-shadow font-mono bg-black/40 px-2 py-0.5 rounded-full mt-1">
+              <span className="text-[9px] sm:text-[10px] font-black text-amber-300 drop-shadow font-mono bg-black/60 px-2 py-0.5 rounded-full mt-1 border border-amber-400/40 glow-orange">
                 ⛏️ Tıkla & Hasat Et
               </span>
             </div>
@@ -333,11 +339,12 @@ export const CosmicCommandArena: React.FC = () => {
 
         {/* ORBITING USER MINER FLEET SHIPS (Real purchased ships!) */}
         {userMiners.map((miner, index) => {
-          // Calculate orbital positions based on index
+          // Responsive orbital radius scaling so ships never clip or wobble mobile
           const total = Math.max(1, userMiners.length);
           const angleOffset = (index * 360) / total;
-          const orbitRadiusX = 135 + (index % 3) * 20;
-          const orbitRadiusY = 75 + (index % 3) * 15;
+          // Scale down orbit radius on mobile to prevent any horizontal overflow
+          const baseRadiusX = 82 + (index % 3) * 12;
+          const baseRadiusY = 44 + (index % 3) * 8;
           const animDuration = 12 + index * 3;
 
           return (
@@ -354,23 +361,23 @@ export const CosmicCommandArena: React.FC = () => {
             >
               {/* Ship Body */}
               <div
-                className={`relative p-2 rounded-2xl backdrop-blur-md border transition-all duration-200 group-hover:scale-125 shadow-xl ${
+                className={`relative p-1.5 sm:p-2 rounded-xl backdrop-blur-md border transition-all duration-200 group-hover:scale-125 shadow-xl ${
                   miner.durability < 40
-                    ? 'bg-rose-950/80 border-rose-500 text-rose-300'
-                    : 'bg-slate-900/90 border-cyan-400/70 text-cyan-300 glow-cyan'
+                    ? 'bg-rose-950/90 border-rose-500 text-rose-300'
+                    : 'bg-[#220f38]/95 border-amber-400/80 text-amber-300 glow-orange'
                 }`}
                 style={{
-                  transform: `translate(${Math.cos((angleOffset * Math.PI) / 180) * orbitRadiusX}px, ${
-                    Math.sin((angleOffset * Math.PI) / 180) * orbitRadiusY
+                  transform: `translate(${Math.cos((angleOffset * Math.PI) / 180) * baseRadiusX}px, ${
+                    Math.sin((angleOffset * Math.PI) / 180) * baseRadiusY
                   }px)`,
                 }}
               >
                 {/* Engine Thruster Flame */}
-                <span className="absolute -left-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-cyan-400 blur-[2px] animate-ping" />
+                <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-orange-400 blur-[2px] animate-ping" />
 
-                <div className="flex items-center gap-1.5 text-xs font-bold font-display">
-                  <Rocket className="w-4 h-4 transform rotate-45 text-cyan-400 group-hover:rotate-90 transition" />
-                  <span className="hidden sm:inline text-[11px] truncate max-w-[80px]">
+                <div className="flex items-center gap-1 text-[11px] font-bold font-display">
+                  <Rocket className="w-3.5 h-3.5 transform rotate-45 text-orange-400 group-hover:rotate-90 transition" />
+                  <span className="text-[10px] truncate max-w-[65px] sm:max-w-[80px]">
                     {miner.packageName.split(' ')[0]}
                   </span>
                 </div>
@@ -379,19 +386,18 @@ export const CosmicCommandArena: React.FC = () => {
                 <div className="text-[9px] font-mono text-emerald-300 flex items-center justify-between gap-1 mt-0.5">
                   <span>+${miner.unclaimedYield.toFixed(3)}</span>
                   <span
-                    className={miner.durability < 40 ? 'text-rose-400 font-bold' : 'text-slate-400'}
+                    className={miner.durability < 40 ? 'text-rose-400 font-bold' : 'text-amber-400/80'}
                   >
                     %{Math.round(miner.durability)}
                   </span>
                 </div>
 
                 {/* Laser beam connecting ship to planet */}
-                <div className="absolute top-1/2 left-1/2 w-24 h-0.5 bg-gradient-to-r from-cyan-400/80 via-emerald-400/40 to-transparent pointer-events-none -z-10 rotate-45 transform origin-left" />
+                <div className="absolute top-1/2 left-1/2 w-16 sm:w-20 h-0.5 bg-gradient-to-r from-orange-400/80 via-amber-300/40 to-transparent pointer-events-none -z-10 rotate-45 transform origin-left" />
               </div>
             </div>
           );
         })}
-
         {/* If user has no miners, show a friendly tutorial probe in orbit */}
         {userMiners.length === 0 && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 bg-slate-950/85 border border-indigo-500/40 px-4 py-2 rounded-2xl flex items-center gap-3">

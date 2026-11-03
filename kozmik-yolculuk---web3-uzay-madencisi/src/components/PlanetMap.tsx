@@ -38,30 +38,30 @@ export const PlanetMap: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5 pb-24">
+    <div className="space-y-5 pb-24 w-full max-w-full overflow-hidden">
       {/* Header Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 border border-indigo-900/40 rounded-2xl p-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-[#2c123a] via-[#1a0928] to-[#2c123a] border border-orange-500/35 rounded-2xl p-4 shadow-xl glow-orange">
         <div>
-          <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
-            <Globe2 className="w-4 h-4 animate-spin" />
+          <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
+            <Globe2 className="w-4 h-4 animate-spin text-orange-400" />
             <span>Galaksi Haritası & Sektör Keşifleri</span>
           </div>
           <h2 className="text-xl font-black text-white font-display mt-0.5">
             Uzay Keşif Yolculuğu
           </h2>
-          <p className="text-xs text-slate-400 mt-1 max-w-lg">
+          <p className="text-xs text-amber-100/80 mt-1 max-w-lg">
             İlerledikçe yeni gezegenlerin kilidini açın. Her yeni gezegen daha yüksek madencilik çarpanı (x4.00'e kadar!), nadir cevherler ve elit yatırım paketleri sunar.
           </p>
         </div>
 
-        <div className="bg-indigo-950/50 border border-indigo-500/30 rounded-xl p-3 flex items-center gap-3 shrink-0">
+        <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-3 flex items-center gap-3 shrink-0 shadow-md">
           <div>
-            <div className="text-[10px] text-indigo-300 font-semibold">Keşfedilen Gezegenler</div>
-            <div className="text-lg font-bold text-white font-mono">
+            <div className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Keşfedilen Gezegenler</div>
+            <div className="text-xl font-black text-amber-300 font-mono">
               {user.unlockedPlanetIds.length} / {planets.length}
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-cyan-300">
+          <div className="w-10 h-10 rounded-xl bg-orange-500/25 border border-orange-500/40 flex items-center justify-center text-amber-300">
             <Rocket className="w-5 h-5" />
           </div>
         </div>
@@ -80,9 +80,9 @@ export const PlanetMap: React.FC = () => {
               key={planet.id}
               className={`relative overflow-hidden rounded-2xl border transition-all duration-300 ${
                 isCurrent
-                  ? 'border-cyan-400/80 bg-slate-900/95 shadow-xl glow-cyan ring-1 ring-cyan-400/30'
+                  ? 'border-orange-400 bg-gradient-to-br from-[#2a1138] to-[#180a25] shadow-xl glow-orange ring-1 ring-orange-400/40'
                   : isUnlocked
-                  ? 'border-indigo-500/30 bg-slate-900/70 hover:border-indigo-500/60'
+                  ? 'border-orange-500/25 bg-[#1c0c29]/80 hover:border-orange-500/50'
                   : 'border-slate-800/80 bg-slate-950/60 opacity-85'
               }`}
             >

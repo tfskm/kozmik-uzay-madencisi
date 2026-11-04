@@ -43,37 +43,37 @@ export const WithdrawModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-cyan-500/50 rounded-2xl max-w-md w-full p-5 shadow-2xl relative glow-cyan">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#03141c]/80 backdrop-blur-md p-4 animate-in fade-in">
+      <div className="bg-gradient-to-b from-[#0a3848] via-[#08303e] to-[#062430] border border-cyan-400/50 rounded-3xl max-w-md w-full p-6 shadow-2xl shadow-cyan-950/60 relative">
         {/* Close Button */}
         <button
           onClick={() => {
             sounds.playClick();
             setIsWithdrawModalOpen(false);
           }}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+          className="absolute top-4 right-4 text-teal-200/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2.5 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300">
-            <ArrowUpRight className="w-5 h-5" />
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-11 h-11 rounded-2xl bg-cyan-400/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-inner">
+            <ArrowUpRight className="w-5 h-5 stroke-[2.5]" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white font-display">
+            <h3 className="text-base font-black text-white font-display">
               Kazanç Çekimi (Withdraw)
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-teal-100/70">
               Madencilik hasılatınızı doğrudan kişisel kripto cüzdanınıza çekin
             </p>
           </div>
         </div>
 
         {/* User Balance overview */}
-        <div className="my-3 bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex items-center justify-between">
-          <span className="text-xs text-slate-400">Kullanılabilir Bakiye:</span>
-          <span className="font-mono font-bold text-sm text-emerald-400">
+        <div className="my-3 bg-[#05222d] border border-teal-500/30 rounded-2xl p-3 flex items-center justify-between">
+          <span className="text-xs text-teal-200/80">Kullanılabilir Bakiye:</span>
+          <span className="font-mono font-black text-sm text-emerald-400">
             ${user.usdtBalance.toFixed(2)} USDT
           </span>
         </div>
@@ -81,7 +81,7 @@ export const WithdrawModal: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-3.5">
           {/* Target Address */}
           <div>
-            <label className="text-xs text-slate-300 font-medium mb-1 block">
+            <label className="text-xs text-teal-100 font-semibold mb-1 block">
               Alıcı Cüzdan Adresi (TON / TRC20 / BEP20):
             </label>
             <input
@@ -90,18 +90,18 @@ export const WithdrawModal: React.FC = () => {
               placeholder="EQB... veya 0x... veya T..."
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none focus:border-cyan-500 transition"
+              className="w-full bg-[#05202b] border border-cyan-500/40 rounded-xl px-3 py-2 text-cyan-100 font-mono text-xs outline-none focus:border-cyan-400 transition"
             />
           </div>
 
           {/* Amount */}
           <div>
             <div className="flex items-center justify-between text-xs mb-1">
-              <label className="text-slate-300 font-medium">Çekilecek Tutar (USDT):</label>
+              <label className="text-teal-100 font-semibold">Çekilecek Tutar (USDT):</label>
               <button
                 type="button"
                 onClick={() => setAmount(Math.floor(user.usdtBalance))}
-                className="text-cyan-400 font-bold hover:underline"
+                className="text-cyan-300 font-bold hover:text-cyan-100 hover:underline"
               >
                 Maksimum
               </button>
@@ -113,33 +113,33 @@ export const WithdrawModal: React.FC = () => {
               step="1"
               value={amount}
               onChange={(e) => setAmount(Number(e.target.value))}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm outline-none focus:border-cyan-500 transition"
+              className="w-full bg-[#05202b] border border-cyan-500/40 rounded-xl px-3 py-2 text-cyan-200 font-mono text-sm outline-none focus:border-cyan-400 transition"
             />
           </div>
 
           {/* Calculation Breakdown */}
-          <div className="bg-slate-950/80 rounded-xl p-3 border border-slate-800 space-y-1.5 text-xs font-mono">
-            <div className="flex items-center justify-between text-slate-400">
+          <div className="bg-[#05202b] rounded-2xl p-3 border border-teal-500/30 space-y-1.5 text-xs font-mono">
+            <div className="flex items-center justify-between text-teal-200/70">
               <span>Çekim Tutarı:</span>
-              <span>${amount.toFixed(2)} USDT</span>
+              <span className="text-white font-bold">${amount.toFixed(2)} USDT</span>
             </div>
-            <div className="flex items-center justify-between text-slate-400">
+            <div className="flex items-center justify-between text-teal-200/70">
               <span>Ağ ve Servis Ücreti (%{adminSettings.withdrawalFeePercent}):</span>
-              <span className="text-rose-400">-${feeAmount.toFixed(2)} USDT</span>
+              <span className="text-rose-300 font-bold">-${feeAmount.toFixed(2)} USDT</span>
             </div>
-            <div className="pt-1.5 border-t border-slate-800 flex items-center justify-between text-white font-bold">
+            <div className="pt-1.5 border-t border-teal-500/25 flex items-center justify-between text-white font-black">
               <span>Cüzdanınıza Geçecek Net:</span>
-              <span className="text-emerald-400 text-sm">${netAmount.toFixed(2)} USDT</span>
+              <span className="text-emerald-300 text-sm font-black">${netAmount.toFixed(2)} USDT</span>
             </div>
           </div>
 
           {/* Feedback Msg */}
           {resultMsg && (
             <div
-              className={`p-2.5 rounded-xl text-xs font-medium flex items-center gap-2 ${
+              className={`p-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 ${
                 resultMsg.type === 'success'
-                  ? 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-300'
-                  : 'bg-rose-950/80 border border-rose-500/40 text-rose-300'
+                  ? 'bg-emerald-950/70 border border-emerald-400/50 text-emerald-300'
+                  : 'bg-rose-950/70 border border-rose-400/50 text-rose-300'
               }`}
             >
               {resultMsg.type === 'success' ? (
@@ -155,7 +155,7 @@ export const WithdrawModal: React.FC = () => {
           <button
             type="submit"
             disabled={user.usdtBalance < amount || amount < adminSettings.minWithdrawal}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-xs uppercase font-display tracking-wider transition shadow-lg active:scale-95 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs uppercase font-display tracking-wider transition shadow-lg shadow-teal-950 active:scale-95 disabled:bg-[#062430] disabled:text-teal-200/30 disabled:cursor-not-allowed"
           >
             {isAuto
               ? `Anında Çekimi Onayla ($${netAmount.toFixed(2)} Net)`
@@ -163,7 +163,7 @@ export const WithdrawModal: React.FC = () => {
           </button>
         </form>
 
-        <div className="mt-3 flex items-center gap-1.5 text-[10px] text-slate-400">
+        <div className="mt-3 flex items-center gap-1.5 text-[10px] text-teal-200/70">
           <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
           <span>Minimum çekim: ${adminSettings.minWithdrawal} USDT. ${adminSettings.autoApproveWithdrawalsUnder} USDT ve altı anında onaylanır.</span>
         </div>

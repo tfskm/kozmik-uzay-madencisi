@@ -75,31 +75,31 @@ export const PackagesShop: React.FC = () => {
   return (
     <div className="space-y-6 pb-24 w-full max-w-full overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#2c123a] via-[#180927] to-[#2c123a] border border-orange-500/35 rounded-2xl p-4 sm:p-5 shadow-xl glow-orange">
+      <div className="bg-gradient-to-r from-[#0d3f4f] via-[#094857] to-[#0a3b4a] border border-cyan-400/40 rounded-2xl p-4 sm:p-5 shadow-xl glow-cyan">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 uppercase tracking-wider">
-              <PackageCheck className="w-4 h-4 text-orange-400" />
+            <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-300 uppercase tracking-wider">
+              <PackageCheck className="w-4 h-4 text-emerald-400" />
               <span>Uzay Filosu Teçhizat Pazarı</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white font-display mt-0.5">
               Madenci Paketleri (~6 Ay Amorti)
             </h2>
-            <p className="text-xs text-amber-100/80 mt-1 max-w-xl">
+            <p className="text-xs text-teal-100/90 mt-1 max-w-xl">
               Tüm madencilerimiz sürdürülebilir matematiksel ekonomiyle ortalama <strong>~180 günde (6 ayda)</strong> kendini tamamen amorti eder (cover). Sonrasında tamir kiti ile sınırsız net pasif gelir üretmeye devam eder.
             </p>
           </div>
 
-          <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-3 shrink-0 shadow-md">
-            <div className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Cüzdan USDT Bakiyeniz</div>
-            <div className="text-2xl font-black text-amber-300 font-mono">
+          <div className="bg-[#052632] border border-emerald-400/60 rounded-2xl p-3 shrink-0 shadow-md">
+            <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider">Cüzdan USDT Bakiyeniz</div>
+            <div className="text-2xl font-black text-emerald-300 font-mono">
               ${user.usdtBalance.toFixed(2)}
             </div>
           </div>
         </div>
 
         {/* Planet Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto mt-4 pt-3 border-t border-orange-500/20 max-w-full scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto mt-4 pt-3 border-t border-cyan-500/25 max-w-full scrollbar-none">
           <button
             onClick={() => {
               sounds.playClick();
@@ -107,8 +107,8 @@ export const PackagesShop: React.FC = () => {
             }}
             className={`px-3 py-1.5 rounded-xl text-xs font-black transition shrink-0 ${
               selectedPlanetFilter === 'all'
-                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 shadow-md glow-orange'
-                : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+                ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md'
+                : 'bg-[#07303e] hover:bg-[#0b3c4e] text-teal-200 border border-teal-500/30'
             }`}
           >
             Tüm Gezegenler ({packages.length})
@@ -127,11 +127,11 @@ export const PackagesShop: React.FC = () => {
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 border ${
                   selectedPlanetFilter === planet.id
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 border-orange-400 shadow-md'
-                    : 'bg-slate-900/60 hover:bg-slate-850 text-slate-400 border-slate-800'
+                    ? 'bg-gradient-to-r from-teal-400 to-emerald-400 text-slate-950 border-teal-300 shadow-md'
+                    : 'bg-[#07303e]/70 hover:bg-[#0b3c4e] text-teal-200/80 border-teal-500/20'
                 }`}
               >
-                {!isUnlocked && <Lock className="w-3 h-3 text-amber-400" />}
+                {!isUnlocked && <Lock className="w-3 h-3 text-amber-300" />}
                 <span>{planet.name.split(' ')[0]}</span>
                 <span className="text-[10px] opacity-75">({count})</span>
               </button>
@@ -141,16 +141,16 @@ export const PackagesShop: React.FC = () => {
       </div>
 
       {/* Interactive ROI Calculator Accordion / Card */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+      <div className="bg-[#083444]/90 border border-cyan-400/40 rounded-2xl p-4 shadow-lg">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-teal-500/25 text-teal-300 flex items-center justify-center">
             <Calculator className="w-4 h-4" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-white font-display">
               Kazanç ve Amorti Simülatörü
             </h3>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-teal-200/70">
               Yatırım tutarınızı seçerek 6 aylık cover ve 1 yıllık net kazanç projeksiyonunu görün
             </p>
           </div>
@@ -167,8 +167,8 @@ export const PackagesShop: React.FC = () => {
               }}
               className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition ${
                 calcInvestment === amt
-                  ? 'bg-cyan-500 text-slate-950'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black'
+                  : 'bg-[#052430] text-teal-200 hover:bg-[#0b394c] border border-teal-500/30'
               }`}
             >
               ${amt}
@@ -178,27 +178,27 @@ export const PackagesShop: React.FC = () => {
 
         {/* Projection Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5">
-            <div className="text-[10px] text-slate-400">Günlük Hasılat</div>
-            <div className="text-sm font-bold text-emerald-400 font-mono mt-0.5">
+          <div className="bg-[#05222c] border border-teal-500/30 rounded-xl p-2.5">
+            <div className="text-[10px] text-teal-300/70">Günlük Hasılat</div>
+            <div className="text-sm font-bold text-emerald-300 font-mono mt-0.5">
               +${estimatedDaily.toFixed(2)} USDT
             </div>
           </div>
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5">
-            <div className="text-[10px] text-slate-400">30 Günlük (1 Ay)</div>
-            <div className="text-sm font-bold text-cyan-400 font-mono mt-0.5">
+          <div className="bg-[#05222c] border border-teal-500/30 rounded-xl p-2.5">
+            <div className="text-[10px] text-teal-300/70">30 Günlük (1 Ay)</div>
+            <div className="text-sm font-bold text-cyan-300 font-mono mt-0.5">
               +${estimatedMonthly.toFixed(2)} USDT
             </div>
           </div>
-          <div className="bg-slate-950/60 border border-indigo-500/40 rounded-xl p-2.5 bg-indigo-950/20">
-            <div className="text-[10px] text-indigo-300 font-bold">180 Gün (Tam Amorti)</div>
+          <div className="bg-[#062e3c] border border-cyan-400/50 rounded-xl p-2.5">
+            <div className="text-[10px] text-cyan-300 font-bold">180 Gün (Tam Amorti)</div>
             <div className="text-sm font-black text-amber-300 font-mono mt-0.5">
               +${estimated6Months.toFixed(2)} USDT (%104)
             </div>
           </div>
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5">
-            <div className="text-[10px] text-slate-400">365 Gün (1 Yıl Net)</div>
-            <div className="text-sm font-bold text-purple-400 font-mono mt-0.5">
+          <div className="bg-[#05222c] border border-teal-500/30 rounded-xl p-2.5">
+            <div className="text-[10px] text-teal-300/70">365 Gün (1 Yıl Net)</div>
+            <div className="text-sm font-bold text-teal-200 font-mono mt-0.5">
               +${estimatedYearly.toFixed(2)} USDT (%212)
             </div>
           </div>
@@ -217,12 +217,12 @@ export const PackagesShop: React.FC = () => {
               key={pkg.id}
               className={`relative overflow-hidden rounded-2xl border transition-all duration-300 flex flex-col justify-between ${
                 pkg.tier === 'quantum'
-                  ? 'border-pink-500/50 bg-gradient-to-br from-[#2e0f35] via-[#1a0824] to-[#0d0413] glow-rose'
+                  ? 'border-cyan-400/50 bg-gradient-to-br from-[#0c4052] via-[#093240] to-[#062532] shadow-xl glow-cyan'
                   : pkg.tier === 'neon'
-                  ? 'border-purple-500/50 bg-gradient-to-br from-[#280d3b] via-[#160726] to-[#0d0417] glow-purple'
+                  ? 'border-teal-400/50 bg-gradient-to-br from-[#0a3f4c] via-[#08303a] to-[#06242c] shadow-lg'
                   : pkg.tier === 'gold'
-                  ? 'border-amber-500/50 bg-gradient-to-br from-[#30160d] via-[#1c0a1a] to-[#0e0413] glow-gold'
-                  : 'border-orange-500/35 bg-gradient-to-br from-[#260f33] via-[#150824] to-[#0c0415] hover:border-orange-500/60 shadow-lg'
+                  ? 'border-emerald-400/50 bg-gradient-to-br from-[#0a4240] via-[#073230] to-[#052725] shadow-lg glow-emerald'
+                  : 'border-cyan-500/35 bg-gradient-to-br from-[#0b3848] via-[#082d3a] to-[#06232e] hover:border-cyan-400/60 shadow-md'
               }`}
             >
               {/* Badge */}
@@ -269,60 +269,60 @@ export const PackagesShop: React.FC = () => {
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-300 mt-3 line-clamp-2">
+                <p className="text-xs text-teal-100/80 mt-3 line-clamp-2">
                   {pkg.description}
                 </p>
 
                 {/* Key Metrics Matrix */}
                 <div className="grid grid-cols-3 gap-2 mt-4 text-center">
-                  <div className="bg-[#12071d]/80 border border-orange-500/20 rounded-xl p-2">
-                    <div className="text-[10px] text-slate-400">Günlük Üretim</div>
-                    <div className="text-xs font-bold text-emerald-400 font-mono mt-0.5">
+                  <div className="bg-[#052430]/90 border border-teal-500/25 rounded-xl p-2">
+                    <div className="text-[10px] text-teal-300/70">Günlük Üretim</div>
+                    <div className="text-xs font-bold text-emerald-300 font-mono mt-0.5">
                       +${pkg.dailyProduction.toFixed(2)}
                     </div>
                   </div>
 
-                  <div className="bg-[#12071d]/80 border border-orange-500/20 rounded-xl p-2">
-                    <div className="text-[10px] text-amber-400/80">Amorti Süresi</div>
+                  <div className="bg-[#052430]/90 border border-teal-500/25 rounded-xl p-2">
+                    <div className="text-[10px] text-cyan-300/80">Amorti Süresi</div>
                     <div className="text-xs font-black text-amber-300 font-mono mt-0.5">
                       ~{pkg.coverDays} Gün
                     </div>
                   </div>
 
-                  <div className="bg-[#12071d]/80 border border-orange-500/20 rounded-xl p-2">
-                    <div className="text-[10px] text-slate-400">Günlük Oran</div>
-                    <div className="text-xs font-bold text-orange-300 font-mono mt-0.5">
+                  <div className="bg-[#052430]/90 border border-teal-500/25 rounded-xl p-2">
+                    <div className="text-[10px] text-teal-300/70">Günlük Oran</div>
+                    <div className="text-xs font-bold text-teal-200 font-mono mt-0.5">
                       %{pkg.dailyReturnPercent}
                     </div>
                   </div>
                 </div>
 
                 {/* Durability info */}
-                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-3 pt-2.5 border-t border-white/10">
+                <div className="flex items-center justify-between text-[11px] text-teal-200/70 mt-3 pt-2.5 border-t border-cyan-500/20">
                   <span className="flex items-center gap-1">
-                    <Wrench className="w-3.5 h-3.5 text-amber-400" />
+                    <Wrench className="w-3.5 h-3.5 text-amber-300" />
                     Aşınma: %{pkg.durabilityDecayPerDay}/gün (Tamir Edilebilir)
                   </span>
-                  <span className="font-mono text-amber-300">
+                  <span className="font-mono text-cyan-200 font-bold">
                     {pkg.totalPurchased} Madenci Aktif
                   </span>
                 </div>
               </div>
 
               {/* Purchase Action Button */}
-              <div className="p-4 bg-[#140822]/90 border-t border-orange-500/20">
+              <div className="p-4 bg-[#05202a]/95 border-t border-cyan-500/25">
                 {isPlanetLocked ? (
                   <button
                     onClick={() => setActiveTab('planets')}
-                    className="w-full py-2.5 rounded-xl text-xs font-bold bg-amber-950/60 border border-amber-500/50 text-amber-300 hover:bg-amber-900/60 transition flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 rounded-xl text-xs font-bold bg-[#093240] border border-cyan-500/40 text-cyan-200 hover:bg-[#0c3e50] transition flex items-center justify-center gap-1.5"
                   >
-                    <Lock className="w-3.5 h-3.5" />
+                    <Lock className="w-3.5 h-3.5 text-amber-300" />
                     <span>Önce Bu Gezegenin Kilidini Açın</span>
                   </button>
                 ) : (
                   <button
                     onClick={() => handleBuy(pkg)}
-                    className="w-full py-2.5 rounded-xl text-xs font-display tracking-wider transition shadow-lg active:scale-95 flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black shadow-orange-500/30"
+                    className="w-full py-2.5 rounded-xl text-xs font-display tracking-wider transition shadow-lg active:scale-95 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black shadow-teal-500/30"
                   >
                     <PackageCheck className="w-4 h-4" />
                     <span>Hemen Filoya Kat (${pkg.price} USDT)</span>

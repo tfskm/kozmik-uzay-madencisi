@@ -47,48 +47,48 @@ export const DepositModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-emerald-500/50 rounded-2xl max-w-md w-full p-5 shadow-2xl relative glow-emerald">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#03141c]/80 backdrop-blur-md p-4 animate-in fade-in">
+      <div className="bg-gradient-to-b from-[#0a3848] via-[#08303e] to-[#062430] border border-cyan-400/50 rounded-3xl max-w-md w-full p-6 shadow-2xl shadow-cyan-950/60 relative">
         {/* Close Button */}
         <button
           onClick={() => {
             sounds.playClick();
             setIsDepositModalOpen(false);
           }}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+          className="absolute top-4 right-4 text-teal-200/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2.5 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300">
-            <ArrowDownLeft className="w-5 h-5" />
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-11 h-11 rounded-2xl bg-emerald-400/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 shadow-inner">
+            <ArrowDownLeft className="w-5 h-5 stroke-[2.5]" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white font-display">
+            <h3 className="text-base font-black text-white font-display">
               Bakiye Yükleme (Deposit)
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-teal-100/70">
               Paket satın almak ve filonuzu büyütmek için USDT veya TON yatırın
             </p>
           </div>
         </div>
 
         {/* Currency & Network Selector */}
-        <div className="grid grid-cols-2 gap-2 mt-4">
+        <div className="grid grid-cols-2 gap-2.5 mt-4">
           <button
             onClick={() => {
               sounds.playClick();
               setSelectedCurrency('USDT');
             }}
-            className={`p-2.5 rounded-xl border text-center transition ${
+            className={`p-3 rounded-2xl border text-center transition ${
               selectedCurrency === 'USDT'
-                ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300 font-bold'
-                : 'bg-slate-950/40 border-slate-800 text-slate-400'
+                ? 'bg-[#093d4e] border-emerald-400 text-emerald-300 font-black shadow-md ring-1 ring-emerald-400/50'
+                : 'bg-[#05222d] border-teal-500/25 text-teal-200/70 hover:text-white hover:bg-[#072c3a]'
             }`}
           >
-            <div className="text-xs">Tether (USDT)</div>
-            <div className="text-[10px] opacity-75">1 USDT = $1.00</div>
+            <div className="text-xs font-bold">Tether (USDT)</div>
+            <div className="text-[10px] opacity-75 font-mono">1 USDT = $1.00</div>
           </button>
 
           <button
@@ -96,20 +96,20 @@ export const DepositModal: React.FC = () => {
               sounds.playClick();
               setSelectedCurrency('TON');
             }}
-            className={`p-2.5 rounded-xl border text-center transition ${
+            className={`p-3 rounded-2xl border text-center transition ${
               selectedCurrency === 'TON'
-                ? 'bg-cyan-950/60 border-cyan-500 text-cyan-300 font-bold'
-                : 'bg-slate-950/40 border-slate-800 text-slate-400'
+                ? 'bg-[#093d4e] border-cyan-400 text-cyan-300 font-black shadow-md ring-1 ring-cyan-400/50'
+                : 'bg-[#05222d] border-teal-500/25 text-teal-200/70 hover:text-white hover:bg-[#072c3a]'
             }`}
           >
-            <div className="text-xs">Toncoin (TON)</div>
-            <div className="text-[10px] opacity-75">1 TON ≈ $5.20 USDT</div>
+            <div className="text-xs font-bold">Toncoin (TON)</div>
+            <div className="text-[10px] opacity-75 font-mono">1 TON ≈ $5.20 USDT</div>
           </button>
         </div>
 
         {/* Network Pills */}
         <div className="flex items-center gap-2 mt-3">
-          <span className="text-[11px] text-slate-400 font-medium">Ağ:</span>
+          <span className="text-[11px] text-teal-200/70 font-medium">Ağ:</span>
           {(['TON', 'TRC20', 'BEP20'] as const).map((net) => (
             <button
               key={net}
@@ -117,10 +117,10 @@ export const DepositModal: React.FC = () => {
                 sounds.playClick();
                 setSelectedNetwork(net);
               }}
-              className={`px-2.5 py-0.5 rounded-lg text-[10px] font-mono font-bold transition ${
+              className={`px-3 py-1 rounded-xl text-[10px] font-mono font-black transition ${
                 selectedNetwork === net
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
+                  ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md'
+                  : 'bg-[#05222d] text-teal-200/80 border border-teal-500/25 hover:text-white'
               }`}
             >
               {net}
@@ -129,8 +129,8 @@ export const DepositModal: React.FC = () => {
         </div>
 
         {/* Quick Amount Selectors */}
-        <div className="mt-3.5">
-          <label className="text-xs text-slate-300 font-medium mb-1.5 block">
+        <div className="mt-4">
+          <label className="text-xs text-teal-100 font-semibold mb-1.5 block">
             Yatırmak İstediğiniz Tutar ({selectedCurrency}):
           </label>
           <div className="grid grid-cols-4 gap-2 mb-2">
@@ -141,10 +141,10 @@ export const DepositModal: React.FC = () => {
                   sounds.playClick();
                   setDepositAmount(amt);
                 }}
-                className={`py-1.5 rounded-lg text-xs font-mono font-bold transition ${
+                className={`py-1.5 rounded-xl text-xs font-mono font-black transition ${
                   depositAmount === amt
-                    ? 'bg-emerald-500 text-slate-950'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    ? 'bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 shadow-md'
+                    : 'bg-[#05222d] text-teal-200/80 border border-teal-500/25 hover:bg-[#08303f]'
                 }`}
               >
                 ${amt}
@@ -157,23 +157,23 @@ export const DepositModal: React.FC = () => {
             min="5"
             value={depositAmount}
             onChange={(e) => setDepositAmount(Math.max(5, Number(e.target.value)))}
-            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-sm outline-none focus:border-emerald-500 transition"
+            className="w-full bg-[#05202b] border border-cyan-500/40 rounded-xl px-3 py-2 text-cyan-200 font-mono text-sm outline-none focus:border-cyan-400 transition"
           />
         </div>
 
         {/* Deposit Address Box */}
-        <div className="mt-4 bg-slate-950/80 border border-slate-800 rounded-xl p-3">
-          <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+        <div className="mt-4 bg-[#05202b] border border-teal-500/30 rounded-2xl p-3">
+          <div className="flex items-center justify-between text-[11px] text-teal-200/70 mb-1">
             <span>Yatırım Cüzdan Adresi ({selectedNetwork}):</span>
             <button
               onClick={handleCopy}
-              className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-bold"
+              className="text-cyan-300 hover:text-cyan-200 flex items-center gap-1 font-bold"
             >
               {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
               <span>{copied ? 'Kopyalandı' : 'Kopyala'}</span>
             </button>
           </div>
-          <div className="font-mono text-xs text-slate-200 select-all break-all bg-black/40 p-2 rounded border border-white/5">
+          <div className="font-mono text-xs text-cyan-100 select-all break-all bg-[#03151d] p-2.5 rounded-xl border border-teal-500/20">
             {currentDepositAddress}
           </div>
         </div>
@@ -182,7 +182,7 @@ export const DepositModal: React.FC = () => {
         <button
           onClick={handleConfirmDeposit}
           disabled={isProcessing}
-          className="mt-4 w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black text-xs font-display uppercase tracking-wider transition shadow-lg shadow-emerald-950 active:scale-95 flex items-center justify-center gap-2"
+          className="mt-4 w-full py-3 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs font-display uppercase tracking-wider transition shadow-lg shadow-teal-950 active:scale-95 flex items-center justify-center gap-2"
         >
           {isProcessing ? (
             <span>Blokzincir Onayı Doğrulanıyor...</span>
@@ -191,7 +191,7 @@ export const DepositModal: React.FC = () => {
           )}
         </button>
 
-        <div className="mt-3 flex items-center gap-1.5 text-[10px] text-slate-400 justify-center">
+        <div className="mt-3 flex items-center gap-1.5 text-[10px] text-teal-300/70 justify-center">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
           <span>Ağ onayından sonra bakiye 1-3 dakika içinde otomatik geçer.</span>
         </div>

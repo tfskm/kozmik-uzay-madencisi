@@ -61,7 +61,7 @@ export const Navbar: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-[#120824]/95 backdrop-blur-xl border-t border-orange-500/30 pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-[#082836]/95 backdrop-blur-xl border-t border-cyan-400/40 pb-safe shadow-2xl">
       <div className="max-w-xl mx-auto px-1.5 py-1.5 flex items-center justify-around">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -83,21 +83,21 @@ export const Navbar: React.FC = () => {
               }}
               className={`relative flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition duration-200 group ${
                 isActive
-                  ? 'text-amber-300 font-bold'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'text-cyan-300 font-bold'
+                  : 'text-teal-200/60 hover:text-cyan-100'
               }`}
             >
               <div className="relative">
                 <div
                   className={`p-1.5 rounded-xl transition duration-200 ${
                     isActive
-                      ? 'bg-gradient-to-tr from-amber-500/25 via-orange-500/20 to-purple-600/20 text-amber-300 ring-1 ring-orange-400/60 shadow-md shadow-orange-500/30 glow-orange'
-                      : 'group-hover:bg-slate-800/60'
+                      ? 'bg-gradient-to-tr from-cyan-500/30 via-teal-500/25 to-emerald-500/25 text-cyan-200 ring-1 ring-cyan-400/70 shadow-lg shadow-cyan-500/30'
+                      : 'group-hover:bg-[#0b3648]'
                   }`}
                 >
                   <Icon
                     className={`w-5 h-5 transition-transform duration-200 ${
-                      isActive ? 'scale-110 text-amber-300' : 'group-hover:scale-105'
+                      isActive ? 'scale-110 text-cyan-300' : 'group-hover:scale-105'
                     } ${tab.accent && isActive ? 'animate-spin' : ''}`}
                   />
                 </div>
@@ -118,7 +118,7 @@ export const Navbar: React.FC = () => {
               <span className="text-[10px] mt-0.5 tracking-tight font-display">{tab.label}</span>
 
               {isActive && (
-                <div className="absolute -bottom-1 w-6 h-0.5 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-400 rounded-full" />
+                <div className="absolute -bottom-1 w-6 h-0.5 bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
               )}
             </button>
           );

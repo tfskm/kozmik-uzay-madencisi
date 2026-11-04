@@ -40,23 +40,23 @@ const MainLayout: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-b from-[#2a134a] via-[#1c0c36] to-[#140628] text-slate-100 flex flex-col relative selection:bg-orange-500 selection:text-slate-950">
-      {/* Background Solar Flares and Warm Galactic Lighting */}
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-slate-950">
+      {/* Background Luminous Celestial & Emerald/Cyan Auroras */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Warm Orange / Solar Flare Accent */}
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-b from-orange-500/28 via-amber-500/20 to-transparent blur-[110px] rounded-full" />
-        {/* Warm Sunset Magenta Flare */}
-        <div className="absolute top-1/3 -left-20 w-[550px] h-[550px] bg-pink-500/18 blur-[120px] rounded-full" />
-        {/* Radiant Cyan Deep Space Aurora */}
-        <div className="absolute bottom-10 right-0 w-[600px] h-[600px] bg-cyan-400/20 blur-[125px] rounded-full" />
-        {/* Radiant Purple-Violet Core */}
-        <div className="absolute top-2/3 left-1/4 w-[450px] h-[450px] bg-purple-600/18 blur-[115px] rounded-full" />
+        {/* Vibrant Emerald & Mint Solar Aurora */}
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-b from-emerald-500/22 via-teal-400/18 to-transparent blur-[110px] rounded-full" />
+        {/* Radiant Cyan & Azure Flare */}
+        <div className="absolute top-1/3 -left-20 w-[550px] h-[550px] bg-cyan-400/22 blur-[120px] rounded-full" />
+        {/* Deep Ocean Turquoise Glow */}
+        <div className="absolute bottom-10 right-0 w-[600px] h-[600px] bg-teal-400/20 blur-[125px] rounded-full" />
+        {/* Warm Golden Stardust Accent */}
+        <div className="absolute top-2/3 left-1/4 w-[450px] h-[450px] bg-amber-400/14 blur-[115px] rounded-full" />
 
         {/* Subtle Stardust texture */}
         <div
-          className="w-full h-full opacity-[0.06]"
+          className="w-full h-full opacity-[0.07]"
           style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, #ffb74d 1.2px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 1px 1px, #67e8f9 1.2px, transparent 0)`,
             backgroundSize: '26px 26px',
           }}
         />

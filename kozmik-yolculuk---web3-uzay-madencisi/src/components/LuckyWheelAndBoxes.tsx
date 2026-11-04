@@ -122,22 +122,22 @@ export const LuckyWheelAndBoxes: React.FC = () => {
   return (
     <div className="space-y-6 pb-24 w-full max-w-full overflow-hidden">
       {/* Header and Sub Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#2c123a] via-[#1a0928] to-[#2c123a] border border-orange-500/35 rounded-2xl p-4 shadow-xl glow-orange">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#0d3f4f] via-[#094857] to-[#0a3b4a] border border-cyan-400/40 rounded-2xl p-4 shadow-xl glow-cyan">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
-            <Sparkles className="w-4 h-4 animate-spin text-orange-400" />
+          <div className="flex items-center gap-2 text-xs font-bold text-cyan-300 uppercase tracking-wider">
+            <Sparkles className="w-4 h-4 animate-spin text-teal-300" />
             <span>Kozmik Şans & Ödül Merkezi</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white font-display mt-0.5">
             Şans Çarkı ve Gizemli Sandıklar
           </h2>
-          <p className="text-xs text-amber-100/80 mt-1">
+          <p className="text-xs text-teal-100/90 mt-1">
             Her gün şansınızı deneyin; anında nakit USDT, bedava tamir kitleri, yıldız tozu ve efsanevi bonuslar kazanın!
           </p>
         </div>
 
         {/* Tab switch buttons */}
-        <div className="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-orange-500/30 shrink-0">
+        <div className="flex items-center gap-1.5 bg-[#052632] p-1 rounded-xl border border-cyan-500/35 shrink-0">
           <button
             onClick={() => {
               sounds.playClick();
@@ -145,8 +145,8 @@ export const LuckyWheelAndBoxes: React.FC = () => {
             }}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black transition ${
               activeSubTab === 'wheel'
-                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 shadow-md glow-orange'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md'
+                : 'text-teal-200/70 hover:text-white'
             }`}
           >
             <Disc3 className="w-4 h-4" />
@@ -160,8 +160,8 @@ export const LuckyWheelAndBoxes: React.FC = () => {
             }}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black transition ${
               activeSubTab === 'boxes'
-                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 shadow-md glow-orange'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md'
+                : 'text-teal-200/70 hover:text-white'
             }`}
           >
             <Gift className="w-4 h-4" />
@@ -180,7 +180,7 @@ export const LuckyWheelAndBoxes: React.FC = () => {
               <div className="absolute -top-3 z-20 w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[24px] border-t-amber-400 drop-shadow-[0_2px_8px_rgba(234,179,8,0.8)]" />
 
               {/* Glowing Outer Ring */}
-              <div className="absolute inset-0 rounded-full border-4 border-amber-400/40 glow-gold animate-pulse" />
+              <div className="absolute inset-0 rounded-full border-4 border-cyan-400/50 glow-cyan animate-pulse" />
 
               {/* Rotating Canvas/SVG Wheel */}
               <div
@@ -189,7 +189,7 @@ export const LuckyWheelAndBoxes: React.FC = () => {
                   transform: `rotate(${wheelRotation}deg)`,
                   transition: isSpinning ? 'transform 4s cubic-bezier(0.15, 0.9, 0.25, 1)' : 'none',
                 }}
-                className="w-full h-full rounded-full overflow-hidden shadow-2xl relative border-4 border-slate-900 bg-slate-950"
+                className="w-full h-full rounded-full overflow-hidden shadow-2xl relative border-4 border-[#072d3b] bg-[#051e28]"
               >
                 <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
                   {WHEEL_PRIZES.map((prize, idx) => {
@@ -211,7 +211,7 @@ export const LuckyWheelAndBoxes: React.FC = () => {
 
                     return (
                       <g key={prize.id}>
-                        <path d={pathData} fill={prize.color} stroke="#050714" strokeWidth="0.8" />
+                        <path d={pathData} fill={prize.color} stroke="#052430" strokeWidth="0.8" />
                         <text
                           x={textX}
                           y={textY}
@@ -231,8 +231,8 @@ export const LuckyWheelAndBoxes: React.FC = () => {
                 </svg>
 
                 {/* Center Hub */}
-                <div className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-gradient-to-tr from-slate-950 via-slate-900 to-indigo-950 border-2 border-amber-400 flex items-center justify-center shadow-lg">
-                  <Sparkles className="w-5 h-5 text-amber-400 animate-spin" />
+                <div className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-gradient-to-tr from-[#062430] via-[#09394a] to-[#0d4559] border-2 border-cyan-400 flex items-center justify-center shadow-lg">
+                  <Sparkles className="w-5 h-5 text-amber-300 animate-spin" />
                 </div>
               </div>
             </div>
@@ -240,10 +240,10 @@ export const LuckyWheelAndBoxes: React.FC = () => {
             {/* Spin Controls */}
             <div className="mt-6 flex flex-col items-center gap-2">
               <div className="flex items-center gap-4 text-xs font-mono">
-                <span className="text-amber-300 font-bold bg-amber-950/40 border border-amber-500/30 px-3 py-1 rounded-full">
+                <span className="text-amber-300 font-bold bg-[#052430] border border-amber-500/35 px-3 py-1 rounded-full">
                   🎁 Ücretsiz Çevirme: <strong>{user.spinsAvailable}</strong>
                 </span>
-                <span className="text-purple-300 bg-purple-950/40 border border-purple-500/30 px-3 py-1 rounded-full">
+                <span className="text-cyan-300 bg-[#052430] border border-cyan-500/35 px-3 py-1 rounded-full">
                   ✨ Yıldız Tozu: <strong>{user.stardustBalance}</strong>
                 </span>
               </div>
@@ -253,8 +253,8 @@ export const LuckyWheelAndBoxes: React.FC = () => {
                 disabled={isSpinning}
                 className={`mt-2 px-8 py-3.5 rounded-2xl font-black text-sm tracking-wide uppercase font-display transition shadow-xl active:scale-95 flex items-center gap-2 ${
                   isSpinning
-                    ? 'bg-slate-800 text-slate-500 cursor-wait'
-                    : 'bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500 text-slate-950 shadow-amber-500/30 hover:scale-105 glow-gold'
+                    ? 'bg-[#062532] text-teal-200/40 cursor-wait'
+                    : 'bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 text-slate-950 shadow-cyan-500/30 hover:scale-105'
                 }`}
               >
                 <Disc3 className={`w-5 h-5 ${isSpinning ? 'animate-spin' : ''}`} />
@@ -268,7 +268,7 @@ export const LuckyWheelAndBoxes: React.FC = () => {
               </button>
 
               {recentWin && (
-                <div className="mt-3 bg-emerald-950/60 border border-emerald-500/50 rounded-xl px-4 py-2 text-center animate-bounce">
+                <div className="mt-3 bg-[#062d3a] border border-emerald-400/60 rounded-xl px-4 py-2 text-center animate-bounce shadow-lg">
                   <div className="text-[11px] text-emerald-300 font-semibold">Tebrikler Kazandınız!</div>
                   <div className="text-sm font-black text-white font-display">{recentWin.label}</div>
                 </div>
@@ -277,9 +277,9 @@ export const LuckyWheelAndBoxes: React.FC = () => {
           </div>
 
           {/* Prize Table */}
-          <div className="lg:col-span-5 bg-slate-900/60 border border-slate-800 rounded-2xl p-4">
+          <div className="lg:col-span-5 bg-[#083444]/90 border border-cyan-400/35 rounded-2xl p-4 shadow-lg">
             <h3 className="text-sm font-bold text-white font-display flex items-center gap-2 mb-3">
-              <Trophy className="w-4 h-4 text-amber-400" />
+              <Trophy className="w-4 h-4 text-amber-300" />
               <span>Çark Ödül Havuzu ve Oranları</span>
             </h3>
 
@@ -287,23 +287,23 @@ export const LuckyWheelAndBoxes: React.FC = () => {
               {WHEEL_PRIZES.map((prize) => (
                 <div
                   key={prize.id}
-                  className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs"
+                  className="flex items-center justify-between p-2 rounded-xl bg-[#052430] border border-teal-500/25 text-xs"
                 >
                   <div className="flex items-center gap-2">
                     <span
                       className="w-3 h-3 rounded-full shrink-0"
                       style={{ backgroundColor: prize.color }}
                     />
-                    <span className="font-semibold text-slate-200">{prize.label}</span>
+                    <span className="font-semibold text-teal-100">{prize.label}</span>
                   </div>
-                  <span className="font-mono text-cyan-400 text-[11px]">
+                  <span className="font-mono text-cyan-300 text-[11px]">
                     %{(prize.probability * 100).toFixed(1)} Şans
                   </span>
                 </div>
               ))}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400">
+            <div className="mt-4 pt-3 border-t border-teal-500/25 text-[11px] text-teal-200/70">
               💡 <strong>İpucu:</strong> Madencilik yaptıkça ve günlük görevleri tamamladıkça ücretsiz çevirme biletleri kazanırsınız.
             </div>
           </div>
@@ -317,13 +317,13 @@ export const LuckyWheelAndBoxes: React.FC = () => {
             {MYSTERY_BOXES.map((box) => (
               <div
                 key={box.id}
-                className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between hover:border-indigo-500/50 transition duration-200"
+                className="bg-[#083546]/90 border border-teal-400/40 rounded-2xl p-4 flex flex-col justify-between hover:border-cyan-400/70 transition duration-200 shadow-lg"
               >
                 <div>
                   <div
                     className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-3xl shadow-lg mb-3"
                     style={{
-                      background: `linear-gradient(135deg, ${box.color}40, rgba(15, 23, 42, 0.9))`,
+                      background: `linear-gradient(135deg, ${box.color}40, rgba(8, 48, 64, 0.9))`,
                       border: `1px solid ${box.color}`,
                     }}
                   >
@@ -334,16 +334,16 @@ export const LuckyWheelAndBoxes: React.FC = () => {
                     {box.name}
                   </h3>
 
-                  <div className="text-center text-xl font-black text-amber-400 font-mono mt-1">
-                    ${box.price} <span className="text-xs text-slate-400 font-sans">USDT</span>
+                  <div className="text-center text-xl font-black text-amber-300 font-mono mt-1">
+                    ${box.price} <span className="text-xs text-teal-200/60 font-sans">USDT</span>
                   </div>
 
                   {/* Drop Table Preview */}
-                  <div className="mt-3 bg-slate-950/60 rounded-xl p-2.5 border border-slate-800/80">
-                    <div className="text-[10px] text-indigo-300 font-bold mb-1">
+                  <div className="mt-3 bg-[#05222c] rounded-xl p-2.5 border border-teal-500/25">
+                    <div className="text-[10px] text-cyan-300 font-bold mb-1">
                       İçerebileceği Sürprizler:
                     </div>
-                    <ul className="text-[11px] text-slate-300 space-y-1">
+                    <ul className="text-[11px] text-teal-100 space-y-1">
                       {box.possibleRewards.map((rew, i) => (
                         <li key={i} className="flex items-center gap-1.5 truncate">
                           <span className="text-amber-400">✦</span>
@@ -357,7 +357,7 @@ export const LuckyWheelAndBoxes: React.FC = () => {
                 <button
                   onClick={() => handleOpenBox(box)}
                   disabled={isOpeningBox}
-                  className="mt-4 w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider font-display transition active:scale-95 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-md shadow-purple-950"
+                  className="mt-4 w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider font-display transition active:scale-95 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black shadow-md"
                 >
                   {isOpeningBox ? 'Açılıyor...' : `Sandığı Aç ($${box.price})`}
                 </button>
@@ -368,8 +368,8 @@ export const LuckyWheelAndBoxes: React.FC = () => {
           {/* Mystery Box Opened Result Modal */}
           {openedBoxResult && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-              <div className="bg-slate-900 border border-purple-500/50 rounded-2xl p-6 max-w-sm w-full text-center glow-purple">
-                <div className="w-16 h-16 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-3xl mx-auto mb-3 animate-bounce">
+              <div className="bg-[#07303e] border border-cyan-400/60 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl">
+                <div className="w-16 h-16 rounded-full bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-3xl mx-auto mb-3 animate-bounce">
                   ✨
                 </div>
                 <h3 className="text-lg font-black text-white font-display">
@@ -378,13 +378,13 @@ export const LuckyWheelAndBoxes: React.FC = () => {
                 <p className="text-base font-bold text-amber-300 mt-2 font-mono">
                   {openedBoxResult.prizeName}
                 </p>
-                <p className="text-xs text-slate-400 mt-2">
+                <p className="text-xs text-teal-200/70 mt-2">
                   Kazanılan ödül anında cüzdan bakiyenize aktarıldı.
                 </p>
 
                 <button
                   onClick={() => setOpenedBoxResult(null)}
-                  className="mt-5 w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs font-display uppercase tracking-wider"
+                  className="mt-5 w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black text-xs font-display uppercase tracking-wider"
                 >
                   Harika, Devam Et
                 </button>

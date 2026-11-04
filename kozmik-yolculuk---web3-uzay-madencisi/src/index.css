@@ -103,4 +103,67 @@
   to { transform: rotate(630deg); }
 }
 
+/* Virtual Space Voyage & Rocket Animations */
+@keyframes rocket-flame {
+  0%, 100% {
+    transform: scaleX(1) scaleY(1);
+    opacity: 0.95;
+    filter: drop-shadow(0 0 12px rgba(249, 115, 22, 0.9));
+  }
+  50% {
+    transform: scaleX(1.35) scaleY(0.92);
+    opacity: 1;
+    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 1));
+  }
+}
+
+@keyframes rocket-hover {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-5px) rotate(-1deg); }
+  75% { transform: translateY(4px) rotate(1deg); }
+}
+
+@keyframes screen-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-6px, 4px); }
+  40% { transform: translate(6px, -4px); }
+  60% { transform: translate(-4px, -3px); }
+  80% { transform: translate(4px, 3px); }
+}
+
+@keyframes warp-drift-fast {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes asteroid-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes star-gleam {
+  0%, 100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+  50% { transform: scale(1.25) rotate(45deg); filter: brightness(1.4); }
+}
+
+.animate-rocket-flame {
+  animation: rocket-flame 0.18s infinite alternate ease-in-out;
+}
+
+.animate-rocket-hover {
+  animation: rocket-hover 3.2s ease-in-out infinite;
+}
+
+.animate-screen-shake {
+  animation: screen-shake 0.35s ease-in-out;
+}
+
+.animate-asteroid-spin {
+  animation: asteroid-spin 5s linear infinite;
+}
+
+.animate-star-gleam {
+  animation: star-gleam 1.8s ease-in-out infinite;
+}
+
 

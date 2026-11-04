@@ -132,6 +132,19 @@ export interface MysteryBox {
   possibleRewards: string[];
 }
 
+export interface VoyageSettings {
+  starPoints: number; // default: 15
+  crystalPoints: number; // default: 50
+  asteroidPoints: number; // default: 25
+  asteroidShieldDamage: number; // default: 25
+  asteroidHullDecayPercent: number; // default: 2
+  asteroidPointPenalty: number; // default: 0
+  pirateBountyPoints: number; // default: 500
+  spawnIntervalSeconds: number; // default: 1.5
+  warpSpeedMultiplier: number; // default: 1.8
+  applyPlanetMultiplier: boolean; // default: true
+}
+
 export interface AdminSystemStats {
   maintenanceMode: boolean;
   announcementText: string;
@@ -143,6 +156,7 @@ export interface AdminSystemStats {
   luckyWheelCostStardust: number;
   telegramChannelUrl: string;
   telegramSupportUrl: string;
+  voyageSettings: VoyageSettings;
 }
 
 export interface SpaceBattle {

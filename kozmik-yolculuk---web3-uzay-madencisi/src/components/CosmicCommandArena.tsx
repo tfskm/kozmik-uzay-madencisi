@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
 import { sounds } from '../utils/audio';
 import { UserMiner } from '../types';
@@ -6,20 +6,17 @@ import {
   Sparkles,
   Zap,
   Swords,
-  Crosshair,
   ShieldAlert,
   Flame,
-  Radio,
-  Target,
   Wrench,
   Bot,
   Rocket,
-  Compass,
-  Cpu,
-  Truck,
-  Atom,
-  RefreshCw,
+  Shield,
+  Crosshair,
+  Gauge,
+  Navigation,
   Globe2,
+  AlertTriangle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -29,6 +26,27 @@ interface FloatingNumber {
   y: number;
   text: string;
   color: string;
+}
+
+interface InFlightEntity {
+  id: number;
+  type: 'star' | 'asteroid' | 'crystal';
+  x: number; // percentage 0 - 100
+  y: number; // percentage 10 - 90
+  speed: number;
+  size: number;
+  hp: number;
+  rewardPoints: number;
+  rotation: number;
+  destroyed?: boolean;
+}
+
+interface LaserShot {
+  id: number;
+  startX: number;
+  startY: number;
+  targetX: number;
+  targetY: number;
 }
 
 export const CosmicCommandArena: React.FC = () => {
@@ -41,129 +59,441 @@ export const CosmicCommandArena: React.FC = () => {
     currentBattle,
     startBattle,
     attackEnemy,
-    manualClickMine,
-    setIsRepairModalOpen,
-    setSelectedMinerForRepair,
+    collectVoyageStar,
+    destroyVoyageAsteroid,
+    takeAsteroidHit,
+    adminSettings,
     setActiveTab,
   } = useGame();
 
+  // Ship flight position (Y axis 15% to 85%)
+  const [rocketY, setRocketY] = useState<number>(50);
+  const [targetRocketY, setTargetRocketY] = useState<number>(50);
+
+  // Flight Stats
+  const [distanceKm, setDistanceKm] = useState<number>(142850);
+  const [warpSpeed, setWarpSpeed] = useState<number>(3.6);
+  const [shieldHealth, setShieldHealth] = useState<number>(100);
+  const [isWarpBoosting, setIsWarpBoosting] = useState<boolean>(false);
+  const [screenShake, setScreenShake] = useState<boolean>(false);
+
+  // Entities & Visuals
+  const [entities, setEntities] = useState<InFlightEntity[]>([]);
+  const [lasers, setLasers] = useState<LaserShot[]>([]);
   const [floatingNumbers, setFloatingNumbers] = useState<FloatingNumber[]>([]);
-  const [laserEffect, setLaserEffect] = useState<{ x: number; y: number } | null>(null);
-  const [selectedOrbitShip, setSelectedOrbitShip] = useState<UserMiner | null>(null);
+  const [collisionFlash, setCollisionFlash] = useState<boolean>(false);
+
   const arenaRef = useRef<HTMLDivElement>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const lastSpawnTime = useRef<number>(Date.now());
 
-  // Manual Click to Mine on Planet
-  const handlePlanetClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (currentBattle && !currentBattle.isDefeated) {
-      // If battle is active, clicking planet attacks enemy
-      handleAttackEnemy();
-      return;
-    }
+  // Increment distance smoothly
+  useEffect(() => {
+    const distTimer = setInterval(() => {
+      const speedKmPerSec = Math.floor(25000 * warpSpeed);
+      setDistanceKm((prev) => prev + Math.floor(speedKmPerSec / 10));
+    }, 100);
+    return () => clearInterval(distTimer);
+  }, [warpSpeed]);
 
-    const rect = arenaRef.current?.getBoundingClientRect();
-    const x = rect ? e.clientX - rect.left : 150;
-    const y = rect ? e.clientY - rect.top : 150;
+  // Shield regeneration
+  useEffect(() => {
+    const shieldTimer = setInterval(() => {
+      setShieldHealth((prev) => Math.min(100, prev + 1));
+    }, 1500);
+    return () => clearInterval(shieldTimer);
+  }, []);
 
-    const result = manualClickMine();
+  // Smooth rocket Y interpolation towards targetRocketY
+  useEffect(() => {
+    let animId: number;
+    const smoothFollow = () => {
+      setRocketY((curr) => {
+        const diff = targetRocketY - curr;
+        if (Math.abs(diff) < 0.2) return targetRocketY;
+        return curr + diff * 0.15;
+      });
+      animId = requestAnimationFrame(smoothFollow);
+    };
+    animId = requestAnimationFrame(smoothFollow);
+    return () => cancelAnimationFrame(animId);
+  }, [targetRocketY]);
 
-    // Floating text feedback
+  // Spawn in-flight entities (stars, crystals, and asteroids)
+  const spawnEntity = useCallback(() => {
+    const vSettings = adminSettings.voyageSettings || {
+      starPoints: 15,
+      crystalPoints: 50,
+      asteroidPoints: 25,
+      asteroidShieldDamage: 25,
+      asteroidHullDecayPercent: 2,
+      asteroidPointPenalty: 0,
+      pirateBountyPoints: 500,
+      spawnIntervalSeconds: 1.5,
+      warpSpeedMultiplier: 1.8,
+      applyPlanetMultiplier: true,
+    };
+
+    const isStar = Math.random() < 0.55;
+    const type: 'star' | 'asteroid' | 'crystal' = isStar
+      ? Math.random() < 0.35
+        ? 'crystal'
+        : 'star'
+      : 'asteroid';
+
+    const pts =
+      type === 'crystal'
+        ? vSettings.crystalPoints
+        : type === 'star'
+        ? vSettings.starPoints
+        : vSettings.asteroidPoints;
+
+    const newEnt: InFlightEntity = {
+      id: Date.now() + Math.random(),
+      type,
+      x: 104, // starts just off the right edge
+      y: 15 + Math.random() * 70, // random altitude between 15% and 85%
+      speed: (type === 'asteroid' ? 0.38 + Math.random() * 0.25 : 0.32 + Math.random() * 0.2) * (isWarpBoosting ? (vSettings.warpSpeedMultiplier || 1.8) : 1),
+      size: type === 'asteroid' ? 36 + Math.random() * 16 : 28 + Math.random() * 12,
+      hp: 1,
+      rewardPoints: pts,
+      rotation: Math.floor(Math.random() * 360),
+    };
+
+    setEntities((prev) => [...prev.slice(-15), newEnt]);
+  }, [isWarpBoosting, adminSettings.voyageSettings]);
+
+  // Trigger floating feedback text
+  const addFloatingNumber = (x: number, y: number, text: string, color: string) => {
     const newFloat: FloatingNumber = {
       id: Date.now() + Math.random(),
       x,
-      y: y - 20,
-      text: `+$${result.usdtEarned} • +${result.stardustEarned} Toz`,
-      color: '#34d399',
+      y,
+      text,
+      color,
     };
-
     setFloatingNumbers((prev) => [...prev.slice(-8), newFloat]);
-
-    // Laser tap spark
-    setLaserEffect({ x, y });
-    setTimeout(() => setLaserEffect(null), 300);
   };
 
-  const handleAttackEnemy = () => {
-    if (!currentBattle || currentBattle.isDefeated) return;
-    const res = attackEnemy(30);
+  // Rocket fires twin lasers towards a specific point
+  const fireRocketLaser = (targetX: number, targetY: number) => {
+    sounds.playLaser();
+    sounds.triggerHaptic('light');
 
     const rect = arenaRef.current?.getBoundingClientRect();
-    const x = rect ? rect.width / 2 : 200;
-    const y = rect ? 80 : 80;
+    const arenaW = rect?.width || 360;
+    const arenaH = rect?.height || 380;
 
-    const newFloat: FloatingNumber = {
+    const shipScreenX = arenaW * 0.22;
+    const shipScreenY = (arenaH * rocketY) / 100;
+
+    const shot: LaserShot = {
       id: Date.now() + Math.random(),
-      x: x + (Math.random() * 60 - 30),
-      y: y + (Math.random() * 40 - 20),
-      text: res.defeated ? `🏆 BOUNTY: +$${res.loot?.usdt} USDT!` : `💥 -${30 + userMiners.length * 4} HASAR!`,
-      color: res.defeated ? '#fbbf24' : '#f87171',
+      startX: shipScreenX,
+      startY: shipScreenY,
+      targetX,
+      targetY,
     };
 
-    setFloatingNumbers((prev) => [...prev.slice(-8), newFloat]);
+    setLasers((prev) => [...prev.slice(-4), shot]);
+    setTimeout(() => {
+      setLasers((prev) => prev.filter((l) => l.id !== shot.id));
+    }, 250);
+  };
 
-    if (res.defeated) {
-      confetti({
-        particleCount: 70,
-        spread: 80,
-        origin: { y: 0.4 },
-        colors: ['#ef4444', '#fbbf24', '#38bdf8'],
+  // Main In-Flight Update Loop (Physics & Collision Detection)
+  useEffect(() => {
+    let lastTime = performance.now();
+    const vSettings = adminSettings.voyageSettings || {
+      starPoints: 15,
+      crystalPoints: 50,
+      asteroidPoints: 25,
+      asteroidShieldDamage: 25,
+      asteroidHullDecayPercent: 2,
+      asteroidPointPenalty: 0,
+      pirateBountyPoints: 500,
+      spawnIntervalSeconds: 1.5,
+      warpSpeedMultiplier: 1.8,
+      applyPlanetMultiplier: true,
+    };
+
+    const spawnDelayMs = Math.max(
+      600,
+      ((vSettings.spawnIntervalSeconds || 1.5) * 1000) / (isWarpBoosting ? (vSettings.warpSpeedMultiplier || 1.8) : 1)
+    );
+
+    const loop = (time: number) => {
+      const dt = (time - lastTime) / 1000;
+      lastTime = time;
+
+      // Spawn check
+      if (Date.now() - lastSpawnTime.current > spawnDelayMs) {
+        spawnEntity();
+        lastSpawnTime.current = Date.now();
+      }
+
+      setEntities((prev) => {
+        const next: InFlightEntity[] = [];
+
+        for (const ent of prev) {
+          if (ent.destroyed) continue;
+
+          // Move object from right to left
+          const newX = ent.x - ent.speed * (dt * 60);
+
+          // Check collision with Hero Rocket (Rocket is at X ≈ 20%)
+          const rocketXPos = 20;
+          const isAtRocketX = newX <= rocketXPos + 6 && newX >= rocketXPos - 6;
+          const isAtRocketY = Math.abs(ent.y - rocketY) < 14;
+
+          if (isAtRocketX && isAtRocketY) {
+            // Collision occurred!
+            if (ent.type === 'star' || ent.type === 'crystal') {
+              // Collected bonus points!
+              const earnedPts = collectVoyageStar(ent.rewardPoints);
+              addFloatingNumber(
+                rocketXPos + 5,
+                rocketY - 5,
+                ent.type === 'crystal' ? `+${earnedPts} KRİSTAL PUANI 💎` : `+${earnedPts} PUAN ⭐`,
+                '#fbbf24'
+              );
+              confetti({
+                particleCount: 20,
+                spread: 40,
+                origin: { x: 0.22, y: rocketY / 100 },
+                colors: ['#fbbf24', '#f59e0b', '#38bdf8'],
+              });
+            } else if (ent.type === 'asteroid') {
+              // Asteroid impact!
+              setScreenShake(true);
+              setCollisionFlash(true);
+              setTimeout(() => setScreenShake(false), 350);
+              setTimeout(() => setCollisionFlash(false), 200);
+
+              const shieldDmg = vSettings.asteroidShieldDamage || 25;
+              const hullDecay = vSettings.asteroidHullDecayPercent || 2;
+              const ptPenalty = vSettings.asteroidPointPenalty || 0;
+
+              if (shieldHealth > 20) {
+                // Shield absorbs damage points
+                setShieldHealth((s) => Math.max(0, s - shieldDmg));
+                sounds.playExplosion();
+                sounds.triggerHaptic('heavy');
+                addFloatingNumber(rocketXPos + 5, rocketY - 5, `🛡️ KALKAN PUANI (-${shieldDmg})`, '#38bdf8');
+              } else {
+                // Hull damage to fleet & point penalty if configured
+                takeAsteroidHit(hullDecay, ptPenalty);
+                addFloatingNumber(
+                  rocketXPos + 5,
+                  rocketY - 5,
+                  `⚠️ GÖKTAŞI ÇARPMASI (-%${hullDecay} HASAR${ptPenalty > 0 ? ` -${ptPenalty} PUAN` : ''})`,
+                  '#ef4444'
+                );
+              }
+            }
+            // Mark entity as consumed
+            continue;
+          }
+
+          // If entity flew past left edge without hitting
+          if (newX < -10) {
+            continue;
+          }
+
+          next.push({
+            ...ent,
+            x: newX,
+            rotation: (ent.rotation + 1) % 360,
+          });
+        }
+
+        return next;
       });
+
+      animFrameRef.current = requestAnimationFrame(loop);
+    };
+
+    animFrameRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [rocketY, isWarpBoosting, shieldHealth, collectVoyageStar, takeAsteroidHit, spawnEntity, adminSettings.voyageSettings]);
+
+  // Handle tap / click inside arena
+  const handleArenaClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = arenaRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    const clickXPercent = (clickX / rect.width) * 100;
+    const clickYPercent = (clickY / rect.height) * 100;
+
+    // Fire laser beam from rocket to click target
+    fireRocketLaser(clickX, clickY);
+
+    const vSettings = adminSettings.voyageSettings || {
+      starPoints: 15,
+      crystalPoints: 50,
+      asteroidPoints: 25,
+      asteroidShieldDamage: 25,
+      asteroidHullDecayPercent: 2,
+      asteroidPointPenalty: 0,
+      pirateBountyPoints: 500,
+      spawnIntervalSeconds: 1.5,
+      warpSpeedMultiplier: 1.8,
+      applyPlanetMultiplier: true,
+    };
+
+    // If pirate battle is active and click is near top/center, attack boss
+    if (currentBattle && !currentBattle.isDefeated && clickYPercent < 35) {
+      const res = attackEnemy(35);
+      addFloatingNumber(
+        clickXPercent,
+        clickYPercent - 5,
+        res.defeated ? `🏆 KORSAN YOK EDİLDİ! +${res.loot?.stardust || vSettings.pirateBountyPoints} PUAN ⭐` : `💥 -35 HASAR!`,
+        res.defeated ? '#fbbf24' : '#f87171'
+      );
+      return;
+    }
+
+    // Check if clicked directly on an approaching asteroid or star
+    let hitObject = false;
+    setEntities((prev) =>
+      prev.map((ent) => {
+        if (hitObject || ent.destroyed) return ent;
+
+        const distX = Math.abs(ent.x - clickXPercent);
+        const distY = Math.abs(ent.y - clickYPercent);
+
+        if (distX < 12 && distY < 12) {
+          hitObject = true;
+          if (ent.type === 'asteroid') {
+            // Destroy asteroid with laser!
+            const earnedPts = destroyVoyageAsteroid(ent.rewardPoints);
+            addFloatingNumber(
+              ent.x,
+              ent.y - 5,
+              `💥 GÖKTAŞI İMHA! +${earnedPts} CEVHER PUANI`,
+              '#34d399'
+            );
+            confetti({
+              particleCount: 25,
+              spread: 60,
+              origin: { x: ent.x / 100, y: ent.y / 100 },
+              colors: ['#f97316', '#fbbf24', '#ffffff'],
+            });
+            return { ...ent, destroyed: true };
+          } else {
+            // Collected star/crystal with laser beam
+            const earnedPts = collectVoyageStar(ent.rewardPoints);
+            addFloatingNumber(
+              ent.x,
+              ent.y - 5,
+              ent.type === 'crystal' ? `+${earnedPts} KRİSTAL PUANI 💎` : `+${earnedPts} PUAN ⭐`,
+              '#fbbf24'
+            );
+            return { ...ent, destroyed: true };
+          }
+        }
+        return ent;
+      })
+    );
+
+    // If no specific entity clicked, award small mining tap ore
+    if (!hitObject) {
+      addFloatingNumber(clickXPercent, clickYPercent - 4, '⚡ LAZER IŞINI', '#f97316');
     }
   };
 
-  // Clean floating numbers after 1.2s
+  // Pointer move / touch move steering for the rocket
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const rect = arenaRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const pointerY = e.clientY - rect.top;
+    const percentY = (pointerY / rect.height) * 100;
+    // Clamp rocket altitude between 16% and 84%
+    const clampedY = Math.max(16, Math.min(84, percentY));
+    setTargetRocketY(clampedY);
+  };
+
+  // Clean floating numbers
   useEffect(() => {
     if (!floatingNumbers.length) return;
     const timer = setTimeout(() => {
       setFloatingNumbers((prev) => prev.slice(1));
-    }, 1200);
+    }, 1100);
     return () => clearTimeout(timer);
   }, [floatingNumbers]);
 
-  // Planet specific visual styling
-  const planetVisuals: Record<number, { bg: string; glow: string; shadow: string; surface: string }> = {
+  // Sector Environment Visual Theme based on current planet
+  const sectorThemes: Record<
+    number,
+    {
+      bg: string;
+      nebulaColor1: string;
+      nebulaColor2: string;
+      planetOrbColor: string;
+      sectorName: string;
+      debrisName: string;
+    }
+  > = {
     1: {
-      bg: 'radial-gradient(circle at 35% 35%, #93c5fd, #2563eb 45%, #0f172a 85%)',
-      glow: 'shadow-[0_0_50px_rgba(59,130,246,0.6)]',
-      shadow: '#1e3a8a',
-      surface: 'Ay Kraterleri & Titanyum Vadisi',
+      bg: 'from-[#1a0c2e] via-[#120822] to-[#0a0414]',
+      nebulaColor1: 'bg-indigo-600/20',
+      nebulaColor2: 'bg-orange-500/20',
+      planetOrbColor: 'radial-gradient(circle at 35% 35%, #93c5fd, #2563eb 45%, #0f172a 85%)',
+      sectorName: 'Sektör 1: Ay Kraterleri & Titanyum Vadisi',
+      debrisName: 'Titanyum Asteroitleri',
     },
     2: {
-      bg: 'radial-gradient(circle at 35% 35%, #fca5a5, #dc2626 50%, #450a0a 90%)',
-      glow: 'shadow-[0_0_55px_rgba(239,68,68,0.65)]',
-      shadow: '#7f1d1d',
-      surface: 'Kızıl Kanyon & Volkanik Plazma',
+      bg: 'from-[#2a0c18] via-[#190610] to-[#0c0308]',
+      nebulaColor1: 'bg-rose-600/25',
+      nebulaColor2: 'bg-orange-600/25',
+      planetOrbColor: 'radial-gradient(circle at 35% 35%, #fca5a5, #dc2626 50%, #450a0a 90%)',
+      sectorName: 'Sektör 2: Mars Kızıl Kanyon & Plazma Fırtınası',
+      debrisName: 'Volkanik Bazalt Taşları',
     },
     3: {
-      bg: 'radial-gradient(circle at 35% 35%, #67e8f9, #0891b2 50%, #083344 90%)',
-      glow: 'shadow-[0_0_60px_rgba(6,182,212,0.65)]',
-      shadow: '#164e63',
-      surface: 'Buzaltı Okyanusu & Süperiletkenler',
+      bg: 'from-[#0b1c2b] via-[#06121c] to-[#03090e]',
+      nebulaColor1: 'bg-cyan-500/25',
+      nebulaColor2: 'bg-blue-600/20',
+      planetOrbColor: 'radial-gradient(circle at 35% 35%, #67e8f9, #0891b2 50%, #083344 90%)',
+      sectorName: 'Sektör 3: Europa Buzaltı Okyanusu & Kutup Yıldızları',
+      debrisName: 'Buz Kristal Kuyrukluyıldızları',
     },
     4: {
-      bg: 'radial-gradient(circle at 35% 35%, #fde047, #d97706 50%, #451a03 90%)',
-      glow: 'shadow-[0_0_65px_rgba(245,158,11,0.65)]',
-      shadow: '#78350f',
-      surface: 'Satürn Altın Halkaları & Asteroitler',
+      bg: 'from-[#2e1908] via-[#1c0f05] to-[#0c0702]',
+      nebulaColor1: 'bg-amber-500/25',
+      nebulaColor2: 'bg-yellow-600/20',
+      planetOrbColor: 'radial-gradient(circle at 35% 35%, #fde047, #d97706 50%, #451a03 90%)',
+      sectorName: 'Sektör 4: Satürn Altın Kuşakları & Cevher Halkası',
+      debrisName: 'Altın-Platin Göktaşları',
     },
     5: {
-      bg: 'radial-gradient(circle at 35% 35%, #f472b6, #9333ea 50%, #2e1065 90%)',
-      glow: 'shadow-[0_0_70px_rgba(168,85,247,0.7)]',
-      shadow: '#581c87',
-      surface: 'Siber Nebula İyon Gaz Bulutu',
+      bg: 'from-[#260c33] via-[#160620] to-[#0b0310]',
+      nebulaColor1: 'bg-fuchsia-600/25',
+      nebulaColor2: 'bg-purple-600/25',
+      planetOrbColor: 'radial-gradient(circle at 35% 35%, #f472b6, #9333ea 50%, #2e1065 90%)',
+      sectorName: 'Sektör 5: Siber Nebula İyon Bulutu & Kozmik Ağ',
+      debrisName: 'İyonik Plazma Parçacıkları',
     },
     6: {
-      bg: 'radial-gradient(circle at 40% 40%, #fb7185, #be185d 40%, #000000 80%)',
-      glow: 'shadow-[0_0_80px_rgba(236,72,153,0.85)]',
-      shadow: '#831843',
-      surface: 'Kuasar Tekillik & Olay Ufku',
+      bg: 'from-[#1e071e] via-[#0f0312] to-[#050106]',
+      nebulaColor1: 'bg-rose-600/30',
+      nebulaColor2: 'bg-purple-900/35',
+      planetOrbColor: 'radial-gradient(circle at 40% 40%, #fb7185, #be185d 40%, #000000 80%)',
+      sectorName: 'Sektör 6: Kuasar Tekillik & Olay Ufku',
+      debrisName: 'Karanlık Madde Kalıntıları',
     },
   };
 
-  const pVis = planetVisuals[currentPlanet.id] || planetVisuals[1];
+  const currentTheme = sectorThemes[currentPlanet.id] || sectorThemes[1];
 
   return (
-    <div className="space-y-4 w-full max-w-full overflow-hidden">
-      {/* Planetary Sector Navigator Strip */}
+    <div className="space-y-3.5 w-full max-w-full overflow-hidden">
+      {/* Sector Quick Switcher Strip */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none">
         {planets.map((planet) => {
           const isCurrent = planet.id === currentPlanet.id;
@@ -179,7 +509,7 @@ export const CosmicCommandArena: React.FC = () => {
                   setActiveTab('planets');
                 }
               }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 border ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 border ${
                 isCurrent
                   ? 'bg-gradient-to-r from-orange-500/25 via-amber-500/20 to-purple-600/30 border-orange-400 text-white shadow-lg glow-orange'
                   : isUnlocked
@@ -188,7 +518,7 @@ export const CosmicCommandArena: React.FC = () => {
               }`}
             >
               <span
-                className="w-3 h-3 rounded-full shrink-0 shadow-sm"
+                className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
                 style={{ backgroundColor: planet.color }}
               />
               <span className="font-display">S{planet.id}: {planet.name.split(' ')[0]}</span>
@@ -200,73 +530,146 @@ export const CosmicCommandArena: React.FC = () => {
         })}
       </div>
 
-      {/* MAIN 3D COSMIC ARENA CANVAS */}
+      {/* MAIN REALISTIC SPACE VOYAGE ARENA */}
       <div
         ref={arenaRef}
-        onClick={handlePlanetClick}
-        className="relative h-96 sm:h-[420px] w-full max-w-full rounded-3xl overflow-hidden border border-orange-500/35 bg-gradient-to-b from-[#1c0b29] via-[#120820] to-[#090412] select-none cursor-crosshair shadow-2xl glow-orange"
+        onClick={handleArenaClick}
+        onPointerMove={handlePointerMove}
+        className={`relative h-[390px] sm:h-[430px] w-full max-w-full rounded-3xl overflow-hidden border border-orange-500/40 bg-gradient-to-r ${
+          currentTheme.bg
+        } select-none cursor-crosshair shadow-2xl glow-orange touch-none ${
+          screenShake ? 'animate-screen-shake ring-2 ring-rose-500' : ''
+        }`}
       >
-        {/* Warm Galactic Nebula Clouds */}
-        <div className="absolute -top-12 -left-12 w-56 h-56 rounded-full bg-orange-500/20 blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 -right-12 w-64 h-64 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 left-1/3 w-60 h-60 rounded-full bg-pink-600/15 blur-3xl pointer-events-none" />
+        {/* Red Hull Impact Flash */}
+        {collisionFlash && (
+          <div className="absolute inset-0 bg-rose-600/30 z-30 pointer-events-none transition-opacity duration-150" />
+        )}
 
-        {/* Deep Space Starfield & Cosmic Dust */}
-        <div className="absolute inset-0 pointer-events-none opacity-80">
-          <div className="w-1.5 h-1.5 rounded-full bg-amber-200 absolute top-12 left-16 animate-ping" />
-          <div className="w-1 h-1 rounded-full bg-orange-300 absolute top-28 right-24 animate-pulse" />
-          <div className="w-2 h-2 rounded-full bg-pink-400/80 absolute bottom-24 left-32 animate-pulse" />
-          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute top-1/2 right-12 animate-ping" />
-          <div className="w-1 h-1 rounded-full bg-yellow-200 absolute bottom-12 right-28 animate-pulse" />
-        </div>
+        {/* Dynamic Nebula Clouds Passing By (Slow Parallax) */}
+        <div
+          className={`absolute -top-16 -left-10 w-80 h-80 rounded-full ${currentTheme.nebulaColor1} blur-3xl pointer-events-none opacity-80`}
+        />
+        <div
+          className={`absolute top-1/2 right-10 w-96 h-96 rounded-full ${currentTheme.nebulaColor2} blur-3xl pointer-events-none opacity-70`}
+        />
 
-        {/* Top HUD Bar */}
-        <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none gap-2">
-          <div className="flex items-center gap-2 bg-slate-950/85 backdrop-blur-md px-2.5 sm:px-3 py-1.5 rounded-xl border border-orange-500/30 pointer-events-auto shrink-0">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <div className="text-xs">
-              <span className="font-black text-white font-display uppercase tracking-wider">
-                {currentPlanet.name}
-              </span>
-              <span className="text-amber-400 font-mono ml-1.5 font-bold text-[11px]">
-                x{currentPlanet.miningMultiplier.toFixed(2)}
-              </span>
-            </div>
-          </div>
-
-          {/* Quick Battle Summon / Alert */}
-          {!currentBattle ? (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                startBattle();
-              }}
-              className="pointer-events-auto flex items-center gap-1.5 bg-gradient-to-r from-orange-500 via-amber-500 to-rose-600 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black font-display uppercase tracking-wider text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 rounded-xl shadow-lg shadow-orange-950 transition active:scale-95 animate-pulse"
-            >
-              <Swords className="w-3.5 h-3.5" />
-              <span>Korsan Avı</span>
-            </button>
-          ) : (
-            <div className="bg-rose-950/90 border border-rose-500/70 px-2 sm:px-3 py-1 rounded-xl flex items-center gap-1.5 animate-bounce">
-              <ShieldAlert className="w-3.5 h-3.5 text-rose-400 animate-spin" />
-              <span className="text-[11px] sm:text-xs font-black text-rose-300 font-display">
-                KORSAN! ({currentBattle.timeRemainingSeconds}s)
-              </span>
-            </div>
+        {/* Distant Celestial Planet/Moon in background (gives true sensation of deep space flight) */}
+        <div className="absolute top-10 right-6 sm:right-16 w-24 h-24 sm:w-32 sm:h-32 rounded-full opacity-60 pointer-events-none overflow-hidden shadow-2xl">
+          <div
+            className="w-full h-full rounded-full shadow-[inset_-12px_-12px_25px_rgba(0,0,0,0.85)]"
+            style={{ background: currentTheme.planetOrbColor }}
+          />
+          {currentPlanet.id === 4 && (
+            <div className="absolute inset-0 m-auto w-40 h-8 border-2 border-amber-400/40 rounded-full rotate-[-25deg]" />
           )}
         </div>
 
-        {/* ACTIVE SPACE BATTLE ENEMY OVERLAY (IF IN COMBAT) */}
+        {/* PARALLAX FAST-MOVING STARFIELD STREAKS (Visual Flight Speed) */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Layer 1: Hyper-drive Warp Speed Lines drifting Right-to-Left */}
+          {[...Array(14)].map((_, i) => (
+            <div
+              key={`warp-${i}`}
+              className="absolute h-0.5 rounded-full bg-gradient-to-r from-transparent via-amber-200/90 to-transparent"
+              style={{
+                width: `${40 + (i % 5) * 35}px`,
+                top: `${(i * 7.5 + 4) % 95}%`,
+                left: `${(i * 19) % 100}%`,
+                animation: `warp-drift-fast ${0.7 + (i % 3) * 0.4}s linear infinite`,
+                opacity: 0.35 + (i % 4) * 0.15,
+              }}
+            />
+          ))}
+
+          {/* Layer 2: Fast Stardust Particles */}
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={`star-${i}`}
+              className="absolute rounded-full bg-white"
+              style={{
+                width: i % 3 === 0 ? '3px' : '2px',
+                height: i % 3 === 0 ? '3px' : '2px',
+                top: `${(i * 5.2 + 8) % 92}%`,
+                left: `${(i * 13.7) % 100}%`,
+                opacity: 0.4 + (i % 3) * 0.25,
+                boxShadow: '0 0 6px rgba(255, 255, 255, 0.8)',
+              }}
+            />
+          ))}
+        </div>
+
+        {/* TOP FLIGHT TELEMETRY HUD BAR */}
+        <div className="absolute top-2.5 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none gap-2">
+          {/* Sector & Telemetry badge */}
+          <div className="flex items-center gap-2 bg-[#120722]/90 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-orange-500/40 pointer-events-auto shadow-md">
+            <span className="w-2.5 h-2.5 rounded-full bg-orange-400 animate-ping" />
+            <div className="text-left">
+              <div className="text-[11px] font-black text-white font-display tracking-wider uppercase flex items-center gap-1">
+                <span>{currentPlanet.name.split(' ')[0]} YOLCULUĞU</span>
+                <span className="text-amber-400 font-mono text-[10px]">
+                  (WARP {warpSpeed.toFixed(1)})
+                </span>
+              </div>
+              <div className="text-[9px] text-amber-200/70 font-mono">
+                {distanceKm.toLocaleString()} KM • x{currentPlanet.miningMultiplier.toFixed(2)}
+              </div>
+            </div>
+          </div>
+
+          {/* Shield & Defense Indicator */}
+          <div className="flex items-center gap-2">
+            <div className="bg-[#120722]/90 backdrop-blur-md px-2 py-1 rounded-xl border border-cyan-500/40 flex items-center gap-1.5 pointer-events-auto shadow-md">
+              <Shield className="w-3.5 h-3.5 text-cyan-400" />
+              <div className="text-right">
+                <div className="text-[9px] text-slate-300 font-bold uppercase font-display">
+                  KALKAN
+                </div>
+                <div
+                  className={`text-[10px] font-black font-mono leading-none ${
+                    shieldHealth > 40 ? 'text-cyan-300' : 'text-rose-400 animate-pulse'
+                  }`}
+                >
+                  %{shieldHealth}
+                </div>
+              </div>
+            </div>
+
+            {/* Pirate Raid Summon / Alert */}
+            {!currentBattle ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startBattle();
+                }}
+                className="pointer-events-auto flex items-center gap-1 bg-gradient-to-r from-orange-500 via-amber-500 to-rose-600 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black font-display uppercase tracking-wider text-[11px] px-2.5 py-1.5 rounded-xl shadow-lg transition active:scale-95 animate-pulse"
+              >
+                <Swords className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Korsan Avı</span>
+                <span className="sm:hidden">Korsan</span>
+              </button>
+            ) : (
+              <div className="bg-rose-950/90 border border-rose-500/70 px-2 py-1 rounded-xl flex items-center gap-1 animate-bounce pointer-events-auto">
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-400 animate-spin" />
+                <span className="text-[10px] sm:text-[11px] font-black text-rose-300 font-display">
+                  BASKIN! ({currentBattle.timeRemainingSeconds}s)
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ACTIVE SPACE PIRATE BOSS OVERLAY (IF ENGAGED) */}
         {currentBattle && (
           <div
             onClick={(e) => {
               e.stopPropagation();
-              handleAttackEnemy();
+              handleArenaClick(e);
             }}
-            className="absolute top-14 left-1/2 -translate-x-1/2 z-30 cursor-pointer group transition-transform active:scale-95 w-[92%] max-w-sm"
+            className="absolute top-12 left-1/2 -translate-x-1/2 z-30 cursor-pointer group transition-transform active:scale-95 w-[92%] max-w-sm pointer-events-auto"
           >
-            <div className="bg-slate-950/95 border border-rose-500/70 p-2.5 sm:p-3 rounded-2xl flex items-center gap-2.5 sm:gap-3 shadow-2xl glow-rose">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-2xl sm:text-3xl shrink-0 group-hover:scale-110 transition animate-bounce">
+            <div className="bg-slate-950/95 border border-rose-500/80 p-2.5 rounded-2xl flex items-center gap-2.5 shadow-2xl glow-rose">
+              <div className="w-12 h-12 rounded-xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-2xl shrink-0 group-hover:scale-110 transition animate-bounce">
                 {currentBattle.avatar}
               </div>
 
@@ -276,12 +679,11 @@ export const CosmicCommandArena: React.FC = () => {
                     {currentBattle.enemyName}
                   </span>
                   <span className="text-[10px] text-amber-300 font-mono font-bold shrink-0">
-                    +${currentBattle.usdtBounty} USDT
+                    +{adminSettings.voyageSettings?.pirateBountyPoints || 500} PUAN ⭐
                   </span>
                 </div>
 
-                {/* HP Bar */}
-                <div className="w-full bg-slate-800 rounded-full h-2.5 sm:h-3 mt-1.5 overflow-hidden border border-white/10">
+                <div className="w-full bg-slate-800 rounded-full h-2.5 mt-1 overflow-hidden border border-white/10">
                   <div
                     className="h-full bg-gradient-to-r from-rose-600 via-orange-500 to-amber-400 transition-all duration-200"
                     style={{
@@ -290,7 +692,7 @@ export const CosmicCommandArena: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono mt-1">
+                <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono mt-0.5">
                   <span>
                     HP: {currentBattle.currentHp}/{currentBattle.maxHp}
                   </span>
@@ -303,205 +705,361 @@ export const CosmicCommandArena: React.FC = () => {
           </div>
         )}
 
-        {/* THE CENTRAL GLOWING 3D PLANET */}
-        <div className="absolute inset-0 m-auto w-36 h-36 sm:w-48 sm:h-48 flex items-center justify-center pointer-events-none">
-          {/* Outer Atmosphere Glow */}
-          <div
-            className={`absolute inset-0 rounded-full pointer-events-none ${pVis.glow} opacity-90 animate-pulse`}
-          />
+        {/* IN-FLIGHT PASSING ENTITIES (STARS, CRYSTALS & ASTEROIDS) */}
+        {entities.map((ent) => {
+          if (ent.destroyed) return null;
 
-          {/* Saturn-like Ring if Planet 4 */}
-          {currentPlanet.id === 4 && (
-            <div className="absolute w-56 sm:w-72 h-14 sm:h-18 rounded-full border-4 border-amber-400/50 rotate-[-25deg] shadow-lg pointer-events-none" />
-          )}
+          if (ent.type === 'star') {
+            return (
+              <div
+                key={ent.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const earned = collectVoyageStar(ent.rewardPoints);
+                  setEntities((prev) =>
+                    prev.map((item) => (item.id === ent.id ? { ...item, destroyed: true } : item))
+                  );
+                  addFloatingNumber(ent.x, ent.y - 5, `+${earned} PUAN ⭐`, '#fbbf24');
+                }}
+                className="absolute z-20 cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2 group"
+                style={{
+                  left: `${ent.x}%`,
+                  top: `${ent.y}%`,
+                  width: `${ent.size}px`,
+                  height: `${ent.size}px`,
+                }}
+              >
+                {/* Glowing Stellar Aura */}
+                <div className="absolute inset-0 rounded-full bg-amber-400/40 blur-md animate-ping" />
+                <div className="relative w-full h-full flex items-center justify-center animate-star-gleam">
+                  <span className="text-xl sm:text-2xl drop-shadow-[0_0_12px_rgba(251,191,36,0.9)]">
+                    ⭐
+                  </span>
+                </div>
+                <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[8px] font-mono font-bold text-amber-300 bg-black/70 px-1 rounded whitespace-nowrap opacity-90">
+                  +{ent.rewardPoints} Puan
+                </span>
+              </div>
+            );
+          }
 
-          {/* Planet Sphere Body */}
-          <div
-            className="w-full h-full rounded-full shadow-2xl relative overflow-hidden transition-all duration-700 pointer-events-auto cursor-pointer"
-            style={{ background: pVis.bg }}
+          if (ent.type === 'crystal') {
+            return (
+              <div
+                key={ent.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const earned = collectVoyageStar(ent.rewardPoints);
+                  setEntities((prev) =>
+                    prev.map((item) => (item.id === ent.id ? { ...item, destroyed: true } : item))
+                  );
+                  addFloatingNumber(ent.x, ent.y - 5, `+${earned} KRİSTAL PUANI 💎`, '#38bdf8');
+                }}
+                className="absolute z-20 cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2 group"
+                style={{
+                  left: `${ent.x}%`,
+                  top: `${ent.y}%`,
+                  width: `${ent.size}px`,
+                  height: `${ent.size}px`,
+                }}
+              >
+                <div className="absolute inset-0 rounded-full bg-cyan-400/40 blur-md animate-pulse" />
+                <div className="relative w-full h-full flex items-center justify-center animate-bounce">
+                  <span className="text-xl sm:text-2xl drop-shadow-[0_0_15px_rgba(6,182,212,0.9)]">
+                    💎
+                  </span>
+                </div>
+                <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[8px] font-mono font-bold text-cyan-300 bg-black/70 px-1 rounded whitespace-nowrap">
+                  +{ent.rewardPoints} Puan
+                </span>
+              </div>
+            );
+          }
+
+          if (ent.type === 'asteroid') {
+            return (
+              <div
+                key={ent.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const earned = destroyVoyageAsteroid(ent.rewardPoints);
+                  setEntities((prev) =>
+                    prev.map((item) => (item.id === ent.id ? { ...item, destroyed: true } : item))
+                  );
+                  addFloatingNumber(ent.x, ent.y - 5, `💥 GÖKTAŞI İMHA! +${earned} CEVHER PUANI`, '#f97316');
+                }}
+                className="absolute z-20 cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2 group"
+                style={{
+                  left: `${ent.x}%`,
+                  top: `${ent.y}%`,
+                  width: `${ent.size}px`,
+                  height: `${ent.size}px`,
+                }}
+              >
+                {/* Burning Fiery Plasma Tail behind the asteroid */}
+                <div className="absolute top-1/2 -right-4 -translate-y-1/2 w-8 h-3 rounded-full bg-gradient-to-r from-orange-600 via-amber-500 to-transparent blur-[2px] opacity-80" />
+
+                {/* Tumbling Asteroid Rock */}
+                <div
+                  className="w-full h-full flex items-center justify-center animate-asteroid-spin transition-transform group-hover:scale-125"
+                  style={{ transform: `rotate(${ent.rotation}deg)` }}
+                >
+                  <span className="text-2xl sm:text-3xl drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
+                    ☄️
+                  </span>
+                </div>
+
+                {/* Target Reticle on hover/tap */}
+                <span className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-bold text-rose-300 bg-rose-950/80 px-1.5 py-0.2 rounded border border-rose-500/40 whitespace-nowrap">
+                  +{ent.rewardPoints} Puan • Vur!
+                </span>
+              </div>
+            );
+          }
+
+          return null;
+        })}
+
+        {/* ACTIVE LASER BEAMS SHOT FROM ROCKET TO TARGETS */}
+        {lasers.map((shot) => (
+          <svg
+            key={shot.id}
+            className="absolute inset-0 w-full h-full pointer-events-none z-25"
           >
-            {/* Crater & Texture shadows */}
-            <div className="absolute inset-0 rounded-full shadow-[inset_-25px_-25px_50px_rgba(0,0,0,0.85)] pointer-events-none" />
-            <div className="absolute inset-0 rounded-full shadow-[inset_12px_12px_24px_rgba(255,255,255,0.3)] pointer-events-none" />
+            <line
+              x1={shot.startX}
+              y1={shot.startY}
+              x2={shot.targetX}
+              y2={shot.targetY}
+              stroke="#fb923c"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              className="drop-shadow-[0_0_8px_rgba(251,146,60,1)] animate-pulse"
+            />
+            <line
+              x1={shot.startX}
+              y1={shot.startY}
+              x2={shot.targetX}
+              y2={shot.targetY}
+              stroke="#ffffff"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        ))}
 
-            {/* Planet Center Label & Tap Hint */}
-            <div className="w-full h-full flex flex-col items-center justify-center text-center p-2.5">
-              <span className="text-xl sm:text-2xl drop-shadow-md">🪐</span>
-              <span className="text-[11px] sm:text-xs font-black text-white font-display drop-shadow tracking-wider mt-0.5 uppercase truncate max-w-full">
-                {currentPlanet.name.split(' ')[0]}
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-black text-amber-300 drop-shadow font-mono bg-black/60 px-2 py-0.5 rounded-full mt-1 border border-amber-400/40 glow-orange">
-                ⛏️ Tıkla & Hasat Et
+        {/* THE HERO: REALISTIC SCI-FI STARSHIP ROCKET CRUISING THROUGH SPACE */}
+        <div
+          className="absolute z-25 pointer-events-auto transform -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing transition-transform duration-75"
+          style={{
+            left: '20%',
+            top: `${rocketY}%`,
+          }}
+        >
+          {/* Subtle hovering float */}
+          <div className="relative animate-rocket-hover">
+            {/* Plasma Thruster Flame & Particle Trail at the Rocket Tail */}
+            <div className="absolute top-1/2 -left-12 sm:-left-16 -translate-y-1/2 flex items-center pointer-events-none">
+              {/* Outer Roaring Orange/Amber Flame Plume */}
+              <div className="w-14 sm:w-18 h-7 sm:h-9 bg-gradient-to-l from-orange-500 via-amber-400 to-transparent rounded-l-full blur-[2px] animate-rocket-flame" />
+              {/* Inner Hyper-Drive Blue-White Core Jet */}
+              <div className="absolute right-0 w-8 sm:w-11 h-3.5 sm:h-4 bg-gradient-to-l from-white via-cyan-300 to-transparent rounded-l-full blur-[1px] animate-pulse" />
+              {/* Spark particles trailing back */}
+              <span className="absolute -left-3 top-1 w-1.5 h-1.5 rounded-full bg-amber-300 animate-ping" />
+              <span className="absolute -left-6 bottom-1 w-1 h-1 rounded-full bg-orange-400 animate-ping" />
+            </div>
+
+            {/* REALISTIC HIGH-FIDELITY STARSHIP ROCKET SVG */}
+            <div className="relative w-28 sm:w-36 h-14 sm:h-16 flex items-center justify-center filter drop-shadow-[0_0_16px_rgba(249,115,22,0.45)]">
+              <svg
+                viewBox="0 0 160 80"
+                className="w-full h-full overflow-visible"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                {/* Defs for Metallic Gradients */}
+                <defs>
+                  <linearGradient id="fuselageGrad" x1="0%" y1="0%" x2="100%" y2="50%">
+                    <stop offset="0%" stopColor="#1e293b" />
+                    <stop offset="35%" stopColor="#334155" />
+                    <stop offset="65%" stopColor="#f8fafc" />
+                    <stop offset="100%" stopColor="#94a3b8" />
+                  </linearGradient>
+
+                  <linearGradient id="wingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#ea580c" />
+                    <stop offset="60%" stopColor="#f97316" />
+                    <stop offset="100%" stopColor="#fbbf24" />
+                  </linearGradient>
+
+                  <linearGradient id="cockpitVisor" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#06b6d4" />
+                    <stop offset="70%" stopColor="#38bdf8" />
+                    <stop offset="100%" stopColor="#ffffff" />
+                  </linearGradient>
+
+                  <linearGradient id="heatShieldGrad" x1="0%" y1="100%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#0f172a" />
+                    <stop offset="100%" stopColor="#1e293b" />
+                  </linearGradient>
+                </defs>
+
+                {/* Top Swept Wing with Laser Blaster */}
+                <path
+                  d="M38 32 L15 10 L52 16 L75 32 Z"
+                  fill="url(#wingGrad)"
+                  stroke="#fb923c"
+                  strokeWidth="1.2"
+                />
+                <circle cx="15" cy="10" r="2.5" fill="#38bdf8" className="animate-pulse" />
+
+                {/* Bottom Swept Wing with Laser Blaster */}
+                <path
+                  d="M38 48 L15 70 L52 64 L75 48 Z"
+                  fill="url(#wingGrad)"
+                  stroke="#fb923c"
+                  strokeWidth="1.2"
+                />
+                <circle cx="15" cy="70" r="2.5" fill="#38bdf8" className="animate-pulse" />
+
+                {/* Main Fuselage Body (Aerodynamic Starship) */}
+                <path
+                  d="M20 30 Q50 26 110 32 L148 40 L110 48 Q50 54 20 50 Z"
+                  fill="url(#fuselageGrad)"
+                  stroke="#64748b"
+                  strokeWidth="1.5"
+                />
+
+                {/* Dark Heat Shield Underside */}
+                <path
+                  d="M25 44 Q60 51 110 48 L148 40 L110 44 Q50 48 25 44 Z"
+                  fill="url(#heatShieldGrad)"
+                  opacity="0.85"
+                />
+
+                {/* Glowing Cockpit Visor / Command Bridge */}
+                <path
+                  d="M92 34 Q115 35 128 40 Q115 45 92 46 Q100 40 92 34 Z"
+                  fill="url(#cockpitVisor)"
+                  filter="drop-shadow(0 0 4px #06b6d4)"
+                />
+
+                {/* Central Mining Ion Reactor Core */}
+                <ellipse cx="62" cy="40" rx="8" ry="4.5" fill="#f97316" className="animate-pulse" />
+                <ellipse cx="62" cy="40" rx="4" ry="2.2" fill="#fef08a" />
+
+                {/* Thruster Engine Bell Nozzle */}
+                <path
+                  d="M18 32 L8 28 L8 52 L18 48 Z"
+                  fill="#0f172a"
+                  stroke="#f97316"
+                  strokeWidth="1.5"
+                />
+
+                {/* Hull Panel Seams & Solar Flare Decals */}
+                <line x1="45" y1="30" x2="45" y2="50" stroke="#cbd5e1" strokeWidth="0.8" opacity="0.6" />
+                <line x1="78" y1="31" x2="78" y2="49" stroke="#cbd5e1" strokeWidth="0.8" opacity="0.6" />
+                <line x1="110" y1="33" x2="110" y2="47" stroke="#cbd5e1" strokeWidth="0.8" opacity="0.6" />
+              </svg>
+            </div>
+
+            {/* Ship Name & Mini Health Indicator */}
+            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-[#120722]/90 border border-orange-500/40 px-2 py-0.5 rounded-full whitespace-nowrap shadow-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[9px] font-black font-display text-white tracking-wide">
+                AMİRAL GEMİSİ
               </span>
             </div>
           </div>
         </div>
 
-        {/* ORBITING USER MINER FLEET SHIPS (Real purchased ships!) */}
-        {userMiners.map((miner, index) => {
-          // Responsive orbital radius scaling so ships never clip or wobble mobile
-          const total = Math.max(1, userMiners.length);
-          const angleOffset = (index * 360) / total;
-          // Scale down orbit radius on mobile to prevent any horizontal overflow
-          const baseRadiusX = 82 + (index % 3) * 12;
-          const baseRadiusY = 44 + (index % 3) * 8;
-          const animDuration = 12 + index * 3;
+        {/* FLEET WINGMEN ESCORT DRONES (Reflecting User's Real Purchased Fleet!) */}
+        {userMiners.slice(0, 3).map((miner, i) => {
+          const offsets = [
+            { x: '10%', yOffset: -26 },
+            { x: '10%', yOffset: 26 },
+            { x: '5%', yOffset: 0 },
+          ];
+          const offset = offsets[i] || offsets[0];
 
           return (
             <div
               key={miner.instanceId}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedOrbitShip(miner);
-              }}
+              className="absolute z-20 pointer-events-none transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300"
               style={{
-                animation: `orbit-${index % 4} ${animDuration}s linear infinite`,
+                left: offset.x,
+                top: `calc(${rocketY}% + ${offset.yOffset}px)`,
               }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer group"
             >
-              {/* Ship Body */}
-              <div
-                className={`relative p-1.5 sm:p-2 rounded-xl backdrop-blur-md border transition-all duration-200 group-hover:scale-125 shadow-xl ${
-                  miner.durability < 40
-                    ? 'bg-rose-950/90 border-rose-500 text-rose-300'
-                    : 'bg-[#220f38]/95 border-amber-400/80 text-amber-300 glow-orange'
-                }`}
-                style={{
-                  transform: `translate(${Math.cos((angleOffset * Math.PI) / 180) * baseRadiusX}px, ${
-                    Math.sin((angleOffset * Math.PI) / 180) * baseRadiusY
-                  }px)`,
-                }}
-              >
-                {/* Engine Thruster Flame */}
-                <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-orange-400 blur-[2px] animate-ping" />
-
-                <div className="flex items-center gap-1 text-[11px] font-bold font-display">
-                  <Rocket className="w-3.5 h-3.5 transform rotate-45 text-orange-400 group-hover:rotate-90 transition" />
-                  <span className="text-[10px] truncate max-w-[65px] sm:max-w-[80px]">
+              <div className="relative flex items-center">
+                {/* Mini Thruster Flame */}
+                <span className="w-4 h-1.5 rounded-l-full bg-gradient-to-l from-orange-400 to-transparent blur-[1px] animate-pulse" />
+                {/* Drone Body */}
+                <div className="p-1 rounded-lg bg-[#200e33]/90 border border-amber-400/70 text-amber-300 shadow-md flex items-center gap-1 scale-90 sm:scale-100">
+                  <Bot className="w-3 h-3 text-orange-400" />
+                  <span className="text-[8px] font-mono font-bold truncate max-w-[50px]">
                     {miner.packageName.split(' ')[0]}
                   </span>
                 </div>
-
-                {/* Micro Durability & Earning tag */}
-                <div className="text-[9px] font-mono text-emerald-300 flex items-center justify-between gap-1 mt-0.5">
-                  <span>+${miner.unclaimedYield.toFixed(3)}</span>
-                  <span
-                    className={miner.durability < 40 ? 'text-rose-400 font-bold' : 'text-amber-400/80'}
-                  >
-                    %{Math.round(miner.durability)}
-                  </span>
-                </div>
-
-                {/* Laser beam connecting ship to planet */}
-                <div className="absolute top-1/2 left-1/2 w-16 sm:w-20 h-0.5 bg-gradient-to-r from-orange-400/80 via-amber-300/40 to-transparent pointer-events-none -z-10 rotate-45 transform origin-left" />
               </div>
             </div>
           );
         })}
-        {/* If user has no miners, show a friendly tutorial probe in orbit */}
-        {userMiners.length === 0 && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 bg-slate-950/85 border border-indigo-500/40 px-4 py-2 rounded-2xl flex items-center gap-3">
-            <span className="text-xl">🛸</span>
-            <div className="text-xs">
-              <span className="font-bold text-white">Yörüngede Henüz Gemi Yok!</span>
-              <p className="text-[11px] text-slate-400">
-                Aşağıdan ilk paketinizi satın alarak madenci filonuzu buraya konuşlandırın.
-              </p>
-            </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveTab('packages');
-              }}
-              className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-xl transition"
-            >
-              Gemi Al
-            </button>
-          </div>
-        )}
 
-        {/* Floating Numbers / Damage / Loot Popups */}
-        {floatingNumbers.map((fn) => (
+        {/* FLOATING DAMAGE / LOOT NUMBERS */}
+        {floatingNumbers.map((item) => (
           <div
-            key={fn.id}
-            style={{ left: fn.x, top: fn.y, color: fn.color }}
-            className="absolute z-40 text-xs sm:text-sm font-black font-mono pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] animate-bounce"
+            key={item.id}
+            className="absolute z-40 pointer-events-none font-display font-black text-xs sm:text-sm animate-float-up drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] whitespace-nowrap"
+            style={{
+              left: `${item.x}%`,
+              top: `${item.y}%`,
+              color: item.color,
+            }}
           >
-            {fn.text}
+            {item.text}
           </div>
         ))}
 
-        {/* Laser Tap Spark Feedback */}
-        {laserEffect && (
-          <div
-            style={{ left: laserEffect.x - 16, top: laserEffect.y - 16 }}
-            className="absolute z-30 w-8 h-8 rounded-full border-2 border-cyan-400 bg-cyan-400/30 blur-sm pointer-events-none animate-ping"
-          />
-        )}
-
-        {/* Bottom Station Status Indicators */}
-        <div className="absolute bottom-3 left-3 right-3 z-20 flex items-center justify-between text-xs pointer-events-none">
-          <div className="bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-xl border border-white/10 flex items-center gap-2 font-mono text-[11px]">
-            <Radio className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
-            <span className="text-slate-300">Radar: Güvenli Bölge</span>
-            <span className="text-emerald-400 font-bold ml-1">
-              Filo: {userMiners.length} Birim
-            </span>
+        {/* BOTTOM VOYAGE CONTROLS & FLIGHT STATS BAR */}
+        <div className="absolute bottom-2.5 left-2.5 right-2.5 z-20 flex items-center justify-between gap-2 pointer-events-none">
+          <div className="flex items-center gap-1.5 bg-[#120722]/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-orange-500/30 text-[10px] text-amber-200/90 font-mono pointer-events-auto">
+            <span>⭐ Yıldızları Topla</span>
+            <span className="text-orange-400">•</span>
+            <span>☄️ Göktaşlarını Vur</span>
           </div>
 
-          <div className="bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-xl border border-white/10 text-[11px] font-mono text-amber-300">
-            ⚡ Enerji: {user.energy}/{user.maxEnergy}
-          </div>
+          {/* Hyper-Warp Drive Booster Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              sounds.playUpgrade();
+              sounds.triggerHaptic('medium');
+              setIsWarpBoosting(true);
+              setWarpSpeed(6.8);
+              confetti({
+                particleCount: 30,
+                spread: 50,
+                origin: { x: 0.8, y: 0.8 },
+                colors: ['#f97316', '#38bdf8', '#fbbf24'],
+              });
+              setTimeout(() => {
+                setIsWarpBoosting(false);
+                setWarpSpeed(3.6);
+              }, 4000);
+            }}
+            disabled={isWarpBoosting}
+            className={`pointer-events-auto flex items-center gap-1 text-[10px] sm:text-[11px] font-black uppercase font-display px-3 py-1.5 rounded-xl transition shadow-lg active:scale-95 ${
+              isWarpBoosting
+                ? 'bg-cyan-500 text-slate-950 shadow-cyan-500/50 animate-pulse'
+                : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 shadow-orange-500/30'
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5 text-slate-950" />
+            <span>{isWarpBoosting ? 'WARP 6.8 HIZI!' : 'HİPER HIZLAN (WARP)'}</span>
+          </button>
         </div>
       </div>
-
-      {/* SELECTED SHIP QUICK INSPECT & REPAIR MODAL */}
-      {selectedOrbitShip && (
-        <div className="bg-slate-900/90 border border-indigo-500/50 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 glow-cyan animate-in fade-in duration-200">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 text-xl shrink-0">
-              🚀
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="font-bold text-white text-sm font-display">
-                  {selectedOrbitShip.packageName}
-                </h4>
-                <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-mono px-2 py-0.5 rounded-full border border-emerald-500/30">
-                  +${selectedOrbitShip.dailyYield.toFixed(2)}/gün
-                </span>
-              </div>
-              <div className="text-xs text-slate-400 mt-0.5 font-mono">
-                Dayanıklılık: %{Math.round(selectedOrbitShip.durability)} • Biriken Hasılat: $
-                {selectedOrbitShip.unclaimedYield.toFixed(4)} USDT
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {selectedOrbitShip.durability < 100 && (
-              <button
-                onClick={() => {
-                  setSelectedMinerForRepair(selectedOrbitShip);
-                  setIsRepairModalOpen(true);
-                  setSelectedOrbitShip(null);
-                }}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition active:scale-95"
-              >
-                <Wrench className="w-3.5 h-3.5" />
-                <span>Hangarda Tamir Et</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => setSelectedOrbitShip(null)}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-xl"
-            >
-              Kapat
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

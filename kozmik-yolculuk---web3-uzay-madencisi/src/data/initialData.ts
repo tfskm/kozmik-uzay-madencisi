@@ -380,6 +380,18 @@ export const INITIAL_ADMIN_SETTINGS: AdminSystemStats = {
   luckyWheelCostStardust: 50,
   telegramChannelUrl: 'https://t.me/CosmicMinerOfficial',
   telegramSupportUrl: 'https://t.me/CosmicMinerSupport',
+  voyageSettings: {
+    starPoints: 15,
+    crystalPoints: 50,
+    asteroidPoints: 25,
+    asteroidShieldDamage: 25,
+    asteroidHullDecayPercent: 2,
+    asteroidPointPenalty: 0,
+    pirateBountyPoints: 500,
+    spawnIntervalSeconds: 3.2,
+    warpSpeedMultiplier: 1.8,
+    applyPlanetMultiplier: true,
+  },
 };
 
 export const INITIAL_USER: User = {

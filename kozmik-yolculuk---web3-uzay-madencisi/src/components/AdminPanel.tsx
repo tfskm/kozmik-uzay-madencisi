@@ -22,6 +22,12 @@ import {
   Radio,
   RefreshCw,
   Globe2,
+  Rocket,
+  Zap,
+  Sparkles,
+  Shield,
+  Flame,
+  Sliders,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -45,7 +51,7 @@ export const AdminPanel: React.FC = () => {
   } = useGame();
 
   const [currentAdminTab, setCurrentAdminTab] = useState<
-    'overview' | 'users' | 'packages' | 'withdrawals' | 'planets' | 'settings'
+    'overview' | 'users' | 'packages' | 'withdrawals' | 'planets' | 'voyage' | 'settings'
   >('overview');
 
   // Search & filter for users
@@ -76,6 +82,33 @@ export const AdminPanel: React.FC = () => {
   const [autoApproveInput, setAutoApproveInput] = useState(adminSettings.autoApproveWithdrawalsUnder);
   const [repairCostInput, setRepairCostInput] = useState(adminSettings.repairCostPerPercent);
   const [maintenanceInput, setMaintenanceInput] = useState(adminSettings.maintenanceMode);
+
+  // In-Flight Voyage Rewards, Penalties & Mechanics State
+  const defaultVoyage = {
+    starPoints: 15,
+    crystalPoints: 50,
+    asteroidPoints: 25,
+    asteroidShieldDamage: 25,
+    asteroidHullDecayPercent: 2,
+    asteroidPointPenalty: 0,
+    pirateBountyPoints: 500,
+    spawnIntervalSeconds: 1.5,
+    warpSpeedMultiplier: 1.8,
+    applyPlanetMultiplier: true,
+  };
+  const activeVoyage = adminSettings.voyageSettings || defaultVoyage;
+
+  const [starPointsInput, setStarPointsInput] = useState<number>(activeVoyage.starPoints);
+  const [crystalPointsInput, setCrystalPointsInput] = useState<number>(activeVoyage.crystalPoints);
+  const [asteroidPointsInput, setAsteroidPointsInput] = useState<number>(activeVoyage.asteroidPoints);
+  const [shieldDamageInput, setShieldDamageInput] = useState<number>(activeVoyage.asteroidShieldDamage);
+  const [hullDecayInput, setHullDecayInput] = useState<number>(activeVoyage.asteroidHullDecayPercent);
+  const [pointPenaltyInput, setPointPenaltyInput] = useState<number>(activeVoyage.asteroidPointPenalty || 0);
+  const [pirateBountyInput, setPirateBountyInput] = useState<number>(activeVoyage.pirateBountyPoints);
+  const [spawnIntervalInput, setSpawnIntervalInput] = useState<number>(activeVoyage.spawnIntervalSeconds);
+  const [warpMultiplierInput, setWarpMultiplierInput] = useState<number>(activeVoyage.warpSpeedMultiplier);
+  const [applyMultiplierInput, setApplyMultiplierInput] = useState<boolean>(activeVoyage.applyPlanetMultiplier);
+  const [voyageToastMessage, setVoyageToastMessage] = useState<string | null>(null);
 
   // Calculations for overview stats
   const totalDeposited = transactions
@@ -153,6 +186,44 @@ export const AdminPanel: React.FC = () => {
     alert('Sistem ve ekonomi parametreleri güncellendi!');
   };
 
+  const handleSaveVoyageSettings = () => {
+    sounds.playUpgrade();
+    adminUpdateSettings({
+      voyageSettings: {
+        starPoints: Number(starPointsInput) || 0,
+        crystalPoints: Number(crystalPointsInput) || 0,
+        asteroidPoints: Number(asteroidPointsInput) || 0,
+        asteroidShieldDamage: Number(shieldDamageInput) || 0,
+        asteroidHullDecayPercent: Number(hullDecayInput) || 0,
+        asteroidPointPenalty: Number(pointPenaltyInput) || 0,
+        pirateBountyPoints: Number(pirateBountyInput) || 0,
+        spawnIntervalSeconds: Number(spawnIntervalInput) || 1.5,
+        warpSpeedMultiplier: Number(warpMultiplierInput) || 1.8,
+        applyPlanetMultiplier: applyMultiplierInput,
+      },
+    });
+    confetti({ particleCount: 40, spread: 60 });
+    setVoyageToastMessage('🚀 Uzay yolculuğu ödül ve zarar parametreleri başarıyla güncellendi!');
+    setTimeout(() => setVoyageToastMessage(null), 3500);
+  };
+
+  const handleResetVoyageSettings = () => {
+    sounds.playClick();
+    setStarPointsInput(defaultVoyage.starPoints);
+    setCrystalPointsInput(defaultVoyage.crystalPoints);
+    setAsteroidPointsInput(defaultVoyage.asteroidPoints);
+    setShieldDamageInput(defaultVoyage.asteroidShieldDamage);
+    setHullDecayInput(defaultVoyage.asteroidHullDecayPercent);
+    setPointPenaltyInput(defaultVoyage.asteroidPointPenalty);
+    setPirateBountyInput(defaultVoyage.pirateBountyPoints);
+    setSpawnIntervalInput(defaultVoyage.spawnIntervalSeconds);
+    setWarpMultiplierInput(defaultVoyage.warpSpeedMultiplier);
+    setApplyMultiplierInput(defaultVoyage.applyPlanetMultiplier);
+    adminUpdateSettings({ voyageSettings: defaultVoyage });
+    setVoyageToastMessage('🔄 Uçuş parametreleri varsayılan fabrika ayarlarına döndürüldü.');
+    setTimeout(() => setVoyageToastMessage(null), 3000);
+  };
+
   return (
     <div className="space-y-6 pb-24">
       {/* Top Admin Header Bar */}
@@ -203,6 +274,7 @@ export const AdminPanel: React.FC = () => {
               badge: pendingWithdrawals.length,
             },
             { id: 'planets', label: `Gezegen Çarpanları`, icon: Globe2 },
+            { id: 'voyage', label: '🚀 Uzay Uçuşu & Puanlar', icon: Rocket },
             { id: 'settings', label: 'Ekonomi Ayarları', icon: Settings },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -820,6 +892,428 @@ export const AdminPanel: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5.5: IN-FLIGHT VOYAGE MECHANICS & REWARDS */}
+      {currentAdminTab === 'voyage' && (
+        <div className="space-y-5">
+          {/* Toast alert banner */}
+          {voyageToastMessage && (
+            <div className="bg-emerald-950/90 border border-emerald-500/70 p-3.5 rounded-2xl flex items-center justify-between shadow-lg animate-bounce text-emerald-200 text-xs font-bold font-mono">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                <span>{voyageToastMessage}</span>
+              </div>
+              <button
+                onClick={() => setVoyageToastMessage(null)}
+                className="text-slate-400 hover:text-white text-xs px-2 py-0.5"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Voyage Header Card */}
+          <div className="bg-gradient-to-r from-orange-950/80 via-slate-900 to-amber-950/80 border border-orange-500/40 rounded-2xl p-5 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400 shrink-0">
+                  <Rocket className="w-6 h-6 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-orange-400 uppercase tracking-wider font-mono">
+                      UZAY UÇUŞU & ÖDÜL/ZARAR MEKANİZMASI
+                    </span>
+                    <span className="bg-amber-400/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-400/40">
+                      CANLI DİNAMİK
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-white font-display mt-0.5">
+                    Sanal Rota Ödülleri & Göktaşı Hasarları
+                  </h3>
+                  <p className="text-xs text-slate-300 max-w-2xl mt-1">
+                    Ana ekrandaki sanal uçuşta toplanan yıldızlar, kırılan meteorlar ve korsan avlarından kazanılan tüm ödüller{' '}
+                    <strong className="text-amber-300">dolar yerine puan</strong> olarak işlenir. Buradaki tüm parametreleri anlık düzenleyebilirsiniz.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handleResetVoyageSettings}
+                  className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Varsayılanlar</span>
+                </button>
+                <button
+                  onClick={handleSaveVoyageSettings}
+                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 text-xs font-black px-4 py-2 rounded-xl transition shadow-lg active:scale-95 flex items-center gap-1.5"
+                >
+                  <Rocket className="w-3.5 h-3.5" />
+                  <span>Ayarları Kaydet</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Grids */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* BOX 1: REWARD MECHANISM (POZİTİF KAZANIM PUANLARI) */}
+            <div className="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm">
+                    ⭐
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-white font-display">
+                      Ödül & Puan Mekanizması (Pozitif)
+                    </h4>
+                    <p className="text-[11px] text-slate-400">
+                      Toplanan nesnelerin kullanıcıya kazandıracağı puan miktarları
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                  PUAN BAZLI
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {/* Star reward */}
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-amber-400">⭐</span>
+                      <label className="text-xs font-bold text-white">Yıldız Toplama Ödülü</label>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Roket veya lazerle yakalanan standart sarı yıldız puanı
+                    </p>
+                  </div>
+                  <div className="w-28 shrink-0 flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="1"
+                      value={starPointsInput}
+                      onChange={(e) => setStarPointsInput(Math.max(1, Number(e.target.value)))}
+                      className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 text-amber-300 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
+                    />
+                    <span className="text-[10px] text-slate-400 font-mono">Puan</span>
+                  </div>
+                </div>
+
+                {/* Crystal reward */}
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-cyan-400">💎</span>
+                      <label className="text-xs font-bold text-white">Kozmik Kristal Ödülü</label>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Nadir geçen mavi kozmik kristallerden elde edilen puan
+                    </p>
+                  </div>
+                  <div className="w-28 shrink-0 flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="1"
+                      value={crystalPointsInput}
+                      onChange={(e) => setCrystalPointsInput(Math.max(1, Number(e.target.value)))}
+                      className="w-full bg-slate-900 border border-slate-700 focus:border-cyan-400 text-cyan-300 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
+                    />
+                    <span className="text-[10px] text-slate-400 font-mono">Puan</span>
+                  </div>
+                </div>
+
+                {/* Asteroid destroy reward */}
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-orange-400">💥</span>
+                      <label className="text-xs font-bold text-white">Göktaşı İmha Cevher Puanı</label>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Meteor roket lazeri veya dokunuşla patlatıldığında kazanılan puan
+                    </p>
+                  </div>
+                  <div className="w-28 shrink-0 flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="1"
+                      value={asteroidPointsInput}
+                      onChange={(e) => setAsteroidPointsInput(Math.max(1, Number(e.target.value)))}
+                      className="w-full bg-slate-900 border border-slate-700 focus:border-orange-400 text-orange-300 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
+                    />
+                    <span className="text-[10px] text-slate-400 font-mono">Puan</span>
+                  </div>
+                </div>
+
+                {/* Pirate boss bounty */}
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-rose-400">⚔️</span>
+                      <label className="text-xs font-bold text-white">Korsan Avı / Zafer Puanı</label>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Baskın yapan korsan fırkateyni yok edildiğinde verilen büyük ödül
+                    </p>
+                  </div>
+                  <div className="w-28 shrink-0 flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="10"
+                      value={pirateBountyInput}
+                      onChange={(e) => setPirateBountyInput(Math.max(10, Number(e.target.value)))}
+                      className="w-full bg-slate-900 border border-slate-700 focus:border-rose-400 text-rose-300 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
+                    />
+                    <span className="text-[10px] text-slate-400 font-mono">Puan</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* BOX 2: PENALTY & DAMAGE MECHANISM (HASAR & ZARAR) */}
+            <div className="bg-slate-900/90 border border-rose-500/30 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-sm">
+                    🛡️
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-white font-display">
+                      Hasar & Zarar Mekanizması (Negatif)
+                    </h4>
+                    <p className="text-[11px] text-slate-400">
+                      Göktaşı çarpışmalarında kalkan, gövde ve puan kesintileri
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono text-rose-400 bg-rose-950/60 border border-rose-500/30 px-2 py-0.5 rounded-full">
+                  HASAR & CEZA
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {/* Shield damage */}
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="w-4 h-4 text-cyan-400" />
+                      <label className="text-xs font-bold text-white">Kalkan Hasar Puanı</label>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Göktaşı kalkana çarptığında kalkandan düşen puan (%100 üzerinden)
+                    </p>
+                  </div>
+                  <div className="w-28 shrink-0 flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="5"
+                      max="100"
+                      value={shieldDamageInput}
+                      onChange={(e) => setShieldDamageInput(Math.min(100, Math.max(5, Number(e.target.value))))}
+                      className="w-full bg-slate-900 border border-slate-700 focus:border-cyan-400 text-cyan-300 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
+                    />
+                    <span className="text-[10px] text-slate-400 font-mono">Puan</span>
+                  </div>
+                </div>
+
+                {/* Hull decay % */}
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-rose-400" />
+                      <label className="text-xs font-bold text-white">Gövde Aşınma Zararı (%)</label>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Kalkan bittiğinde madenci araçlarına verilen kalıcı aşınma hasarı
+                    </p>
+                  </div>
+                  <div className="w-28 shrink-0 flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0.5"
+                      max="20"
+                      step="0.5"
+                      value={hullDecayInput}
+                      onChange={(e) => setHullDecayInput(Math.max(0.1, Number(e.target.value)))}
+                      className="w-full bg-slate-900 border border-slate-700 focus:border-rose-400 text-rose-400 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
+                    />
+                    <span className="text-[10px] text-slate-400 font-mono">% Hasar</span>
+                  </div>
+                </div>
+
+                {/* Point penalty on crash */}
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-rose-500 font-bold">🔻</span>
+                      <label className="text-xs font-bold text-white">Çarpışma Puan Cezası</label>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      Kalkan yokken çarpmada kullanıcı bakiyesinden silinecek puan (0 ise puan silinmez)
+                    </p>
+                  </div>
+                  <div className="w-28 shrink-0 flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      value={pointPenaltyInput}
+                      onChange={(e) => setPointPenaltyInput(Math.max(0, Number(e.target.value)))}
+                      className="w-full bg-slate-900 border border-slate-700 focus:border-rose-400 text-rose-300 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
+                    />
+                    <span className="text-[10px] text-slate-400 font-mono">Puan</span>
+                  </div>
+                </div>
+
+                {/* Planet multiplier toggle */}
+                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <Globe2 className="w-4 h-4 text-emerald-400" />
+                      <label htmlFor="planetMult" className="text-xs font-bold text-white cursor-pointer">
+                        Gezegen Çarpanı Etkisi
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      İleri sektörlerdeki (Mars, Jüpiter vb.) çarpanlar uçuş puanlarına uygulansın
+                    </p>
+                  </div>
+                  <div className="shrink-0 flex items-center">
+                    <input
+                      type="checkbox"
+                      id="planetMult"
+                      checked={applyMultiplierInput}
+                      onChange={(e) => setApplyMultiplierInput(e.target.checked)}
+                      className="w-5 h-5 rounded text-amber-500 focus:ring-0 cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* BOX 3: SPEED & SPAWN MECHANICS */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <h4 className="text-sm font-black text-white font-display flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-indigo-400" />
+              <span>Uçuş Akışı & Spawn Hız Parametreleri</span>
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-xl">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>⏱️ Nesne Doğma Sıklığı (Göz Yormayan Akış)</span>
+                  </label>
+                  <span className="text-amber-400 font-mono font-bold text-xs">{spawnIntervalInput} Saniye</span>
+                </div>
+                <input
+                  type="range"
+                  min="1.0"
+                  max="6.0"
+                  step="0.2"
+                  value={spawnIntervalInput}
+                  onChange={(e) => setSpawnIntervalInput(Number(e.target.value))}
+                  className="w-full accent-amber-400 cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                  <span>Hızlı (1.0s)</span>
+                  <span>Önerilen Sakin (3.2s)</span>
+                  <span>Çok Seyrek (6.0s)</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-xl">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>⚡ Warp Hızlandırıcı Çarpanı</span>
+                  </label>
+                  <span className="text-cyan-400 font-mono font-bold text-xs">x{warpMultiplierInput} Kat</span>
+                </div>
+                <input
+                  type="range"
+                  min="1.2"
+                  max="3.5"
+                  step="0.1"
+                  value={warpMultiplierInput}
+                  onChange={(e) => setWarpMultiplierInput(Number(e.target.value))}
+                  className="w-full accent-cyan-400 cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                  <span>Düşük (1.2x)</span>
+                  <span>Standart (1.8x)</span>
+                  <span>Ultra Hızlı (3.5x)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* BOX 4: INTERACTIVE PLANET SIMULATOR PREVIEW */}
+          <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono flex items-center gap-2">
+                <span>📊 Canlı Gezegen Puan Önizlemesi</span>
+                <span className="text-[10px] text-amber-400 bg-amber-950/50 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                  {applyMultiplierInput ? 'Gezegen Çarpanı Açık' : 'Sabit Puan (Çarpan Kapalı)'}
+                </span>
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+              {planets.map((planet) => {
+                const mult = applyMultiplierInput ? planet.miningMultiplier : 1;
+                const starReward = Math.max(1, Math.round(starPointsInput * mult));
+                const crystalReward = Math.max(1, Math.round(crystalPointsInput * mult));
+                const asteroidReward = Math.max(1, Math.round(asteroidPointsInput * mult));
+
+                return (
+                  <div
+                    key={planet.id}
+                    className="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 text-center space-y-1"
+                  >
+                    <div className="text-[11px] font-bold text-white truncate">
+                      {planet.name.split(' ')[0]}
+                    </div>
+                    <div className="text-[10px] font-mono text-emerald-400">
+                      x{planet.miningMultiplier.toFixed(2)} Kat
+                    </div>
+                    <div className="text-[10px] text-amber-300 font-mono">
+                      ⭐ +{starReward} Puan
+                    </div>
+                    <div className="text-[10px] text-cyan-300 font-mono">
+                      💎 +{crystalReward} Puan
+                    </div>
+                    <div className="text-[10px] text-orange-300 font-mono">
+                      💥 +{asteroidReward} Puan
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Bottom Save Action Button */}
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              onClick={handleResetVoyageSettings}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 py-2.5 rounded-xl transition"
+            >
+              Fabrika Ayarlarına Dön
+            </button>
+            <button
+              onClick={handleSaveVoyageSettings}
+              className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black text-xs px-6 py-2.5 rounded-xl transition shadow-xl active:scale-95 flex items-center gap-2"
+            >
+              <Rocket className="w-4 h-4" />
+              <span>Ayarları Kaydet ve Canlı Uygula</span>
+            </button>
           </div>
         </div>
       )}

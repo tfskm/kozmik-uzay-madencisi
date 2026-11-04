@@ -81,6 +81,9 @@ interface GameContextType {
   startBattle: () => void;
   attackEnemy: (damage?: number) => { defeated: boolean; loot?: { usdt: number; stardust: number } };
   manualClickMine: () => { usdtEarned: number; stardustEarned: number };
+  collectVoyageStar: (pointsOverride?: number) => number;
+  destroyVoyageAsteroid: (pointsOverride?: number) => number;
+  takeAsteroidHit: (decayAmount?: number, pointPenalty?: number) => void;
 }
 
 const STORAGE_KEYS = {
@@ -189,9 +192,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     loadLocal(STORAGE_KEYS.MARKET, INITIAL_MARKET_ITEMS)
   );
 
-  const [adminSettings, setAdminSettings] = useState<AdminSystemStats>(() =>
-    loadLocal(STORAGE_KEYS.SETTINGS, INITIAL_ADMIN_SETTINGS)
-  );
+  const [adminSettings, setAdminSettings] = useState<AdminSystemStats>(() => {
+    const loaded = loadLocal<AdminSystemStats>(STORAGE_KEYS.SETTINGS, INITIAL_ADMIN_SETTINGS);
+    return {
+      ...INITIAL_ADMIN_SETTINGS,
+      ...loaded,
+      voyageSettings: {
+        ...INITIAL_ADMIN_SETTINGS.voyageSettings,
+        ...(loaded?.voyageSettings || {}),
+      },
+    };
+  });
 
   const [activeTab, setActiveTab] = useState<string>('mining');
   const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
@@ -378,13 +389,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Enemy defeated!
       sounds.playWin();
       sounds.triggerHaptic('success');
-      const usdt = currentBattle.usdtBounty;
-      const dust = currentBattle.stardustBounty;
+      const vSettings = adminSettings.voyageSettings || INITIAL_ADMIN_SETTINGS.voyageSettings;
+      const bountyPoints = vSettings.pirateBountyPoints || 500;
 
       setUser((prev) => ({
         ...prev,
-        usdtBalance: Number((prev.usdtBalance + usdt).toFixed(4)),
-        stardustBalance: prev.stardustBalance + dust,
+        stardustBalance: prev.stardustBalance + bountyPoints,
         exp: prev.exp + 35,
       }));
 
@@ -393,18 +403,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         userId: user.id,
         userName: user.telegramUsername,
         type: 'spin_win',
-        amount: usdt,
-        currency: 'USDT',
+        amount: bountyPoints,
+        currency: 'STARDUST',
         status: 'completed',
         timestamp: Date.now(),
-        note: `⚔️ ${currentBattle.enemyName} Yok Edildi (Ödül: $${usdt} USDT & ${dust} Toz)`,
+        note: `⚔️ ${currentBattle.enemyName} Yok Edildi (Ödül: +${bountyPoints} PUAN ⭐)`,
       };
       setTransactions((prev) => [newTx, ...prev]);
 
       setCurrentBattle((prev) => (prev ? { ...prev, currentHp: 0, isDefeated: true } : null));
       setTimeout(() => setCurrentBattle(null), 2500);
 
-      return { defeated: true, loot: { usdt, stardust: dust } };
+      return { defeated: true, loot: { usdt: 0, stardust: bountyPoints } };
     } else {
       setCurrentBattle((prev) => (prev ? { ...prev, currentHp: nextHp } : null));
       return { defeated: false };
@@ -432,6 +442,66 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     return { usdtEarned, stardustEarned };
+  };
+
+  const collectVoyageStar = (pointsOverride?: number) => {
+    sounds.playCollectStar();
+    sounds.triggerHaptic('success');
+    const vSettings = adminSettings.voyageSettings || INITIAL_ADMIN_SETTINGS.voyageSettings;
+    const basePts = pointsOverride !== undefined ? pointsOverride : vSettings.starPoints;
+    const multiplier = vSettings.applyPlanetMultiplier ? currentPlanet.miningMultiplier : 1;
+    const earnedPoints = Math.max(1, Math.round(basePts * multiplier));
+
+    setUser((prev) => ({
+      ...prev,
+      stardustBalance: prev.stardustBalance + earnedPoints,
+      exp: prev.exp + 5,
+    }));
+    return earnedPoints;
+  };
+
+  const destroyVoyageAsteroid = (pointsOverride?: number) => {
+    sounds.playExplosion();
+    sounds.triggerHaptic('heavy');
+    const vSettings = adminSettings.voyageSettings || INITIAL_ADMIN_SETTINGS.voyageSettings;
+    const basePts = pointsOverride !== undefined ? pointsOverride : vSettings.asteroidPoints;
+    const multiplier = vSettings.applyPlanetMultiplier ? currentPlanet.miningMultiplier : 1;
+    const earnedPoints = Math.max(1, Math.round(basePts * multiplier));
+
+    setUser((prev) => ({
+      ...prev,
+      stardustBalance: prev.stardustBalance + earnedPoints,
+      exp: prev.exp + 8,
+    }));
+    return earnedPoints;
+  };
+
+  const takeAsteroidHit = (decayAmount?: number, pointPenalty?: number) => {
+    sounds.playLaser();
+    sounds.triggerHaptic('warning');
+    const vSettings = adminSettings.voyageSettings || INITIAL_ADMIN_SETTINGS.voyageSettings;
+    const actualDecay = decayAmount !== undefined ? decayAmount : vSettings.asteroidHullDecayPercent;
+    const actualPenalty = pointPenalty !== undefined ? pointPenalty : (vSettings.asteroidPointPenalty || 0);
+
+    // Apply miner durability decay
+    if (actualDecay > 0) {
+      setUserMiners((prev) => {
+        if (prev.length === 0) return prev;
+        const idx = prev.findIndex((m) => m.durability > 0);
+        if (idx === -1) return prev;
+        return prev.map((m, i) =>
+          i === idx ? { ...m, durability: Math.max(0, m.durability - actualDecay) } : m
+        );
+      });
+    }
+
+    // Apply point penalty if configured
+    if (actualPenalty > 0) {
+      setUser((prev) => ({
+        ...prev,
+        stardustBalance: Math.max(0, prev.stardustBalance - actualPenalty),
+      }));
+    }
   };
 
   const claimRandomEvent = () => {
@@ -1148,6 +1218,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         startBattle,
         attackEnemy,
         manualClickMine,
+        collectVoyageStar,
+        destroyVoyageAsteroid,
+        takeAsteroidHit,
       }}
     >
       {children}

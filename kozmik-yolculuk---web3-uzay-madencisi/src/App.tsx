@@ -40,22 +40,24 @@ const MainLayout: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-b from-[#180d2e] via-[#100722] to-[#080414] text-slate-100 flex flex-col relative selection:bg-orange-500 selection:text-slate-950">
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-b from-[#2a134a] via-[#1c0c36] to-[#140628] text-slate-100 flex flex-col relative selection:bg-orange-500 selection:text-slate-950">
       {/* Background Solar Flares and Warm Galactic Lighting */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         {/* Warm Orange / Solar Flare Accent */}
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[600px] h-[450px] bg-gradient-to-b from-orange-500/20 via-amber-500/15 to-transparent blur-[120px] rounded-full" />
-        {/* Warm Sunset Magenta */}
-        <div className="absolute top-1/2 left-0 w-[450px] h-[450px] bg-pink-600/12 blur-[130px] rounded-full" />
-        {/* Radiant Cyan Deep Space Glow */}
-        <div className="absolute bottom-10 right-0 w-[500px] h-[500px] bg-cyan-500/14 blur-[130px] rounded-full" />
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-b from-orange-500/28 via-amber-500/20 to-transparent blur-[110px] rounded-full" />
+        {/* Warm Sunset Magenta Flare */}
+        <div className="absolute top-1/3 -left-20 w-[550px] h-[550px] bg-pink-500/18 blur-[120px] rounded-full" />
+        {/* Radiant Cyan Deep Space Aurora */}
+        <div className="absolute bottom-10 right-0 w-[600px] h-[600px] bg-cyan-400/20 blur-[125px] rounded-full" />
+        {/* Radiant Purple-Violet Core */}
+        <div className="absolute top-2/3 left-1/4 w-[450px] h-[450px] bg-purple-600/18 blur-[115px] rounded-full" />
 
         {/* Subtle Stardust texture */}
         <div
-          className="w-full h-full opacity-[0.04]"
+          className="w-full h-full opacity-[0.06]"
           style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, #ffaa40 1px, transparent 0)`,
-            backgroundSize: '28px 28px',
+            backgroundImage: `radial-gradient(circle at 1px 1px, #ffb74d 1.2px, transparent 0)`,
+            backgroundSize: '26px 26px',
           }}
         />
       </div>

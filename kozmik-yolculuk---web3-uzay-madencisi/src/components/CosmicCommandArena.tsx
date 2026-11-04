@@ -475,10 +475,8 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
 
     if (hitObject) {
       handleEntityDirectClick(hitObject);
-    } else {
-      // If no specific entity clicked, award small mining tap ore
-      addFloatingNumber(clickXPercent, clickYPercent - 4, '⚡ LAZER IŞINI', '#f97316');
     }
+    // Clean shot into space: No annoying floating text popups on empty taps!
   };
 
   // Pointer move / touch move steering for the rocket
@@ -501,63 +499,70 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     return () => clearTimeout(timer);
   }, [floatingNumbers]);
 
-  // Sector Environment Visual Theme based on current planet
+  // Sector Environment Visual Theme based on current planet - Vibrant, Colorful & Atmospheric
   const sectorThemes: Record<
     number,
     {
       bg: string;
       nebulaColor1: string;
       nebulaColor2: string;
+      nebulaColor3: string;
       planetOrbColor: string;
       sectorName: string;
       debrisName: string;
     }
   > = {
     1: {
-      bg: 'from-[#1a0c2e] via-[#120822] to-[#0a0414]',
-      nebulaColor1: 'bg-indigo-600/20',
-      nebulaColor2: 'bg-orange-500/20',
-      planetOrbColor: 'radial-gradient(circle at 35% 35%, #93c5fd, #2563eb 45%, #0f172a 85%)',
+      bg: 'from-[#3b1262] via-[#240e44] to-[#4c167d]',
+      nebulaColor1: 'bg-indigo-500/40',
+      nebulaColor2: 'bg-amber-500/40',
+      nebulaColor3: 'bg-fuchsia-500/35',
+      planetOrbColor: 'radial-gradient(circle at 35% 35%, #93c5fd, #3b82f6 50%, #1e3a8a 90%)',
       sectorName: 'Sektör 1: Ay Kraterleri & Titanyum Vadisi',
       debrisName: 'Titanyum Asteroitleri',
     },
     2: {
-      bg: 'from-[#2a0c18] via-[#190610] to-[#0c0308]',
-      nebulaColor1: 'bg-rose-600/25',
-      nebulaColor2: 'bg-orange-600/25',
-      planetOrbColor: 'radial-gradient(circle at 35% 35%, #fca5a5, #dc2626 50%, #450a0a 90%)',
+      bg: 'from-[#66162a] via-[#4d0c1e] to-[#7a1f33]',
+      nebulaColor1: 'bg-rose-500/45',
+      nebulaColor2: 'bg-orange-500/50',
+      nebulaColor3: 'bg-amber-400/40',
+      planetOrbColor: 'radial-gradient(circle at 35% 35%, #fecaca, #ef4444 50%, #881337 90%)',
       sectorName: 'Sektör 2: Mars Kızıl Kanyon & Plazma Fırtınası',
       debrisName: 'Volkanik Bazalt Taşları',
     },
     3: {
-      bg: 'from-[#0b1c2b] via-[#06121c] to-[#03090e]',
-      nebulaColor1: 'bg-cyan-500/25',
-      nebulaColor2: 'bg-blue-600/20',
-      planetOrbColor: 'radial-gradient(circle at 35% 35%, #67e8f9, #0891b2 50%, #083344 90%)',
+      bg: 'from-[#0e4475] via-[#092e52] to-[#165a94]',
+      nebulaColor1: 'bg-cyan-400/45',
+      nebulaColor2: 'bg-teal-400/40',
+      nebulaColor3: 'bg-blue-500/45',
+      planetOrbColor: 'radial-gradient(circle at 35% 35%, #a5f3fc, #06b6d4 50%, #164e63 90%)',
       sectorName: 'Sektör 3: Europa Buzaltı Okyanusu & Kutup Yıldızları',
       debrisName: 'Buz Kristal Kuyrukluyıldızları',
     },
     4: {
-      bg: 'from-[#2e1908] via-[#1c0f05] to-[#0c0702]',
-      nebulaColor1: 'bg-amber-500/25',
-      nebulaColor2: 'bg-yellow-600/20',
-      planetOrbColor: 'radial-gradient(circle at 35% 35%, #fde047, #d97706 50%, #451a03 90%)',
+      bg: 'from-[#5a2c06] via-[#3d1c04] to-[#703908]',
+      nebulaColor1: 'bg-amber-400/45',
+      nebulaColor2: 'bg-yellow-500/40',
+      nebulaColor3: 'bg-orange-500/45',
+      planetOrbColor: 'radial-gradient(circle at 35% 35%, #fef08a, #f59e0b 50%, #78350f 90%)',
       sectorName: 'Sektör 4: Satürn Altın Kuşakları & Cevher Halkası',
       debrisName: 'Altın-Platin Göktaşları',
     },
     5: {
-      bg: 'from-[#260c33] via-[#160620] to-[#0b0310]',
-      nebulaColor1: 'bg-fuchsia-600/25',
-      nebulaColor2: 'bg-purple-600/25',
-      planetOrbColor: 'radial-gradient(circle at 35% 35%, #f472b6, #9333ea 50%, #2e1065 90%)',
+      bg: 'from-[#54126d] via-[#3a094e] to-[#6c1a8a]',
+      nebulaColor1: 'bg-fuchsia-500/45',
+      nebulaColor2: 'bg-violet-500/50',
+      nebulaColor3: 'bg-cyan-400/40',
+      planetOrbColor: 'radial-gradient(circle at 35% 35%, #f472b6, #a855f7 50%, #4c1d95 90%)',
       sectorName: 'Sektör 5: Siber Nebula İyon Bulutu & Kozmik Ağ',
       debrisName: 'İyonik Plazma Parçacıkları',
     },
     6: {
-      bg: 'from-[#1e071e] via-[#0f0312] to-[#050106]',
-      nebulaColor1: 'bg-rose-600/30',
-      nebulaColor2: 'bg-purple-900/35',
-      planetOrbColor: 'radial-gradient(circle at 40% 40%, #fb7185, #be185d 40%, #000000 80%)',
+      bg: 'from-[#521147] via-[#35072e] to-[#6d1a5d]',
+      nebulaColor1: 'bg-rose-500/45',
+      nebulaColor2: 'bg-purple-600/45',
+      nebulaColor3: 'bg-pink-500/40',
+      planetOrbColor: 'radial-gradient(circle at 40% 40%, #fda4af, #e11d48 45%, #4c0519 85%)',
       sectorName: 'Sektör 6: Kuasar Tekillik & Olay Ufku',
       debrisName: 'Karanlık Madde Kalıntıları',
     },
@@ -626,16 +631,21 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
           <div className="absolute inset-0 bg-rose-600/30 z-30 pointer-events-none transition-opacity duration-150" />
         )}
 
-        {/* Dynamic Nebula Clouds Passing By (Slow Parallax) */}
+        {/* Dynamic Multi-Color Nebula Clouds Passing By (Luminous Cosmic Atmosphere) */}
         <div
-          className={`absolute -top-16 -left-10 w-80 h-80 rounded-full ${currentTheme.nebulaColor1} blur-3xl pointer-events-none opacity-80`}
+          className={`absolute -top-16 -left-10 w-96 h-96 rounded-full ${currentTheme.nebulaColor1} blur-3xl pointer-events-none opacity-90`}
         />
         <div
-          className={`absolute top-1/2 right-10 w-96 h-96 rounded-full ${currentTheme.nebulaColor2} blur-3xl pointer-events-none opacity-70`}
+          className={`absolute top-1/2 right-6 w-[26rem] h-[26rem] rounded-full ${currentTheme.nebulaColor2} blur-3xl pointer-events-none opacity-85`}
         />
+        <div
+          className={`absolute bottom-[-15%] left-1/4 w-80 h-80 rounded-full ${currentTheme.nebulaColor3} blur-3xl pointer-events-none opacity-80`}
+        />
+        {/* Ambient Warm Galactic Sunflare Center Glow */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/10 via-purple-500/10 to-transparent pointer-events-none" />
 
         {/* Distant Celestial Planet/Moon in background (gives true sensation of deep space flight) */}
-        <div className="absolute top-10 right-6 sm:right-16 w-24 h-24 sm:w-32 sm:h-32 rounded-full opacity-60 pointer-events-none overflow-hidden shadow-2xl">
+        <div className="absolute top-10 right-6 sm:right-16 w-24 h-24 sm:w-32 sm:h-32 rounded-full opacity-70 pointer-events-none overflow-hidden shadow-2xl">
           <div
             className="w-full h-full rounded-full shadow-[inset_-12px_-12px_25px_rgba(0,0,0,0.85)]"
             style={{ background: currentTheme.planetOrbColor }}
@@ -648,7 +658,7 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         {/* PARALLAX FAST-MOVING STARFIELD STREAKS (Visual Flight Speed) */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {/* Layer 1: Hyper-drive Warp Speed Lines drifting Right-to-Left */}
-          {[...Array(14)].map((_, i) => (
+          {[...Array(16)].map((_, i) => (
             <div
               key={`warp-${i}`}
               className="absolute h-0.5 rounded-full bg-gradient-to-r from-transparent via-amber-200/90 to-transparent"
@@ -657,26 +667,31 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
                 top: `${(i * 7.5 + 4) % 95}%`,
                 left: `${(i * 19) % 100}%`,
                 animation: `warp-drift-fast ${0.7 + (i % 3) * 0.4}s linear infinite`,
-                opacity: 0.35 + (i % 4) * 0.15,
+                opacity: 0.45 + (i % 4) * 0.15,
               }}
             />
           ))}
 
-          {/* Layer 2: Fast Stardust Particles */}
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={`star-${i}`}
-              className="absolute rounded-full bg-white"
-              style={{
-                width: i % 3 === 0 ? '3px' : '2px',
-                height: i % 3 === 0 ? '3px' : '2px',
-                top: `${(i * 5.2 + 8) % 92}%`,
-                left: `${(i * 13.7) % 100}%`,
-                opacity: 0.4 + (i % 3) * 0.25,
-                boxShadow: '0 0 6px rgba(255, 255, 255, 0.8)',
-              }}
-            />
-          ))}
+          {/* Layer 2: Multi-Colored Shimmering Stardust Particles */}
+          {[...Array(24)].map((_, i) => {
+            const starColors = ['#ffffff', '#fbbf24', '#38bdf8', '#f472b6', '#34d399', '#f97316'];
+            const color = starColors[i % starColors.length];
+            return (
+              <div
+                key={`star-${i}`}
+                className="absolute rounded-full"
+                style={{
+                  backgroundColor: color,
+                  width: i % 3 === 0 ? '3.5px' : '2px',
+                  height: i % 3 === 0 ? '3.5px' : '2px',
+                  top: `${(i * 5.2 + 8) % 92}%`,
+                  left: `${(i * 13.7) % 100}%`,
+                  opacity: 0.55 + (i % 3) * 0.25,
+                  boxShadow: `0 0 8px ${color}`,
+                }}
+              />
+            );
+          })}
         </div>
 
         {/* TOP FLIGHT TELEMETRY HUD BAR */}

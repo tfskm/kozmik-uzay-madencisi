@@ -18,11 +18,12 @@ import { WalletModal } from './components/WalletModal';
 import { DepositModal } from './components/DepositModal';
 import { WithdrawModal } from './components/WithdrawModal';
 import { RepairModal } from './components/RepairModal';
+import { GuideModal } from './components/GuideModal';
 import { RandomEventPopup } from './components/RandomEventPopup';
 import { Smartphone, Monitor } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
-  const { activeTab, isAdminMode } = useGame();
+  const { activeTab, isAdminMode, isGuideModalOpen, setIsGuideModalOpen } = useGame();
   const [isTelegramMobileFrame, setIsTelegramMobileFrame] = useState(false);
 
   // Auto-expand Telegram WebApp to 100% full mobile screen
@@ -133,6 +134,10 @@ const MainLayout: React.FC = () => {
         <DepositModal />
         <WithdrawModal />
         <RepairModal />
+        <GuideModal
+          isOpen={isGuideModalOpen}
+          onClose={() => setIsGuideModalOpen(false)}
+        />
       </div>
     </div>
   );

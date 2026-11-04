@@ -44,6 +44,8 @@ interface GameContextType {
   setIsWithdrawModalOpen: (val: boolean) => void;
   isRepairModalOpen: boolean;
   setIsRepairModalOpen: (val: boolean) => void;
+  isGuideModalOpen: boolean;
+  setIsGuideModalOpen: (val: boolean) => void;
   selectedMinerForRepair: UserMiner | null;
   setSelectedMinerForRepair: (miner: UserMiner | null) => void;
   // Active Random Encounter
@@ -212,6 +214,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [isRepairModalOpen, setIsRepairModalOpen] = useState(false);
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
   const [selectedMinerForRepair, setSelectedMinerForRepair] = useState<UserMiner | null>(null);
 
   // Random Encounter (e.g. Passing meteor)
@@ -1186,6 +1189,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsWithdrawModalOpen,
         isRepairModalOpen,
         setIsRepairModalOpen,
+        isGuideModalOpen,
+        setIsGuideModalOpen,
         selectedMinerForRepair,
         setSelectedMinerForRepair,
         randomEvent,

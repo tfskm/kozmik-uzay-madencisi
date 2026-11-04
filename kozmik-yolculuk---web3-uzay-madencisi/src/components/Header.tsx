@@ -13,6 +13,7 @@ import {
   VolumeX,
   Radio,
   UserCheck,
+  BookOpen,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -24,6 +25,7 @@ export const Header: React.FC = () => {
     setIsWalletModalOpen,
     setIsDepositModalOpen,
     setIsWithdrawModalOpen,
+    setIsGuideModalOpen,
     dismissAnnouncement,
   } = useGame();
 
@@ -170,6 +172,19 @@ export const Header: React.FC = () => {
             <Shield className="w-3.5 h-3.5 text-amber-400" />
             <span className="hidden md:inline">{isAdminMode ? 'Yönetici' : 'Admin'}</span>
           </button>
+          {/* Guide / How to Play Button */}
+          <button
+            onClick={() => {
+              sounds.playClick();
+              setIsGuideModalOpen(true);
+            }}
+            className="flex items-center gap-1 bg-[#073240] hover:bg-[#0a3f52] text-cyan-200 border border-cyan-400/40 text-xs font-bold px-2 py-1.5 rounded-xl transition active:scale-95 shadow-sm"
+            title="Nasıl Oynanır? Rehber"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-cyan-300" />
+            <span className="hidden sm:inline">Rehber</span>
+          </button>
+
           {/* Sound Toggle */}
           <button
             onClick={toggleSound}

@@ -388,7 +388,7 @@ export const INITIAL_ADMIN_SETTINGS: AdminSystemStats = {
     asteroidHullDecayPercent: 2,
     asteroidPointPenalty: 0,
     pirateBountyPoints: 500,
-    spawnIntervalSeconds: 3.2,
+    spawnIntervalSeconds: 4.5,
     warpSpeedMultiplier: 1.8,
     applyPlanetMultiplier: true,
   },

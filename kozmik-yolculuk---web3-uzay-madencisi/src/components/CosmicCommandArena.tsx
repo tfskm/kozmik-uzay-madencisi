@@ -17,6 +17,10 @@ import {
   Navigation,
   Globe2,
   AlertTriangle,
+  Maximize2,
+  Minimize2,
+  Info,
+  ChevronUp,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -49,7 +53,19 @@ interface LaserShot {
   targetY: number;
 }
 
-export const CosmicCommandArena: React.FC = () => {
+export interface CosmicCommandArenaProps {
+  onOpenFleetDrawer?: () => void;
+  onOpenPlanetDrawer?: () => void;
+  unclaimedYield?: number;
+  onClaimAll?: () => void;
+}
+
+export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
+  onOpenFleetDrawer,
+  onOpenPlanetDrawer,
+  unclaimedYield = 0,
+  onClaimAll,
+}) => {
   const {
     user,
     currentPlanet,
@@ -70,6 +86,9 @@ export const CosmicCommandArena: React.FC = () => {
   const [rocketY, setRocketY] = useState<number>(50);
   const [targetRocketY, setTargetRocketY] = useState<number>(50);
 
+  // Fullscreen toggle state for immersive space flight experience
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
   // Flight Stats
   const [distanceKm, setDistanceKm] = useState<number>(142850);
   const [warpSpeed, setWarpSpeed] = useState<number>(3.6);
@@ -87,6 +106,34 @@ export const CosmicCommandArena: React.FC = () => {
   const animFrameRef = useRef<number | null>(null);
   const lastSpawnTime = useRef<number>(Date.now());
 
+  // Mutable refs to prevent calling external context setState inside React state updater functions
+  const entitiesRef = useRef<InFlightEntity[]>([]);
+  const rocketYRef = useRef<number>(rocketY);
+  const shieldHealthRef = useRef<number>(shieldHealth);
+
+  useEffect(() => {
+    entitiesRef.current = entities;
+  }, [entities]);
+
+  useEffect(() => {
+    rocketYRef.current = rocketY;
+  }, [rocketY]);
+
+  useEffect(() => {
+    shieldHealthRef.current = shieldHealth;
+  }, [shieldHealth]);
+
+  // Listen for Escape key to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
   // Increment distance smoothly
   useEffect(() => {
     const distTimer = setInterval(() => {
@@ -99,7 +146,11 @@ export const CosmicCommandArena: React.FC = () => {
   // Shield regeneration
   useEffect(() => {
     const shieldTimer = setInterval(() => {
-      setShieldHealth((prev) => Math.min(100, prev + 1));
+      setShieldHealth((prev) => {
+        const next = Math.min(100, prev + 1);
+        shieldHealthRef.current = next;
+        return next;
+      });
     }, 1500);
     return () => clearInterval(shieldTimer);
   }, []);
@@ -119,7 +170,7 @@ export const CosmicCommandArena: React.FC = () => {
     return () => cancelAnimationFrame(animId);
   }, [targetRocketY]);
 
-  // Spawn in-flight entities (stars, crystals, and asteroids)
+  // Spawn in-flight entities (stars, crystals, and asteroids) - Calm & eye-friendly pace
   const spawnEntity = useCallback(() => {
     const vSettings = adminSettings.voyageSettings || {
       starPoints: 15,
@@ -129,8 +180,8 @@ export const CosmicCommandArena: React.FC = () => {
       asteroidHullDecayPercent: 2,
       asteroidPointPenalty: 0,
       pirateBountyPoints: 500,
-      spawnIntervalSeconds: 1.5,
-      warpSpeedMultiplier: 1.8,
+      spawnIntervalSeconds: 4.5,
+      warpSpeedMultiplier: 1.6,
       applyPlanetMultiplier: true,
     };
 
@@ -152,15 +203,25 @@ export const CosmicCommandArena: React.FC = () => {
       id: Date.now() + Math.random(),
       type,
       x: 104, // starts just off the right edge
-      y: 15 + Math.random() * 70, // random altitude between 15% and 85%
-      speed: (type === 'asteroid' ? 0.38 + Math.random() * 0.25 : 0.32 + Math.random() * 0.2) * (isWarpBoosting ? (vSettings.warpSpeedMultiplier || 1.8) : 1),
-      size: type === 'asteroid' ? 36 + Math.random() * 16 : 28 + Math.random() * 12,
+      y: 18 + Math.random() * 64, // random altitude between 18% and 82%
+      // Gentle, calm speed that doesn't cause eye fatigue or rapid flinching
+      speed:
+        (type === 'asteroid' ? 0.20 + Math.random() * 0.08 : 0.18 + Math.random() * 0.06) *
+        (isWarpBoosting ? (vSettings.warpSpeedMultiplier || 1.6) : 1),
+      size: type === 'asteroid' ? 38 + Math.random() * 12 : 30 + Math.random() * 10,
       hp: 1,
       rewardPoints: pts,
       rotation: Math.floor(Math.random() * 360),
     };
 
-    setEntities((prev) => [...prev.slice(-15), newEnt]);
+    const currentEntities = entitiesRef.current;
+    const activeScreenItems = currentEntities.filter((e) => !e.destroyed && e.x > 0);
+    if (activeScreenItems.length >= (isWarpBoosting ? 3 : 2)) {
+      return;
+    }
+    const updated = [...activeScreenItems, newEnt];
+    entitiesRef.current = updated;
+    setEntities(updated);
   }, [isWarpBoosting, adminSettings.voyageSettings]);
 
   // Trigger floating feedback text
@@ -212,14 +273,15 @@ export const CosmicCommandArena: React.FC = () => {
       asteroidHullDecayPercent: 2,
       asteroidPointPenalty: 0,
       pirateBountyPoints: 500,
-      spawnIntervalSeconds: 1.5,
-      warpSpeedMultiplier: 1.8,
+      spawnIntervalSeconds: 4.5,
+      warpSpeedMultiplier: 1.6,
       applyPlanetMultiplier: true,
     };
 
+    // Calm spawn interval: At least 2.8s, default 4.5s
     const spawnDelayMs = Math.max(
-      600,
-      ((vSettings.spawnIntervalSeconds || 1.5) * 1000) / (isWarpBoosting ? (vSettings.warpSpeedMultiplier || 1.8) : 1)
+      2800,
+      ((vSettings.spawnIntervalSeconds || 4.5) * 1000) / (isWarpBoosting ? (vSettings.warpSpeedMultiplier || 1.6) : 1)
     );
 
     const loop = (time: number) => {
@@ -232,83 +294,94 @@ export const CosmicCommandArena: React.FC = () => {
         lastSpawnTime.current = Date.now();
       }
 
-      setEntities((prev) => {
-        const next: InFlightEntity[] = [];
+      const currentEntities = entitiesRef.current;
+      const next: InFlightEntity[] = [];
+      const collectedBonuses: InFlightEntity[] = [];
+      let asteroidHitEvent: InFlightEntity | null = null;
 
-        for (const ent of prev) {
-          if (ent.destroyed) continue;
+      const currentRocketY = rocketYRef.current;
+      const rocketXPos = 20;
 
-          // Move object from right to left
-          const newX = ent.x - ent.speed * (dt * 60);
+      for (const ent of currentEntities) {
+        if (ent.destroyed) continue;
 
-          // Check collision with Hero Rocket (Rocket is at X ≈ 20%)
-          const rocketXPos = 20;
-          const isAtRocketX = newX <= rocketXPos + 6 && newX >= rocketXPos - 6;
-          const isAtRocketY = Math.abs(ent.y - rocketY) < 14;
+        // Move object from right to left
+        const newX = ent.x - ent.speed * (dt * 60);
 
-          if (isAtRocketX && isAtRocketY) {
-            // Collision occurred!
-            if (ent.type === 'star' || ent.type === 'crystal') {
-              // Collected bonus points!
-              const earnedPts = collectVoyageStar(ent.rewardPoints);
-              addFloatingNumber(
-                rocketXPos + 5,
-                rocketY - 5,
-                ent.type === 'crystal' ? `+${earnedPts} KRİSTAL PUANI 💎` : `+${earnedPts} PUAN ⭐`,
-                '#fbbf24'
-              );
-              confetti({
-                particleCount: 20,
-                spread: 40,
-                origin: { x: 0.22, y: rocketY / 100 },
-                colors: ['#fbbf24', '#f59e0b', '#38bdf8'],
-              });
-            } else if (ent.type === 'asteroid') {
-              // Asteroid impact!
-              setScreenShake(true);
-              setCollisionFlash(true);
-              setTimeout(() => setScreenShake(false), 350);
-              setTimeout(() => setCollisionFlash(false), 200);
+        // Check collision with Hero Rocket (Rocket is at X ≈ 20%)
+        const isAtRocketX = newX <= rocketXPos + 6 && newX >= rocketXPos - 6;
+        const isAtRocketY = Math.abs(ent.y - currentRocketY) < 14;
 
-              const shieldDmg = vSettings.asteroidShieldDamage || 25;
-              const hullDecay = vSettings.asteroidHullDecayPercent || 2;
-              const ptPenalty = vSettings.asteroidPointPenalty || 0;
-
-              if (shieldHealth > 20) {
-                // Shield absorbs damage points
-                setShieldHealth((s) => Math.max(0, s - shieldDmg));
-                sounds.playExplosion();
-                sounds.triggerHaptic('heavy');
-                addFloatingNumber(rocketXPos + 5, rocketY - 5, `🛡️ KALKAN PUANI (-${shieldDmg})`, '#38bdf8');
-              } else {
-                // Hull damage to fleet & point penalty if configured
-                takeAsteroidHit(hullDecay, ptPenalty);
-                addFloatingNumber(
-                  rocketXPos + 5,
-                  rocketY - 5,
-                  `⚠️ GÖKTAŞI ÇARPMASI (-%${hullDecay} HASAR${ptPenalty > 0 ? ` -${ptPenalty} PUAN` : ''})`,
-                  '#ef4444'
-                );
-              }
-            }
-            // Mark entity as consumed
-            continue;
+        if (isAtRocketX && isAtRocketY) {
+          if (ent.type === 'star' || ent.type === 'crystal') {
+            collectedBonuses.push({ ...ent, x: rocketXPos, y: currentRocketY });
+          } else if (ent.type === 'asteroid') {
+            asteroidHitEvent = { ...ent, x: rocketXPos, y: currentRocketY };
           }
-
-          // If entity flew past left edge without hitting
-          if (newX < -10) {
-            continue;
-          }
-
-          next.push({
-            ...ent,
-            x: newX,
-            rotation: (ent.rotation + 1) % 360,
-          });
+          // Consumed
+          continue;
         }
 
-        return next;
-      });
+        // If entity flew past left edge without hitting
+        if (newX < -10) {
+          continue;
+        }
+
+        next.push({
+          ...ent,
+          x: newX,
+          rotation: (ent.rotation + 1) % 360,
+        });
+      }
+
+      // 1. Update entities state cleanly with pure values (no nested side-effects)
+      entitiesRef.current = next;
+      setEntities(next);
+
+      // 2. Safely trigger rewards / impacts outside of state updater functions
+      for (const item of collectedBonuses) {
+        const earnedPts = collectVoyageStar(item.rewardPoints);
+        addFloatingNumber(
+          rocketXPos + 5,
+          item.y - 5,
+          item.type === 'crystal' ? `+${earnedPts} KRİSTAL PUANI 💎` : `+${earnedPts} PUAN ⭐`,
+          '#fbbf24'
+        );
+        confetti({
+          particleCount: 20,
+          spread: 40,
+          origin: { x: 0.22, y: item.y / 100 },
+          colors: ['#fbbf24', '#f59e0b', '#38bdf8'],
+        });
+      }
+
+      if (asteroidHitEvent) {
+        setScreenShake(true);
+        setCollisionFlash(true);
+        setTimeout(() => setScreenShake(false), 350);
+        setTimeout(() => setCollisionFlash(false), 200);
+
+        const shieldDmg = vSettings.asteroidShieldDamage || 25;
+        const hullDecay = vSettings.asteroidHullDecayPercent || 2;
+        const ptPenalty = vSettings.asteroidPointPenalty || 0;
+
+        if (shieldHealthRef.current > 20) {
+          const newShield = Math.max(0, shieldHealthRef.current - shieldDmg);
+          shieldHealthRef.current = newShield;
+          setShieldHealth(newShield);
+          sounds.playExplosion();
+          sounds.triggerHaptic('heavy');
+          addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `🛡️ KALKAN PUANI (-${shieldDmg})`, '#38bdf8');
+        } else {
+          takeAsteroidHit(hullDecay, ptPenalty);
+          addFloatingNumber(
+            rocketXPos + 5,
+            asteroidHitEvent.y - 5,
+            `⚠️ GÖKTAŞI ÇARPMASI (-%${hullDecay} HASAR${ptPenalty > 0 ? ` -${ptPenalty} PUAN` : ''})`,
+            '#ef4444'
+          );
+        }
+      }
 
       animFrameRef.current = requestAnimationFrame(loop);
     };
@@ -317,7 +390,35 @@ export const CosmicCommandArena: React.FC = () => {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [rocketY, isWarpBoosting, shieldHealth, collectVoyageStar, takeAsteroidHit, spawnEntity, adminSettings.voyageSettings]);
+  }, [isWarpBoosting, collectVoyageStar, takeAsteroidHit, spawnEntity, adminSettings.voyageSettings]);
+
+  // Handle direct tap on entity element
+  const handleEntityDirectClick = (ent: InFlightEntity) => {
+    const updated = entitiesRef.current.map((item) =>
+      item.id === ent.id ? { ...item, destroyed: true } : item
+    );
+    entitiesRef.current = updated;
+    setEntities(updated);
+
+    if (ent.type === 'asteroid') {
+      const earned = destroyVoyageAsteroid(ent.rewardPoints);
+      addFloatingNumber(ent.x, ent.y - 5, `💥 GÖKTAŞI İMHA! +${earned} CEVHER PUANI`, '#f97316');
+      confetti({
+        particleCount: 25,
+        spread: 60,
+        origin: { x: ent.x / 100, y: ent.y / 100 },
+        colors: ['#f97316', '#fbbf24', '#ffffff'],
+      });
+    } else {
+      const earned = collectVoyageStar(ent.rewardPoints);
+      addFloatingNumber(
+        ent.x,
+        ent.y - 5,
+        ent.type === 'crystal' ? `+${earned} KRİSTAL PUANI 💎` : `+${earned} PUAN ⭐`,
+        ent.type === 'crystal' ? '#38bdf8' : '#fbbf24'
+      );
+    }
+  };
 
   // Handle tap / click inside arena
   const handleArenaClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -359,50 +460,23 @@ export const CosmicCommandArena: React.FC = () => {
     }
 
     // Check if clicked directly on an approaching asteroid or star
-    let hitObject = false;
-    setEntities((prev) =>
-      prev.map((ent) => {
-        if (hitObject || ent.destroyed) return ent;
+    const currentList = entitiesRef.current;
+    let hitObject: InFlightEntity | null = null;
 
-        const distX = Math.abs(ent.x - clickXPercent);
-        const distY = Math.abs(ent.y - clickYPercent);
+    for (const ent of currentList) {
+      if (ent.destroyed) continue;
+      const distX = Math.abs(ent.x - clickXPercent);
+      const distY = Math.abs(ent.y - clickYPercent);
+      if (distX < 12 && distY < 12) {
+        hitObject = ent;
+        break;
+      }
+    }
 
-        if (distX < 12 && distY < 12) {
-          hitObject = true;
-          if (ent.type === 'asteroid') {
-            // Destroy asteroid with laser!
-            const earnedPts = destroyVoyageAsteroid(ent.rewardPoints);
-            addFloatingNumber(
-              ent.x,
-              ent.y - 5,
-              `💥 GÖKTAŞI İMHA! +${earnedPts} CEVHER PUANI`,
-              '#34d399'
-            );
-            confetti({
-              particleCount: 25,
-              spread: 60,
-              origin: { x: ent.x / 100, y: ent.y / 100 },
-              colors: ['#f97316', '#fbbf24', '#ffffff'],
-            });
-            return { ...ent, destroyed: true };
-          } else {
-            // Collected star/crystal with laser beam
-            const earnedPts = collectVoyageStar(ent.rewardPoints);
-            addFloatingNumber(
-              ent.x,
-              ent.y - 5,
-              ent.type === 'crystal' ? `+${earnedPts} KRİSTAL PUANI 💎` : `+${earnedPts} PUAN ⭐`,
-              '#fbbf24'
-            );
-            return { ...ent, destroyed: true };
-          }
-        }
-        return ent;
-      })
-    );
-
-    // If no specific entity clicked, award small mining tap ore
-    if (!hitObject) {
+    if (hitObject) {
+      handleEntityDirectClick(hitObject);
+    } else {
+      // If no specific entity clicked, award small mining tap ore
       addFloatingNumber(clickXPercent, clickYPercent - 4, '⚡ LAZER IŞINI', '#f97316');
     }
   };
@@ -530,14 +604,20 @@ export const CosmicCommandArena: React.FC = () => {
         })}
       </div>
 
-      {/* MAIN REALISTIC SPACE VOYAGE ARENA */}
+      {/* MAIN REALISTIC SPACE VOYAGE ARENA - Expansive / Fullscreen Experience */}
       <div
         ref={arenaRef}
         onClick={handleArenaClick}
         onPointerMove={handlePointerMove}
-        className={`relative h-[390px] sm:h-[430px] w-full max-w-full rounded-3xl overflow-hidden border border-orange-500/40 bg-gradient-to-r ${
+        className={`relative ${
+          isFullscreen
+            ? 'fixed inset-0 z-50 w-screen h-screen rounded-none'
+            : 'h-[58vh] sm:h-[64vh] md:h-[70vh] min-h-[460px] max-h-[760px] w-full rounded-3xl'
+        } overflow-hidden border ${
+          isFullscreen ? 'border-0' : 'border-orange-500/40'
+        } bg-gradient-to-r ${
           currentTheme.bg
-        } select-none cursor-crosshair shadow-2xl glow-orange touch-none ${
+        } select-none cursor-crosshair shadow-2xl glow-orange touch-none transition-all duration-300 ${
           screenShake ? 'animate-screen-shake ring-2 ring-rose-500' : ''
         }`}
       >
@@ -617,8 +697,8 @@ export const CosmicCommandArena: React.FC = () => {
             </div>
           </div>
 
-          {/* Shield & Defense Indicator */}
-          <div className="flex items-center gap-2">
+          {/* Defense, Battles & Fullscreen Controls */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="bg-[#120722]/90 backdrop-blur-md px-2 py-1 rounded-xl border border-cyan-500/40 flex items-center gap-1.5 pointer-events-auto shadow-md">
               <Shield className="w-3.5 h-3.5 text-cyan-400" />
               <div className="text-right">
@@ -656,6 +736,33 @@ export const CosmicCommandArena: React.FC = () => {
                 </span>
               </div>
             )}
+
+            {/* Fullscreen Expand / Shrink Toggle Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                sounds.playClick();
+                setIsFullscreen((prev) => !prev);
+              }}
+              className={`pointer-events-auto flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold font-display uppercase tracking-wider transition active:scale-95 shadow-md border ${
+                isFullscreen
+                  ? 'bg-rose-500/30 border-rose-500/60 text-rose-200 hover:bg-rose-500/50'
+                  : 'bg-[#120722]/90 border-amber-500/50 text-amber-300 hover:border-amber-400 hover:bg-[#1c0c32]'
+              }`}
+              title={isFullscreen ? 'Tam Ekrandan Çık (Esc)' : 'Tam Ekran Moduna Geç'}
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5 text-rose-400" />
+                  <span className="hidden sm:inline">Küçült</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Tam Ekran</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
@@ -715,11 +822,7 @@ export const CosmicCommandArena: React.FC = () => {
                 key={ent.id}
                 onClick={(e) => {
                   e.stopPropagation();
-                  const earned = collectVoyageStar(ent.rewardPoints);
-                  setEntities((prev) =>
-                    prev.map((item) => (item.id === ent.id ? { ...item, destroyed: true } : item))
-                  );
-                  addFloatingNumber(ent.x, ent.y - 5, `+${earned} PUAN ⭐`, '#fbbf24');
+                  handleEntityDirectClick(ent);
                 }}
                 className="absolute z-20 cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2 group"
                 style={{
@@ -749,11 +852,7 @@ export const CosmicCommandArena: React.FC = () => {
                 key={ent.id}
                 onClick={(e) => {
                   e.stopPropagation();
-                  const earned = collectVoyageStar(ent.rewardPoints);
-                  setEntities((prev) =>
-                    prev.map((item) => (item.id === ent.id ? { ...item, destroyed: true } : item))
-                  );
-                  addFloatingNumber(ent.x, ent.y - 5, `+${earned} KRİSTAL PUANI 💎`, '#38bdf8');
+                  handleEntityDirectClick(ent);
                 }}
                 className="absolute z-20 cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2 group"
                 style={{
@@ -782,11 +881,7 @@ export const CosmicCommandArena: React.FC = () => {
                 key={ent.id}
                 onClick={(e) => {
                   e.stopPropagation();
-                  const earned = destroyVoyageAsteroid(ent.rewardPoints);
-                  setEntities((prev) =>
-                    prev.map((item) => (item.id === ent.id ? { ...item, destroyed: true } : item))
-                  );
-                  addFloatingNumber(ent.x, ent.y - 5, `💥 GÖKTAŞI İMHA! +${earned} CEVHER PUANI`, '#f97316');
+                  handleEntityDirectClick(ent);
                 }}
                 className="absolute z-20 cursor-pointer pointer-events-auto transform -translate-x-1/2 -translate-y-1/2 group"
                 style={{
@@ -1024,40 +1119,71 @@ export const CosmicCommandArena: React.FC = () => {
         {/* BOTTOM VOYAGE CONTROLS & FLIGHT STATS BAR */}
         <div className="absolute bottom-2.5 left-2.5 right-2.5 z-20 flex items-center justify-between gap-2 pointer-events-none">
           <div className="flex items-center gap-1.5 bg-[#120722]/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-orange-500/30 text-[10px] text-amber-200/90 font-mono pointer-events-auto">
-            <span>⭐ Yıldızları Topla</span>
+            <span>⭐ Topla</span>
             <span className="text-orange-400">•</span>
-            <span>☄️ Göktaşlarını Vur</span>
+            <span>☄️ Vur</span>
+            {unclaimedYield > 0.001 && onClaimAll && (
+              <>
+                <span className="text-orange-400">•</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClaimAll();
+                  }}
+                  className="text-emerald-400 hover:text-emerald-300 font-bold font-mono underline ml-0.5"
+                >
+                  ${unclaimedYield.toFixed(2)} Al
+                </button>
+              </>
+            )}
           </div>
 
-          {/* Hyper-Warp Drive Booster Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              sounds.playUpgrade();
-              sounds.triggerHaptic('medium');
-              setIsWarpBoosting(true);
-              setWarpSpeed(6.8);
-              confetti({
-                particleCount: 30,
-                spread: 50,
-                origin: { x: 0.8, y: 0.8 },
-                colors: ['#f97316', '#38bdf8', '#fbbf24'],
-              });
-              setTimeout(() => {
-                setIsWarpBoosting(false);
-                setWarpSpeed(3.6);
-              }, 4000);
-            }}
-            disabled={isWarpBoosting}
-            className={`pointer-events-auto flex items-center gap-1 text-[10px] sm:text-[11px] font-black uppercase font-display px-3 py-1.5 rounded-xl transition shadow-lg active:scale-95 ${
-              isWarpBoosting
-                ? 'bg-cyan-500 text-slate-950 shadow-cyan-500/50 animate-pulse'
-                : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 shadow-orange-500/30'
-            }`}
-          >
-            <Flame className="w-3.5 h-3.5 text-slate-950" />
-            <span>{isWarpBoosting ? 'WARP 6.8 HIZI!' : 'HİPER HIZLAN (WARP)'}</span>
-          </button>
+          <div className="flex items-center gap-1.5 pointer-events-auto">
+            {/* Quick Fleet Drawer Button */}
+            {onOpenFleetDrawer && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenFleetDrawer();
+                }}
+                className="flex items-center gap-1 bg-[#120722]/90 hover:bg-[#1e0e33] border border-orange-500/40 text-amber-300 text-[10px] sm:text-[11px] font-bold font-display px-2.5 py-1.5 rounded-xl transition shadow-md active:scale-95"
+                title="Filo Birimlerini ve Madencileri İncele"
+              >
+                <Bot className="w-3 h-3 text-orange-400" />
+                <span>Filom ({userMiners.length})</span>
+              </button>
+            )}
+
+            {/* Hyper-Warp Drive Booster Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                sounds.playUpgrade();
+                sounds.triggerHaptic('medium');
+                setIsWarpBoosting(true);
+                setWarpSpeed(6.8);
+                confetti({
+                  particleCount: 30,
+                  spread: 50,
+                  origin: { x: 0.8, y: 0.8 },
+                  colors: ['#f97316', '#38bdf8', '#fbbf24'],
+                });
+                setTimeout(() => {
+                  setIsWarpBoosting(false);
+                  setWarpSpeed(3.6);
+                }, 4000);
+              }}
+              disabled={isWarpBoosting}
+              className={`flex items-center gap-1 text-[10px] sm:text-[11px] font-black uppercase font-display px-2.5 sm:px-3 py-1.5 rounded-xl transition shadow-lg active:scale-95 ${
+                isWarpBoosting
+                  ? 'bg-cyan-500 text-slate-950 shadow-cyan-500/50 animate-pulse'
+                  : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 shadow-orange-500/30'
+              }`}
+            >
+              <Flame className="w-3.5 h-3.5 text-slate-950" />
+              <span>{isWarpBoosting ? 'WARP 6.8!' : 'WARP HIZ'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

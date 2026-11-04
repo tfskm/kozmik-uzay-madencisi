@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { sounds } from '../utils/audio';
 import {
@@ -18,6 +18,11 @@ import {
   Compass,
   Rocket,
   Atom,
+  X,
+  Layers,
+  ChevronUp,
+  AlertTriangle,
+  CheckCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -39,12 +44,18 @@ export const MiningDashboard: React.FC = () => {
     user,
     currentPlanet,
     userMiners,
+    planets,
+    travelToPlanet,
     claimSingleMiner,
     claimAllMiners,
     setIsRepairModalOpen,
     setSelectedMinerForRepair,
     setActiveTab,
   } = useGame();
+
+  // Slide-up Drawers / Modals state for detailed info
+  const [isFleetDrawerOpen, setIsFleetDrawerOpen] = useState(false);
+  const [isPlanetDrawerOpen, setIsPlanetDrawerOpen] = useState(false);
 
   const totalUnclaimed = userMiners.reduce((acc, m) => acc + m.unclaimedYield, 0);
   const totalDailyYield = userMiners.reduce((acc, m) => {
@@ -56,9 +67,12 @@ export const MiningDashboard: React.FC = () => {
     ? Math.round(userMiners.reduce((acc, m) => acc + m.durability, 0) / userMiners.length)
     : 100;
 
+  const activeMinersCount = userMiners.filter((m) => m.durability > 0).length;
+
   const handleClaimAll = () => {
     const res = claimAllMiners();
     if (res.totalClaimed > 0) {
+      sounds.playCoin();
       confetti({
         particleCount: 50,
         spread: 60,
@@ -69,328 +83,412 @@ export const MiningDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 pb-20 w-full max-w-full overflow-hidden">
-      {/* 3D Visual Cosmic Command Arena with Planets, Orbiting Ships and Pirate Battles */}
-      <CosmicCommandArena />
+    <div className="flex flex-col w-full max-w-full space-y-2.5 pb-20 select-none overflow-x-hidden">
+      {/* 1. TOP FULLSCREEN 3D COSMIC COMMAND ARENA */}
+      <CosmicCommandArena
+        onOpenFleetDrawer={() => setIsFleetDrawerOpen(true)}
+        onOpenPlanetDrawer={() => setIsPlanetDrawerOpen(true)}
+        unclaimedYield={totalUnclaimed}
+        onClaimAll={handleClaimAll}
+      />
 
-      {/* Current Planet Hero Banner */}
-      <div
-        className={`relative overflow-hidden rounded-2xl border border-orange-500/35 bg-gradient-to-br ${currentPlanet.gradient} p-4 sm:p-5 shadow-xl glow-orange`}
-      >
-        <div className="absolute -right-10 -bottom-10 w-48 h-48 rounded-full bg-orange-500/15 blur-3xl pointer-events-none" />
-        <div className="absolute top-2 right-3 flex items-center gap-2">
-          <span className="bg-slate-950/80 border border-amber-400/40 text-amber-300 text-[11px] font-mono px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-            <Sparkles className="w-3 h-3 text-amber-400 animate-spin" />
-            {currentPlanet.codeName}
-          </span>
-          <button
-            onClick={() => setActiveTab('planets')}
-            className="bg-amber-950/80 hover:bg-amber-900 border border-amber-500/50 text-amber-200 text-xs px-2.5 py-1 rounded-xl flex items-center gap-1 transition shadow-md"
-          >
-            <Globe2 className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Gezegen Değiştir</span>
-          </button>
-        </div>
-
-        <div className="max-w-md">
-          <div className="flex items-center gap-2 text-xs font-semibold text-amber-300 uppercase tracking-wider">
-            <span>Sektör #{currentPlanet.id}</span>
-            <span>•</span>
-            <span className="text-emerald-400 font-mono font-bold">Çarpan: x{currentPlanet.miningMultiplier.toFixed(2)}</span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-black text-white font-display mt-0.5 tracking-wide">
-            {currentPlanet.name}
-          </h1>
-          <p className="text-xs sm:text-sm text-amber-100/90 mt-1 line-clamp-2">
-            {currentPlanet.tagline}
-          </p>
-
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 text-[11px] text-slate-200 font-mono">
-            <span className="bg-black/50 px-2 py-0.5 rounded border border-orange-400/30">
-              💎 Cevher: <strong className="text-amber-300">{currentPlanet.specialOre}</strong>
-            </span>
-            <span className="bg-black/50 px-2 py-0.5 rounded border border-white/10">
-              🪐 Yerçekimi: {currentPlanet.gravity}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Fleet Stats Overview - Warm Solar Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        {/* Daily Yield */}
-        <div className="bg-gradient-to-br from-[#241036]/90 to-[#150a24]/90 border border-orange-500/25 rounded-2xl p-3 shadow-md">
-          <div className="flex items-center justify-between text-slate-300 text-xs mb-1">
-            <span>Günlük Getiri</span>
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-          </div>
-          <div className="text-lg font-bold text-emerald-300 font-mono">
-            +${totalDailyYield.toFixed(2)}
-          </div>
-          <div className="text-[10px] text-amber-400/80 font-mono">24 Saatte USDT</div>
-        </div>
-
-        {/* Active Miners */}
-        <div className="bg-gradient-to-br from-[#241036]/90 to-[#150a24]/90 border border-orange-500/25 rounded-2xl p-3 shadow-md">
-          <div className="flex items-center justify-between text-slate-300 text-xs mb-1">
-            <span>Aktif Filo</span>
-            <Bot className="w-3.5 h-3.5 text-orange-400" />
-          </div>
-          <div className="text-lg font-bold text-amber-300 font-mono">
-            {userMiners.filter((m) => m.durability > 0).length} / {userMiners.length}
-          </div>
-          <div className="text-[10px] text-slate-400 font-mono">Çalışan Madenci</div>
-        </div>
-
-        {/* Fleet Durability */}
-        <div className="bg-gradient-to-br from-[#241036]/90 to-[#150a24]/90 border border-orange-500/25 rounded-2xl p-3 shadow-md">
-          <div className="flex items-center justify-between text-slate-300 text-xs mb-1">
-            <span>Ort. Kondisyon</span>
-            <Wrench className="w-3.5 h-3.5 text-amber-400" />
-          </div>
-          <div className={`text-lg font-bold font-mono ${avgDurability > 70 ? 'text-emerald-300' : avgDurability > 40 ? 'text-amber-300' : 'text-rose-400'}`}>
-            %{avgDurability}
-          </div>
-          <div className="text-[10px] text-slate-400 font-mono">Dayanıklılık</div>
-        </div>
-
-        {/* Total Mined */}
-        <div className="bg-gradient-to-br from-[#241036]/90 to-[#150a24]/90 border border-orange-500/25 rounded-2xl p-3 shadow-md">
-          <div className="flex items-center justify-between text-slate-300 text-xs mb-1">
-            <span>Toplam Hasat</span>
-            <Pickaxe className="w-3.5 h-3.5 text-orange-400" />
-          </div>
-          <div className="text-lg font-bold text-orange-300 font-mono">
-            ${user.totalMined.toFixed(2)}
-          </div>
-          <div className="text-[10px] text-slate-400 font-mono">Kazanılan USDT</div>
-        </div>
-      </div>
-
-      {/* Main Claim All Master Button - Warm Amber/Orange Energy */}
-      <div className="bg-gradient-to-r from-[#2a1138] via-[#200c2e] to-[#2a1138] border border-orange-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl glow-orange">
-        <div className="flex items-center gap-3 text-center sm:text-left">
-          <div className="w-12 h-12 rounded-2xl bg-orange-500/20 border border-orange-400/50 flex items-center justify-center text-orange-400 shadow-inner">
-            <Flame className="w-6 h-6 animate-pulse text-amber-400" />
-          </div>
-          <div>
-            <div className="text-xs text-amber-300 font-semibold uppercase tracking-wider">
-              Bekleyen Hasılat (Canlı Sayıyor)
+      {/* 2. ULTRA-COMPACT BOTTOM STATUS & CONTROL DOCK (EKRANA TAM SIĞAR, GÖZ YORMAZ) */}
+      <div className="bg-[#150a24]/90 border border-orange-500/30 backdrop-blur-md rounded-2xl p-2.5 sm:p-3 shadow-xl glow-orange">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {/* Left: Pending Yield & Quick Claim Button */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-black/40 border border-orange-500/25 px-2.5 py-1.5 rounded-xl">
+              <Flame className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
+              <div>
+                <div className="text-[9px] uppercase font-bold text-amber-300/80 font-mono leading-none">
+                  Bekleyen Hasat
+                </div>
+                <div className="text-sm sm:text-base font-black text-amber-300 font-mono leading-tight">
+                  ${totalUnclaimed.toFixed(4)} <span className="text-[10px] text-slate-400 font-sans">USDT</span>
+                </div>
+              </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-300 to-yellow-200 font-mono">
-              ${totalUnclaimed.toFixed(4)} <span className="text-sm text-emerald-400 font-sans">USDT</span>
+
+            <button
+              onClick={handleClaimAll}
+              disabled={totalUnclaimed <= 0.001}
+              className={`px-3 py-2 rounded-xl font-display font-black text-xs tracking-wider transition active:scale-95 flex items-center gap-1 shadow-md ${
+                totalUnclaimed > 0.001
+                  ? 'bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 animate-pulse'
+                  : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/60'
+              }`}
+              title="Tüm birikmiş hasılatı cüzdana aktar"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Topla</span>
+            </button>
+          </div>
+
+          {/* Center: Daily Rate & Active Fleet Micro-Chips */}
+          <div className="hidden sm:flex items-center gap-2 font-mono text-xs">
+            <div className="bg-black/30 border border-white/10 px-2.5 py-1.5 rounded-xl text-slate-300">
+              <span className="text-slate-400 text-[10px]">Günlük: </span>
+              <strong className="text-emerald-400">+${totalDailyYield.toFixed(2)}</strong>
+            </div>
+
+            <div className="bg-black/30 border border-white/10 px-2.5 py-1.5 rounded-xl text-slate-300">
+              <span className="text-slate-400 text-[10px]">Kondisyon: </span>
+              <strong className={avgDurability > 70 ? 'text-emerald-400' : 'text-amber-400'}>
+                %{avgDurability}
+              </strong>
             </div>
           </div>
-        </div>
 
-        <button
-          onClick={handleClaimAll}
-          disabled={totalUnclaimed <= 0.001}
-          className={`w-full sm:w-auto px-6 py-3 rounded-xl font-display font-black text-sm tracking-wide transition shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
-            totalUnclaimed > 0.001
-              ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 shadow-orange-500/30 animate-pulse'
-              : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          Tüm Hasılatı Cüzdana Aktar
-        </button>
-      </div>
+          {/* Right: Drawer Triggers ("Tıklayınca Açılan Detay Panelleri") */}
+          <div className="flex items-center gap-2 ml-auto sm:ml-0">
+            {/* Sector Details Trigger */}
+            <button
+              onClick={() => {
+                sounds.playClick();
+                setIsPlanetDrawerOpen(true);
+              }}
+              className="bg-[#241038] hover:bg-[#2f1649] border border-amber-500/40 text-amber-200 text-xs font-bold font-display px-2.5 sm:px-3 py-2 rounded-xl flex items-center gap-1.5 transition active:scale-95 shadow-md"
+              title="Gezegen ve Sektör Bilgilerini Görüntüle"
+            >
+              <Globe2 className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden xs:inline">{currentPlanet.name.split(' ')[0]}</span>
+              <span className="xs:hidden">S{currentPlanet.id}</span>
+            </button>
 
-      {/* Fleet Miners List Header */}
-      <div className="flex items-center justify-between pt-2">
-        <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-orange-400" />
-          <h2 className="text-base font-bold text-white font-display">
-            Filo Birimleriniz ({userMiners.length})
-          </h2>
-        </div>
-        <button
-          onClick={() => setActiveTab('packages')}
-          className="text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 transition"
-        >
-          <span>Yeni Paket Al</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      {/* Miners Grid / List */}
-      {userMiners.length === 0 ? (
-        <div className="bg-[#1c0c29]/70 border border-orange-500/25 border-dashed rounded-2xl p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-orange-950/60 border border-orange-500/40 flex items-center justify-center text-orange-400 mx-auto mb-3">
-            <Pickaxe className="w-8 h-8" />
+            {/* Fleet & Miner Units Trigger */}
+            <button
+              onClick={() => {
+                sounds.playClick();
+                setIsFleetDrawerOpen(true);
+              }}
+              className="bg-gradient-to-r from-orange-600/90 to-amber-600/90 hover:from-orange-500 hover:to-amber-500 text-white text-xs font-bold font-display px-3 py-2 rounded-xl flex items-center gap-1.5 transition active:scale-95 shadow-lg border border-orange-400/50"
+              title="Filo Birimlerini ve Madencileri İncele / Tamir Et"
+            >
+              <Bot className="w-3.5 h-3.5 text-amber-200" />
+              <span>Filom ({userMiners.length})</span>
+              <span className="text-[10px] bg-black/40 px-1.5 py-0.2 rounded font-mono text-emerald-300">
+                {activeMinersCount} Aktif
+              </span>
+            </button>
           </div>
-          <h3 className="text-base font-bold text-white font-display">
-            Henüz Aktif Madenci Bulunmuyor
-          </h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
-            Gezegenlerde madencilik başlatmak ve 6 ayda kendini amorti eden günlük USDT kazancı elde etmek için ilk paketinizi seçin.
-          </p>
-          <button
-            onClick={() => setActiveTab('packages')}
-            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black text-xs px-5 py-2.5 rounded-xl shadow-lg transition active:scale-95"
-          >
-            Madenci Paketlerini İncele
-          </button>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {userMiners.map((miner) => {
-            const Icon = ICON_MAP[miner.iconName] || Bot;
-            const isDamaged = miner.durability < 40;
-            const isDead = miner.durability <= 0;
+      </div>
 
-            return (
-              <div
-                key={miner.instanceId}
-                className={`relative bg-[#1f0e2d]/90 border rounded-2xl p-3.5 transition-all shadow-md ${
-                  isDead
-                    ? 'border-rose-900/60 bg-rose-950/20'
-                    : isDamaged
-                    ? 'border-amber-600/40 bg-amber-950/20'
-                    : 'border-orange-500/25 hover:border-orange-500/60'
-                }`}
-              >
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        miner.tier === 'quantum'
-                          ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40'
-                          : miner.tier === 'neon'
-                          ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
-                          : miner.tier === 'gold'
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                          : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm text-slate-100 font-display leading-tight">
-                        {miner.packageName}
-                      </h4>
-                      <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5 font-mono">
-                        <span>Maliyet: ${miner.price}</span>
-                        <span>•</span>
-                        <span className="text-emerald-400 font-semibold">
-                          +${miner.dailyYield.toFixed(2)}/gün
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Status Indicator */}
-                  <div className="text-right">
-                    <span
-                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        isDead
-                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                          : isDamaged
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                      }`}
-                    >
-                      {isDead ? 'ARIZALI' : isDamaged ? 'AŞINMIŞ' : 'ÇALIŞIYOR'}
-                    </span>
-                  </div>
+      {/* 3. SLIDE-UP DRAWER MODAL: DETAILED FLEET & MINERS ("TIKLAYINCA AÇILAN ARAYÜZ") */}
+      {isFleetDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="w-full sm:max-w-2xl max-h-[85vh] bg-[#160b24] border border-orange-500/40 rounded-t-3xl sm:rounded-3xl flex flex-col shadow-2xl overflow-hidden">
+            {/* Drawer Header */}
+            <div className="p-4 border-b border-orange-500/25 flex items-center justify-between bg-[#1f0e34]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400">
+                  <Bot className="w-5 h-5" />
                 </div>
-
-                {/* Durability Progress Bar */}
-                <div className="mt-3">
-                  <div className="flex items-center justify-between text-[11px] mb-1">
-                    <span className="text-slate-400 flex items-center gap-1">
-                      <Wrench className="w-3 h-3 text-slate-400" />
-                      Dayanıklılık:
-                    </span>
-                    <span
-                      className={`font-mono font-bold ${
-                        miner.durability > 70
-                          ? 'text-emerald-400'
-                          : miner.durability > 35
-                          ? 'text-amber-400'
-                          : 'text-rose-400'
-                      }`}
-                    >
-                      %{Math.round(miner.durability)}
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        miner.durability > 70
-                          ? 'bg-emerald-500'
-                          : miner.durability > 35
-                          ? 'bg-amber-500'
-                          : 'bg-rose-500'
-                      }`}
-                      style={{ width: `${Math.max(2, miner.durability)}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Live Output & Action Controls */}
-                <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                  <div>
-                    <div className="text-[10px] text-slate-400">Üretilen Hasılat</div>
-                    <div className="text-sm font-bold text-cyan-300 font-mono">
-                      ${miner.unclaimedYield.toFixed(4)}{' '}
-                      <span className="text-[10px] text-slate-500 font-sans">USDT</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {/* Repair button */}
-                    {miner.durability < 100 && (
-                      <button
-                        onClick={() => {
-                          setSelectedMinerForRepair(miner);
-                          setIsRepairModalOpen(true);
-                          sounds.playClick();
-                        }}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition ${
-                          miner.durability < 40
-                            ? 'bg-rose-950 border border-rose-500/60 text-rose-300 hover:bg-rose-900 animate-pulse'
-                            : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700'
-                        }`}
-                        title="Dayanıklılığı %100 yap"
-                      >
-                        <Wrench className="w-3 h-3" />
-                        <span>Tamir Et</span>
-                      </button>
-                    )}
-
-                    {/* Claim Button */}
-                    <button
-                      onClick={() => claimSingleMiner(miner.instanceId)}
-                      disabled={miner.unclaimedYield <= 0.001}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                        miner.unclaimedYield > 0.001
-                          ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-sm active:scale-95'
-                          : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                      }`}
-                    >
-                      <span>Topla</span>
-                    </button>
+                <div>
+                  <h3 className="text-base font-black text-white font-display">
+                    Filo Birimleriniz & Madenciler
+                  </h3>
+                  <div className="text-xs text-amber-300/80 font-mono">
+                    {activeMinersCount}/{userMiners.length} Aktif Çalışan • Ort. Dayanıklılık: %{avgDurability}
                   </div>
                 </div>
               </div>
-            );
-          })}
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setIsFleetDrawerOpen(false);
+                    setActiveTab('packages');
+                  }}
+                  className="bg-amber-950/80 hover:bg-amber-900 border border-amber-500/50 text-amber-300 text-xs font-bold px-2.5 py-1.5 rounded-xl flex items-center gap-1 transition"
+                >
+                  <span>+ Yeni Al</span>
+                </button>
+                <button
+                  onClick={() => setIsFleetDrawerOpen(false)}
+                  className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition"
+                  title="Kapat"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Summary Chips inside Drawer */}
+            <div className="p-3 bg-black/30 border-b border-white/5 grid grid-cols-3 gap-2 text-center text-xs font-mono">
+              <div className="bg-[#120722] p-2 rounded-xl border border-white/5">
+                <div className="text-[10px] text-slate-400">Günlük Üretim</div>
+                <div className="font-bold text-emerald-400">+${totalDailyYield.toFixed(2)}</div>
+              </div>
+              <div className="bg-[#120722] p-2 rounded-xl border border-white/5">
+                <div className="text-[10px] text-slate-400">Bekleyen Hasılat</div>
+                <div className="font-bold text-amber-300">${totalUnclaimed.toFixed(4)}</div>
+              </div>
+              <div className="bg-[#120722] p-2 rounded-xl border border-white/5">
+                <div className="text-[10px] text-slate-400">Sektör Çarpanı</div>
+                <div className="font-bold text-cyan-400">x{currentPlanet.miningMultiplier.toFixed(2)}</div>
+              </div>
+            </div>
+
+            {/* Scrollable Miner Cards */}
+            <div className="p-3 sm:p-4 overflow-y-auto space-y-2.5 max-h-[55vh]">
+              {userMiners.length === 0 ? (
+                <div className="bg-[#1c0c29]/70 border border-orange-500/25 border-dashed rounded-2xl p-6 text-center">
+                  <Pickaxe className="w-10 h-10 text-orange-400 mx-auto mb-2" />
+                  <h4 className="text-sm font-bold text-white">Henüz Aktif Madenci Yok</h4>
+                  <p className="text-xs text-slate-400 max-w-xs mx-auto mt-1 mb-3">
+                    Günlük otomatik USDT üretimi başlatmak için dükkandan ilk madenci biriminizi edinin.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setIsFleetDrawerOpen(false);
+                      setActiveTab('packages');
+                    }}
+                    className="bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 font-black text-xs px-4 py-2 rounded-xl shadow-lg"
+                  >
+                    Paketleri İncele
+                  </button>
+                </div>
+              ) : (
+                userMiners.map((miner) => {
+                  const Icon = ICON_MAP[miner.iconName] || Bot;
+                  const isDamaged = miner.durability < 40;
+                  const isDead = miner.durability <= 0;
+
+                  return (
+                    <div
+                      key={miner.instanceId}
+                      className={`relative bg-[#1a0c2c] border rounded-2xl p-3 transition shadow-sm ${
+                        isDead
+                          ? 'border-rose-900/60 bg-rose-950/20'
+                          : isDamaged
+                          ? 'border-amber-600/40 bg-amber-950/20'
+                          : 'border-orange-500/20 hover:border-orange-500/40'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center shrink-0">
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-xs text-slate-100 font-display">
+                              {miner.packageName}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              Getiri: <strong className="text-emerald-400">+${miner.dailyYield.toFixed(2)}/gün</strong> • Maliyet: ${miner.price}
+                            </div>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`text-[9px] font-bold px-2 py-0.5 rounded-full font-mono ${
+                            isDead
+                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                              : isDamaged
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          }`}
+                        >
+                          {isDead ? 'ARIZALI' : isDamaged ? 'AŞINMIŞ' : 'ÇALIŞIYOR'}
+                        </span>
+                      </div>
+
+                      {/* Durability bar */}
+                      <div className="mt-2.5">
+                        <div className="flex items-center justify-between text-[10px] mb-1 font-mono">
+                          <span className="text-slate-400">Dayanıklılık:</span>
+                          <span
+                            className={
+                              miner.durability > 70
+                                ? 'text-emerald-400 font-bold'
+                                : miner.durability > 35
+                                ? 'text-amber-400 font-bold'
+                                : 'text-rose-400 font-bold'
+                            }
+                          >
+                            %{Math.round(miner.durability)}
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              miner.durability > 70
+                                ? 'bg-emerald-500'
+                                : miner.durability > 35
+                                ? 'bg-amber-500'
+                                : 'bg-rose-500'
+                            }`}
+                            style={{ width: `${Math.max(2, miner.durability)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Controls */}
+                      <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between gap-2">
+                        <div className="font-mono text-xs text-amber-300">
+                          ${miner.unclaimedYield.toFixed(4)} <span className="text-[10px] text-slate-500">USDT</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          {miner.durability < 100 && (
+                            <button
+                              onClick={() => {
+                                setSelectedMinerForRepair(miner);
+                                setIsRepairModalOpen(true);
+                                sounds.playClick();
+                              }}
+                              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 flex items-center gap-1"
+                            >
+                              <Wrench className="w-3 h-3" />
+                              <span>Tamir Et</span>
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => claimSingleMiner(miner.instanceId)}
+                            disabled={miner.unclaimedYield <= 0.001}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                              miner.unclaimedYield > 0.001
+                                ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 active:scale-95'
+                                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                            }`}
+                          >
+                            Topla
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Drawer Footer Close */}
+            <div className="p-3 border-t border-orange-500/20 bg-[#120722] flex items-center justify-between">
+              <span className="text-[11px] text-slate-400 font-mono">
+                💡 Madencilerinizi tamir ederek hasılatı %100 hızda tutun
+              </span>
+              <button
+                onClick={() => setIsFleetDrawerOpen(false)}
+                className="bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 font-black text-xs px-4 py-2 rounded-xl transition active:scale-95 shadow-md"
+              >
+                Oyuna Dön 🚀
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Sustainable Economy Tips banner */}
-      <div className="bg-slate-900/40 border border-indigo-900/30 rounded-xl p-3.5 flex items-start gap-3 text-xs text-slate-400">
-        <Cpu className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
-        <div>
-          <span className="text-slate-200 font-semibold">Uzay Ekonomisi ve Amorti Mekaniği:</span>
-          <p className="mt-0.5 text-slate-400">
-            Madenciler ortalama <strong>~6 ay (180 gün)</strong> içinde yatırılan bedeli tamamen çıkarır (cover eder). Madencilerinizi düzenli tamir ederek üretim hızını maksimumda tutabilir, elde ettiğiniz Yıldız Tozları ile Pazar yerinde tamir kiti alabilir ya da USDT'ye dönüştürebilirsiniz.
-          </p>
+      {/* 4. SLIDE-UP DRAWER MODAL: PLANET & SECTOR DETAILS ("TIKLAYINCA AÇILAN ARAYÜZ") */}
+      {isPlanetDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="w-full sm:max-w-lg bg-[#160b24] border border-orange-500/40 rounded-t-3xl sm:rounded-3xl flex flex-col shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="p-4 border-b border-orange-500/25 flex items-center justify-between bg-[#1f0e34]">
+              <div className="flex items-center gap-2">
+                <Globe2 className="w-5 h-5 text-amber-400" />
+                <h3 className="text-base font-black text-white font-display">
+                  Sektör & Gezegen Detayı
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsPlanetDrawerOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Current Planet Card */}
+            <div className="p-4 space-y-3">
+              <div
+                className={`relative overflow-hidden rounded-2xl border border-orange-500/40 bg-gradient-to-br ${currentPlanet.gradient} p-4 shadow-lg`}
+              >
+                <div className="flex items-center justify-between text-xs font-semibold text-amber-300 uppercase font-mono">
+                  <span>Sektör #{currentPlanet.id}</span>
+                  <span className="bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                    Çarpan: x{currentPlanet.miningMultiplier.toFixed(2)}
+                  </span>
+                </div>
+
+                <h4 className="text-xl font-black text-white font-display mt-1">
+                  {currentPlanet.name}
+                </h4>
+                <p className="text-xs text-amber-100/90 mt-1">{currentPlanet.tagline}</p>
+
+                <div className="flex flex-wrap items-center gap-2 mt-3 text-[11px] font-mono text-slate-200">
+                  <span className="bg-black/50 px-2 py-0.5 rounded border border-orange-400/30">
+                    💎 Cevher: <strong className="text-amber-300">{currentPlanet.specialOre}</strong>
+                  </span>
+                  <span className="bg-black/50 px-2 py-0.5 rounded border border-white/10">
+                    🪐 {currentPlanet.gravity}
+                  </span>
+                  <span className="bg-black/50 px-2 py-0.5 rounded border border-white/10">
+                    🌌 {currentPlanet.atmosphere}
+                  </span>
+                </div>
+              </div>
+
+              {/* Quick Planet Hop Grid */}
+              <div>
+                <div className="text-xs font-bold text-white mb-2 font-display">
+                  Diğer Sektörlere Yolculuk:
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {planets.map((p) => {
+                    const isCurrent = p.id === currentPlanet.id;
+                    const isUnlocked = user.unlockedPlanetIds.includes(p.id);
+
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          if (isUnlocked) {
+                            travelToPlanet(p.id);
+                            setIsPlanetDrawerOpen(false);
+                            sounds.playClick();
+                          } else {
+                            setIsPlanetDrawerOpen(false);
+                            setActiveTab('planets');
+                          }
+                        }}
+                        className={`p-2.5 rounded-xl border text-left text-xs transition flex items-center justify-between ${
+                          isCurrent
+                            ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-sm'
+                            : isUnlocked
+                            ? 'bg-slate-900/80 border-slate-700/80 text-slate-200 hover:border-orange-500/50'
+                            : 'bg-slate-950/60 border-slate-900 text-slate-500'
+                        }`}
+                      >
+                        <div>
+                          <div className="font-bold font-display">{p.name.split(' ')[0]}</div>
+                          <div className="text-[10px] font-mono text-emerald-400">
+                            x{p.miningMultiplier.toFixed(1)} Kat
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-mono">
+                          {isCurrent ? 'Buradasınız' : isUnlocked ? 'Işınlan' : 'Kilitli 🔒'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 border-t border-orange-500/20 bg-[#120722] flex justify-end">
+              <button
+                onClick={() => setIsPlanetDrawerOpen(false)}
+                className="bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 font-black text-xs px-4 py-2 rounded-xl transition active:scale-95"
+              >
+                Tamam
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

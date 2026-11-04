@@ -1216,17 +1216,17 @@ export const AdminPanel: React.FC = () => {
                 </div>
                 <input
                   type="range"
-                  min="1.0"
-                  max="6.0"
-                  step="0.2"
+                  min="2.0"
+                  max="10.0"
+                  step="0.5"
                   value={spawnIntervalInput}
                   onChange={(e) => setSpawnIntervalInput(Number(e.target.value))}
                   className="w-full accent-amber-400 cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                  <span>Hızlı (1.0s)</span>
-                  <span>Önerilen Sakin (3.2s)</span>
-                  <span>Çok Seyrek (6.0s)</span>
+                  <span>Hızlı (2.0s)</span>
+                  <span className="text-amber-300 font-bold">Önerilen Sakin (4.5s - 6.0s)</span>
+                  <span>Çok Seyrek (10.0s)</span>
                 </div>
               </div>
 

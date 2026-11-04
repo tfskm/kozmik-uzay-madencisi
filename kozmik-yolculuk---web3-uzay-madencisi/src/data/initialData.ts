@@ -378,6 +378,7 @@ export const INITIAL_ADMIN_SETTINGS: AdminSystemStats = {
   autoApproveWithdrawalsUnder: 50,
   repairCostPerPercent: 0.05, // 10% repair costs 0.50 USDT or 50 Stardust
   luckyWheelCostStardust: 50,
+  stardustPerUsdt: 1000, // 1000 Uzay Tozu = 1.00 USDT
   telegramChannelUrl: 'https://t.me/CosmicMinerOfficial',
   telegramSupportUrl: 'https://t.me/CosmicMinerSupport',
   voyageSettings: {

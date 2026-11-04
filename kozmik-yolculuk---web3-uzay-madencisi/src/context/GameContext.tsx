@@ -65,6 +65,7 @@ interface GameContextType {
   spinWheel: () => Promise<WheelPrize>;
   openMysteryBox: (boxId: string) => Promise<{ prizeName: string; usdtAmount: number; stardustAmount: number }>;
   buyMarketItem: (itemId: string) => { success: boolean; message: string };
+  swapStardustToUsdt: (stardustAmount: number) => { success: boolean; message: string; usdtReceived?: number };
   // Admin actions
   adminApproveWithdrawal: (txId: string) => void;
   adminRejectWithdrawal: (txId: string) => void;
@@ -285,7 +286,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
           // 2.5 seconds out of 86400 seconds in a day
           const secondFraction = 2.5 / 86400;
-          const addedYield = m.dailyYield * mult * durabilityFactor * secondFraction;
+          const rate = adminSettings.stardustPerUsdt || 1000;
+          // In-game mining produces exclusively Uzay Tozu (Stardust)
+          const addedYield = (m.dailyYield * rate) * mult * durabilityFactor * secondFraction;
 
           // Tiny durability wear (decays over days)
           // 1.5% per day -> 1.5 / 86400 * 2.5 = 0.0000434% per tick
@@ -694,18 +697,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const claimSingleMiner = (instanceId: string) => {
     const miner = userMiners.find((m) => m.instanceId === instanceId);
-    if (!miner || miner.unclaimedYield <= 0.001) return;
+    if (!miner || miner.unclaimedYield < 1) return;
 
     sounds.playCoin();
     sounds.triggerHaptic('light');
 
-    const yieldAmount = miner.unclaimedYield;
+    const dustGained = Math.floor(miner.unclaimedYield);
 
     setUser((prev) => ({
       ...prev,
-      usdtBalance: Number((prev.usdtBalance + yieldAmount).toFixed(4)),
-      totalMined: Number((prev.totalMined + yieldAmount).toFixed(4)),
-      stardustBalance: prev.stardustBalance + Math.ceil(yieldAmount * 5),
+      stardustBalance: prev.stardustBalance + dustGained,
+      totalMined: prev.totalMined + dustGained,
+      exp: prev.exp + 5,
     }));
 
     setUserMiners((prev) =>
@@ -714,7 +717,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           ? {
               ...m,
               unclaimedYield: 0,
-              totalEarned: m.totalEarned + yieldAmount,
+              totalEarned: m.totalEarned + dustGained,
               lastClaimedAt: Date.now(),
             }
           : m
@@ -726,11 +729,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       userId: user.id,
       userName: user.telegramUsername,
       type: 'mine_claim',
-      amount: Number(yieldAmount.toFixed(4)),
-      currency: 'USDT',
+      amount: dustGained,
+      currency: 'STARDUST',
       status: 'completed',
       timestamp: Date.now(),
-      note: `${miner.packageName} hasılatı toplandı`,
+      note: `${miner.packageName} hasılatı toplandı (+${dustGained.toLocaleString()} Uzay Tozu)`,
     };
 
     setTransactions((prev) => [newTx, ...prev]);
@@ -738,16 +741,16 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const claimAllMiners = () => {
     const totalYield = userMiners.reduce((acc, m) => acc + m.unclaimedYield, 0);
-    if (totalYield <= 0.001) return { totalClaimed: 0 };
+    const dustGained = Math.floor(totalYield);
+    if (dustGained < 1) return { totalClaimed: 0 };
 
     sounds.playCoin();
     sounds.triggerHaptic('medium');
 
     setUser((prev) => ({
       ...prev,
-      usdtBalance: Number((prev.usdtBalance + totalYield).toFixed(4)),
-      totalMined: Number((prev.totalMined + totalYield).toFixed(4)),
-      stardustBalance: prev.stardustBalance + Math.ceil(totalYield * 5),
+      stardustBalance: prev.stardustBalance + dustGained,
+      totalMined: prev.totalMined + dustGained,
       exp: prev.exp + 10,
     }));
 
@@ -765,15 +768,59 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       userId: user.id,
       userName: user.telegramUsername,
       type: 'mine_claim',
-      amount: Number(totalYield.toFixed(4)),
-      currency: 'USDT',
+      amount: dustGained,
+      currency: 'STARDUST',
       status: 'completed',
       timestamp: Date.now(),
-      note: `Tüm Filo Hasılatı Toplandı ($${totalYield.toFixed(4)} USDT)`,
+      note: `Tüm Filo Hasılatı Toplandı (+${dustGained.toLocaleString()} Uzay Tozu)`,
     };
 
     setTransactions((prev) => [newTx, ...prev]);
-    return { totalClaimed: totalYield };
+    return { totalClaimed: dustGained };
+  };
+
+  const swapStardustToUsdt = (stardustAmount: number) => {
+    if (stardustAmount <= 0) {
+      return { success: false, message: 'Lütfen geçerli bir Uzay Tozu miktarı girin.' };
+    }
+    if (user.stardustBalance < stardustAmount) {
+      return { success: false, message: 'Yetersiz Uzay Tozu bakiyesi!' };
+    }
+    const rate = adminSettings.stardustPerUsdt || 1000;
+    const usdtReceived = Number((stardustAmount / rate).toFixed(2));
+    if (usdtReceived <= 0) {
+      return { success: false, message: `Minimum ${Math.ceil(rate * 0.01)} Uzay Tozu bozdurabilirsiniz ($0.01 USDT).` };
+    }
+
+    sounds.playCoin();
+    sounds.triggerHaptic('success');
+
+    setUser((prev) => ({
+      ...prev,
+      stardustBalance: prev.stardustBalance - stardustAmount,
+      usdtBalance: Number((prev.usdtBalance + usdtReceived).toFixed(2)),
+      exp: prev.exp + Math.ceil(usdtReceived * 2),
+    }));
+
+    const newTx: Transaction = {
+      id: 'tx_swap_' + Date.now(),
+      userId: user.id,
+      userName: user.telegramUsername,
+      type: 'stardust_swap',
+      amount: usdtReceived,
+      currency: 'USDT',
+      status: 'completed',
+      timestamp: Date.now(),
+      note: `Swap: ${stardustAmount.toLocaleString()} Uzay Tozu ➔ $${usdtReceived.toFixed(2)} USDT`,
+    };
+
+    setTransactions((prev) => [newTx, ...prev]);
+
+    return {
+      success: true,
+      message: `${stardustAmount.toLocaleString()} Uzay Tozu başarıyla $${usdtReceived.toFixed(2)} USDT'ye dönüştürüldü!`,
+      usdtReceived,
+    };
   };
 
   const repairMiner = (instanceId: string, useCurrency: 'USDT' | 'STARDUST') => {
@@ -1208,6 +1255,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         spinWheel,
         openMysteryBox,
         buyMarketItem,
+        swapStardustToUsdt,
         adminApproveWithdrawal,
         adminRejectWithdrawal,
         adminToggleBanUser,

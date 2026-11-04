@@ -82,6 +82,7 @@ export const AdminPanel: React.FC = () => {
   const [autoApproveInput, setAutoApproveInput] = useState(adminSettings.autoApproveWithdrawalsUnder);
   const [repairCostInput, setRepairCostInput] = useState(adminSettings.repairCostPerPercent);
   const [maintenanceInput, setMaintenanceInput] = useState(adminSettings.maintenanceMode);
+  const [stardustPerUsdtInput, setStardustPerUsdtInput] = useState<number>(adminSettings.stardustPerUsdt || 1000);
 
   // In-Flight Voyage Rewards, Penalties & Mechanics State
   const defaultVoyage = {
@@ -181,6 +182,7 @@ export const AdminPanel: React.FC = () => {
       withdrawalFeePercent: Number(feePercentInput),
       autoApproveWithdrawalsUnder: Number(autoApproveInput),
       repairCostPerPercent: Number(repairCostInput),
+      stardustPerUsdt: Number(stardustPerUsdtInput) || 1000,
       maintenanceMode: maintenanceInput,
     });
     alert('Sistem ve ekonomi parametreleri güncellendi!');
@@ -309,7 +311,7 @@ export const AdminPanel: React.FC = () => {
       {/* TAB 1: OVERVIEW & CASHFLOW */}
       {currentAdminTab === 'overview' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="bg-[#07303e]/90 border border-teal-500/30 rounded-2xl p-4">
               <div className="text-xs text-slate-400 font-medium">Toplam Kayıtlı Madenci</div>
               <div className="text-2xl font-black text-white font-mono mt-1">
@@ -342,6 +344,14 @@ export const AdminPanel: React.FC = () => {
                 ${systemReserve.toFixed(2)}
               </div>
               <div className="text-[11px] text-emerald-400 font-mono mt-1">Sağlıklı Likidite</div>
+            </div>
+
+            <div className="bg-amber-500/10 border border-amber-500/40 rounded-2xl p-4 col-span-2 lg:col-span-1">
+              <div className="text-xs text-amber-300 font-bold">Toz Swap Kuru</div>
+              <div className="text-lg font-black text-amber-300 font-mono mt-1 truncate">
+                1$ = {(adminSettings.stardustPerUsdt || 1000).toLocaleString()}
+              </div>
+              <div className="text-[11px] text-teal-300 font-mono mt-1">Uzay Tozu / USDT</div>
             </div>
           </div>
 
@@ -1383,6 +1393,23 @@ export const AdminPanel: React.FC = () => {
                   onChange={(e) => setRepairCostInput(Number(e.target.value))}
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none"
                 />
+              </div>
+
+              <div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-3">
+                <label className="text-xs text-amber-300 font-bold mb-1 block">
+                  🪙 1 USDT Kaç Uzay Tozu? (Swap Kuru):
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  step="50"
+                  value={stardustPerUsdtInput}
+                  onChange={(e) => setStardustPerUsdtInput(Math.max(1, Number(e.target.value)))}
+                  className="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-3 py-2 text-amber-300 font-mono text-xs font-black outline-none"
+                />
+                <span className="text-[10px] text-teal-300 font-mono mt-1 block">
+                  Oyuncu {Number(stardustPerUsdtInput || 1000).toLocaleString()} Toz bozdurduğunda $1.00 USDT alır.
+                </span>
               </div>
 
               <div className="flex items-center gap-3 pt-4">

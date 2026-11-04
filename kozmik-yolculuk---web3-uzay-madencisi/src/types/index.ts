@@ -88,7 +88,7 @@ export interface Transaction {
   id: string;
   userId: string;
   userName: string;
-  type: 'deposit' | 'withdraw' | 'package_buy' | 'mine_claim' | 'repair' | 'spin_win' | 'box_open' | 'market_trade' | 'admin_adjustment';
+  type: 'deposit' | 'withdraw' | 'package_buy' | 'mine_claim' | 'repair' | 'spin_win' | 'box_open' | 'market_trade' | 'admin_adjustment' | 'stardust_swap';
   amount: number;
   currency: 'USDT' | 'TON' | 'STARDUST';
   status: 'completed' | 'pending' | 'rejected';
@@ -154,6 +154,7 @@ export interface AdminSystemStats {
   autoApproveWithdrawalsUnder: number;
   repairCostPerPercent: number; // Stardust or USDT needed per 1% repair
   luckyWheelCostStardust: number;
+  stardustPerUsdt: number; // Conversion rate: how many Stardust = 1 USDT (e.g. 1000)
   telegramChannelUrl: string;
   telegramSupportUrl: string;
   voyageSettings: VoyageSettings;

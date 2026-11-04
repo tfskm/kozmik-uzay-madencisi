@@ -34,10 +34,12 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 export const PackagesShop: React.FC = () => {
-  const { user, planets, packages, buyPackage, setActiveTab, setIsDepositModalOpen } = useGame();
+  const { user, planets, packages, adminSettings, buyPackage, setActiveTab, setIsDepositModalOpen } = useGame();
 
   const [selectedPlanetFilter, setSelectedPlanetFilter] = useState<number | 'all'>('all');
   const [calcInvestment, setCalcInvestment] = useState<number>(100);
+
+  const rate = adminSettings.stardustPerUsdt || 1000;
 
   const filteredPackages = packages.filter((pkg) => {
     if (!pkg.isActive) return false;
@@ -66,139 +68,154 @@ export const PackagesShop: React.FC = () => {
     }
   };
 
-  // ROI Calculator projection
+  // ROI Calculator estimations
   const estimatedDaily = (calcInvestment * 0.58) / 100;
+  const estimatedDailyDust = Math.floor(estimatedDaily * rate);
   const estimatedMonthly = estimatedDaily * 30;
-  const estimated6Months = estimatedDaily * 180; // ~104% ROI (Full cover)
-  const estimatedYearly = estimatedDaily * 365;  // ~210% ROI
+  const estimated6Months = estimatedDaily * 180;
+  const estimatedYearly = estimatedDaily * 365;
 
   return (
-    <div className="space-y-6 pb-24 w-full max-w-full overflow-hidden">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-[#0d3f4f] via-[#094857] to-[#0a3b4a] border border-cyan-400/40 rounded-2xl p-4 sm:p-5 shadow-xl glow-cyan">
+    <div className="space-y-6 pb-24 text-slate-800">
+      {/* Top Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-white border border-teal-200 p-5 sm:p-6 shadow-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-300 uppercase tracking-wider">
-              <PackageCheck className="w-4 h-4 text-emerald-400" />
-              <span>Uzay Filosu Teçhizat Pazarı</span>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-teal-500 text-white flex items-center justify-center shadow-sm shrink-0">
+              <Rocket className="w-6 h-6 stroke-[2.5]" />
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white font-display mt-0.5">
-              Madenci Paketleri (~6 Ay Amorti)
-            </h2>
-            <p className="text-xs text-teal-100/90 mt-1 max-w-xl">
-              Tüm madencilerimiz sürdürülebilir matematiksel ekonomiyle ortalama <strong>~180 günde (6 ayda)</strong> kendini tamamen amorti eder (cover). Sonrasında tamir kiti ile sınırsız net pasif gelir üretmeye devam eder.
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-teal-700 uppercase tracking-wider">
+                  Madencilik Filosu Mağazası
+                </span>
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-300">
+                  OTOMATİK ÜRETİM
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-display mt-0.5">
+                Kozmik Madenci Paketleri
+              </h2>
+              <p className="text-xs text-slate-500">
+                Satın aldığınız her madenci 7/24 kesintisiz <strong>Uzay Tozu</strong> üretir. Tozları cüzdanda dilediğiniz an USDT'ye çevirebilirsiniz.
+              </p>
+            </div>
           </div>
 
-          <div className="bg-[#052632] border border-emerald-400/60 rounded-2xl p-3 shrink-0 shadow-md">
-            <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider">Cüzdan USDT Bakiyeniz</div>
-            <div className="text-2xl font-black text-emerald-300 font-mono">
-              ${user.usdtBalance.toFixed(2)}
+          <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl flex items-center justify-between sm:justify-end gap-3 shrink-0">
+            <div>
+              <div className="text-[10px] text-slate-500 font-medium">Kullanılabilir Bakiye</div>
+              <div className="text-base font-black text-emerald-600 font-mono">
+                ${user.usdtBalance.toFixed(2)} USDT
+              </div>
             </div>
+            <button
+              onClick={() => setIsDepositModalOpen(true)}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition shadow-sm active:scale-95"
+            >
+              + Bakiye Yükle
+            </button>
           </div>
         </div>
 
-        {/* Planet Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto mt-4 pt-3 border-t border-cyan-500/25 max-w-full scrollbar-none">
+        {/* Planet Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto mt-4 pt-3 border-t border-slate-100 no-scrollbar">
           <button
             onClick={() => {
               sounds.playClick();
               setSelectedPlanetFilter('all');
             }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition shrink-0 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
               selectedPlanetFilter === 'all'
-                ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md'
-                : 'bg-[#07303e] hover:bg-[#0b3c4e] text-teal-200 border border-teal-500/30'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            Tüm Gezegenler ({packages.length})
+            Tüm Sektörler ({packages.length})
           </button>
 
-          {planets.map((planet) => {
-            const count = packages.filter((p) => p.planetId === planet.id).length;
-            const isUnlocked = user.unlockedPlanetIds.includes(planet.id);
-
-            return (
-              <button
-                key={planet.id}
-                onClick={() => {
-                  sounds.playClick();
-                  setSelectedPlanetFilter(planet.id);
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 border ${
-                  selectedPlanetFilter === planet.id
-                    ? 'bg-gradient-to-r from-teal-400 to-emerald-400 text-slate-950 border-teal-300 shadow-md'
-                    : 'bg-[#07303e]/70 hover:bg-[#0b3c4e] text-teal-200/80 border-teal-500/20'
-                }`}
-              >
-                {!isUnlocked && <Lock className="w-3 h-3 text-amber-300" />}
-                <span>{planet.name.split(' ')[0]}</span>
-                <span className="text-[10px] opacity-75">({count})</span>
-              </button>
-            );
-          })}
+          {planets.map((planet) => (
+            <button
+              key={planet.id}
+              onClick={() => {
+                sounds.playClick();
+                setSelectedPlanetFilter(planet.id);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
+                selectedPlanetFilter === planet.id
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              🪐 {planet.name.split(' ')[0]} (x{planet.miningMultiplier}x)
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Interactive ROI Calculator Accordion / Card */}
-      <div className="bg-[#083444]/90 border border-cyan-400/40 rounded-2xl p-4 shadow-lg">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-lg bg-teal-500/25 text-teal-300 flex items-center justify-center">
-            <Calculator className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-white font-display">
-              Kazanç ve Amorti Simülatörü
+      {/* ROI & Amorti Simulator Calculator */}
+      <div className="bg-white border border-teal-200 rounded-3xl p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-teal-600" />
+            <h3 className="text-sm font-bold text-slate-900 font-display">
+              Kazanç ve Amorti (ROI) Simülatörü
             </h3>
-            <p className="text-[11px] text-teal-200/70">
-              Yatırım tutarınızı seçerek 6 aylık cover ve 1 yıllık net kazanç projeksiyonunu görün
-            </p>
           </div>
+          <span className="text-xs text-slate-500 font-mono">
+            Ortalama Amorti Süresi: <strong>160 - 180 Gün</strong>
+          </span>
         </div>
 
-        {/* Amount Buttons */}
-        <div className="flex items-center gap-2 overflow-x-auto mb-3">
-          {[25, 75, 150, 350, 750, 1500, 3000].map((amt) => (
+        {/* Quick Slider / Buttons */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xs text-slate-500 font-medium">Yatırım Tutarı:</span>
+          {[25, 75, 150, 300, 500].map((amt) => (
             <button
               key={amt}
-              onClick={() => {
-                sounds.playClick();
-                setCalcInvestment(amt);
-              }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition ${
+              onClick={() => setCalcInvestment(amt)}
+              className={`text-xs px-2.5 py-1 rounded-lg font-mono font-bold transition ${
                 calcInvestment === amt
-                  ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black'
-                  : 'bg-[#052430] text-teal-200 hover:bg-[#0b394c] border border-teal-500/30'
+                  ? 'bg-cyan-100 text-cyan-800 border border-cyan-300'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               ${amt}
             </button>
           ))}
+          <input
+            type="number"
+            min="10"
+            value={calcInvestment}
+            onChange={(e) => setCalcInvestment(Math.max(10, Number(e.target.value)))}
+            className="w-20 bg-slate-50 border border-slate-300 rounded-lg px-2 py-0.5 text-xs text-slate-900 font-mono outline-none"
+          />
         </div>
 
-        {/* Projection Row */}
+        {/* Return Projections */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-          <div className="bg-[#05222c] border border-teal-500/30 rounded-xl p-2.5">
-            <div className="text-[10px] text-teal-300/70">Günlük Hasılat</div>
-            <div className="text-sm font-bold text-emerald-300 font-mono mt-0.5">
-              +${estimatedDaily.toFixed(2)} USDT
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+            <div className="text-[10px] text-slate-500">Günlük Üretim</div>
+            <div className="text-sm font-bold text-teal-700 font-mono mt-0.5">
+              +{estimatedDailyDust.toLocaleString()} Toz
             </div>
+            <div className="text-[10px] text-slate-400 font-mono">≈${estimatedDaily.toFixed(2)} USDT</div>
           </div>
-          <div className="bg-[#05222c] border border-teal-500/30 rounded-xl p-2.5">
-            <div className="text-[10px] text-teal-300/70">30 Günlük (1 Ay)</div>
-            <div className="text-sm font-bold text-cyan-300 font-mono mt-0.5">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+            <div className="text-[10px] text-slate-500">30 Günlük (1 Ay)</div>
+            <div className="text-sm font-bold text-cyan-800 font-mono mt-0.5">
               +${estimatedMonthly.toFixed(2)} USDT
             </div>
           </div>
-          <div className="bg-[#062e3c] border border-cyan-400/50 rounded-xl p-2.5">
-            <div className="text-[10px] text-cyan-300 font-bold">180 Gün (Tam Amorti)</div>
-            <div className="text-sm font-black text-amber-300 font-mono mt-0.5">
+          <div className="bg-cyan-50/70 border border-cyan-300 rounded-xl p-2.5">
+            <div className="text-[10px] text-cyan-800 font-bold">180 Gün (Tam Amorti)</div>
+            <div className="text-sm font-black text-amber-600 font-mono mt-0.5">
               +${estimated6Months.toFixed(2)} USDT (%104)
             </div>
           </div>
-          <div className="bg-[#05222c] border border-teal-500/30 rounded-xl p-2.5">
-            <div className="text-[10px] text-teal-300/70">365 Gün (1 Yıl Net)</div>
-            <div className="text-sm font-bold text-teal-200 font-mono mt-0.5">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+            <div className="text-[10px] text-slate-500">365 Gün (1 Yıl Net)</div>
+            <div className="text-sm font-bold text-emerald-600 font-mono mt-0.5">
               +${estimatedYearly.toFixed(2)} USDT (%212)
             </div>
           </div>
@@ -211,118 +228,101 @@ export const PackagesShop: React.FC = () => {
           const Icon = ICON_MAP[pkg.iconName] || Bot;
           const planet = planets.find((p) => p.id === pkg.planetId);
           const isPlanetLocked = planet ? !user.unlockedPlanetIds.includes(planet.id) : false;
+          const dailyDust = Math.floor(pkg.dailyProduction * rate);
 
           return (
             <div
               key={pkg.id}
-              className={`relative overflow-hidden rounded-2xl border transition-all duration-300 flex flex-col justify-between ${
-                pkg.tier === 'quantum'
-                  ? 'border-cyan-400/50 bg-gradient-to-br from-[#0c4052] via-[#093240] to-[#062532] shadow-xl glow-cyan'
-                  : pkg.tier === 'neon'
-                  ? 'border-teal-400/50 bg-gradient-to-br from-[#0a3f4c] via-[#08303a] to-[#06242c] shadow-lg'
-                  : pkg.tier === 'gold'
-                  ? 'border-emerald-400/50 bg-gradient-to-br from-[#0a4240] via-[#073230] to-[#052725] shadow-lg glow-emerald'
-                  : 'border-cyan-500/35 bg-gradient-to-br from-[#0b3848] via-[#082d3a] to-[#06232e] hover:border-cyan-400/60 shadow-md'
-              }`}
+              className="relative overflow-hidden rounded-3xl border border-teal-200 bg-white hover:border-cyan-400 transition-all duration-300 flex flex-col justify-between shadow-sm hover:shadow-md"
             >
-              {/* Badge */}
-              <div className="p-4 sm:p-5">
+              <div className="p-5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
-                    <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${
-                        pkg.tier === 'quantum'
-                          ? 'bg-pink-500/20 text-pink-300 border border-pink-500/50 shadow-pink-500/20'
-                          : pkg.tier === 'neon'
-                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50 shadow-purple-500/20'
-                          : pkg.tier === 'gold'
-                          ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 shadow-amber-500/20'
-                          : 'bg-orange-500/25 text-orange-300 border border-orange-500/50 shadow-orange-500/20'
-                      }`}
-                    >
-                      <Icon className="w-6 h-6 animate-pulse" />
+                    <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 border border-teal-200 flex items-center justify-center shrink-0 shadow-sm">
+                      <Icon className="w-6 h-6 stroke-[2.5]" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-500/20 text-amber-300 border border-orange-500/30 font-mono">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 font-mono">
                           {pkg.badge}
                         </span>
                         {planet && (
-                          <span className="text-[10px] text-amber-200/70 font-mono">
+                          <span className="text-[10px] text-slate-500 font-mono">
                             🪐 {planet.name.split(' ')[0]}
                           </span>
                         )}
                       </div>
-                      <h3 className="text-base sm:text-lg font-black text-white font-display mt-0.5">
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 font-display mt-0.5">
                         {pkg.name}
                       </h3>
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <div className="text-xl sm:text-2xl font-black text-amber-300 font-mono leading-none">
+                    <div className="text-2xl font-black text-slate-900 font-mono leading-none">
                       ${pkg.price}
                     </div>
-                    <div className="text-[10px] text-orange-400 font-bold font-mono">
+                    <div className="text-[10px] text-emerald-600 font-bold font-mono">
                       USDT Fiyatı
                     </div>
                   </div>
                 </div>
 
-                <p className="text-xs text-teal-100/80 mt-3 line-clamp-2">
+                <p className="text-xs text-slate-600 mt-3 line-clamp-2">
                   {pkg.description}
                 </p>
 
                 {/* Key Metrics Matrix */}
                 <div className="grid grid-cols-3 gap-2 mt-4 text-center">
-                  <div className="bg-[#052430]/90 border border-teal-500/25 rounded-xl p-2">
-                    <div className="text-[10px] text-teal-300/70">Günlük Üretim</div>
-                    <div className="text-xs font-bold text-emerald-300 font-mono mt-0.5">
-                      +${pkg.dailyProduction.toFixed(2)}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-2">
+                    <div className="text-[10px] text-slate-500">Günlük Üretim</div>
+                    <div className="text-xs font-black text-teal-700 font-mono mt-0.5">
+                      +{dailyDust.toLocaleString()} Toz
                     </div>
+                    <div className="text-[9px] text-slate-400">≈${pkg.dailyProduction.toFixed(2)} USDT</div>
                   </div>
 
-                  <div className="bg-[#052430]/90 border border-teal-500/25 rounded-xl p-2">
-                    <div className="text-[10px] text-cyan-300/80">Amorti Süresi</div>
-                    <div className="text-xs font-black text-amber-300 font-mono mt-0.5">
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-2">
+                    <div className="text-[10px] text-slate-500">Amorti Süresi</div>
+                    <div className="text-xs font-black text-amber-600 font-mono mt-0.5">
                       ~{pkg.coverDays} Gün
                     </div>
                   </div>
 
-                  <div className="bg-[#052430]/90 border border-teal-500/25 rounded-xl p-2">
-                    <div className="text-[10px] text-teal-300/70">Günlük Oran</div>
-                    <div className="text-xs font-bold text-teal-200 font-mono mt-0.5">
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-2">
+                    <div className="text-[10px] text-slate-500">Günlük Oran</div>
+                    <div className="text-xs font-bold text-slate-700 font-mono mt-0.5">
                       %{pkg.dailyReturnPercent}
                     </div>
                   </div>
                 </div>
 
                 {/* Durability info */}
-                <div className="flex items-center justify-between text-[11px] text-teal-200/70 mt-3 pt-2.5 border-t border-cyan-500/20">
+                <div className="flex items-center justify-between text-[11px] text-slate-500 mt-3 pt-2.5 border-t border-slate-100">
                   <span className="flex items-center gap-1">
-                    <Wrench className="w-3.5 h-3.5 text-amber-300" />
-                    Aşınma: %{pkg.durabilityDecayPerDay}/gün (Tamir Edilebilir)
+                    <Wrench className="w-3.5 h-3.5 text-amber-500" />
+                    Aşınma: %{pkg.durabilityDecayPerDay}/gün
                   </span>
-                  <span className="font-mono text-cyan-200 font-bold">
+                  <span className="font-mono text-cyan-800 font-bold">
                     {pkg.totalPurchased} Madenci Aktif
                   </span>
                 </div>
               </div>
 
               {/* Purchase Action Button */}
-              <div className="p-4 bg-[#05202a]/95 border-t border-cyan-500/25">
+              <div className="p-4 bg-slate-50/80 border-t border-slate-100">
                 {isPlanetLocked ? (
                   <button
                     onClick={() => setActiveTab('planets')}
-                    className="w-full py-2.5 rounded-xl text-xs font-bold bg-[#093240] border border-cyan-500/40 text-cyan-200 hover:bg-[#0c3e50] transition flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition flex items-center justify-center gap-1.5"
                   >
-                    <Lock className="w-3.5 h-3.5 text-amber-300" />
+                    <Lock className="w-3.5 h-3.5 text-amber-600" />
                     <span>Önce Bu Gezegenin Kilidini Açın</span>
                   </button>
                 ) : (
                   <button
                     onClick={() => handleBuy(pkg)}
-                    className="w-full py-2.5 rounded-xl text-xs font-display tracking-wider transition shadow-lg active:scale-95 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black shadow-teal-500/30"
+                    className="w-full py-2.5 rounded-xl text-xs font-display tracking-wider transition shadow-sm active:scale-95 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-black"
                   >
                     <PackageCheck className="w-4 h-4" />
                     <span>Hemen Filoya Kat (${pkg.price} USDT)</span>

@@ -41,36 +41,36 @@ const MainLayout: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-slate-950">
-      {/* Background Luminous Celestial & Emerald/Cyan Auroras */}
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-b from-[#edf9fb] via-[#e5f5f8] to-[#d9f1f4] text-slate-800 flex flex-col relative selection:bg-cyan-400 selection:text-slate-950">
+      {/* Background Luminous Celestial Daytime & Sun/Mint Auroras */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Vibrant Emerald & Mint Solar Aurora */}
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-b from-emerald-500/22 via-teal-400/18 to-transparent blur-[110px] rounded-full" />
-        {/* Radiant Cyan & Azure Flare */}
-        <div className="absolute top-1/3 -left-20 w-[550px] h-[550px] bg-cyan-400/22 blur-[120px] rounded-full" />
-        {/* Deep Ocean Turquoise Glow */}
-        <div className="absolute bottom-10 right-0 w-[600px] h-[600px] bg-teal-400/20 blur-[125px] rounded-full" />
-        {/* Warm Golden Stardust Accent */}
-        <div className="absolute top-2/3 left-1/4 w-[450px] h-[450px] bg-amber-400/14 blur-[115px] rounded-full" />
+        {/* Sunny Mint & Emerald Solar Halo */}
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[750px] h-[500px] bg-gradient-to-b from-emerald-200/40 via-teal-200/30 to-transparent blur-[120px] rounded-full" />
+        {/* Bright Cyan & Sky Azure Light Flare */}
+        <div className="absolute top-1/4 -left-20 w-[600px] h-[600px] bg-cyan-200/45 blur-[130px] rounded-full" />
+        {/* Radiant Warm Amber Solar Beam */}
+        <div className="absolute top-1/2 right-0 w-[550px] h-[550px] bg-amber-200/35 blur-[120px] rounded-full" />
+        {/* Soft Turquoise Ocean Glow */}
+        <div className="absolute bottom-10 left-1/4 w-[600px] h-[600px] bg-teal-200/35 blur-[125px] rounded-full" />
 
         {/* Subtle Stardust texture */}
         <div
-          className="w-full h-full opacity-[0.07]"
+          className="w-full h-full opacity-[0.06]"
           style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, #67e8f9 1.2px, transparent 0)`,
-            backgroundSize: '26px 26px',
+            backgroundImage: `radial-gradient(circle at 1px 1px, #0891b2 1.2px, transparent 0)`,
+            backgroundSize: '24px 24px',
           }}
         />
       </div>
 
       {/* Frame Mode Switcher for Desktop Viewers */}
-      <div className="hidden lg:flex fixed top-3 right-4 z-50 items-center gap-1.5 bg-slate-900/90 border border-slate-700/60 p-1 rounded-xl shadow-lg backdrop-blur-md">
+      <div className="hidden lg:flex fixed top-3 right-4 z-50 items-center gap-1.5 bg-white/90 border border-teal-200 p-1 rounded-xl shadow-md backdrop-blur-md">
         <button
           onClick={() => setIsTelegramMobileFrame(false)}
           className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg transition ${
             !isTelegramMobileFrame
-              ? 'bg-cyan-500 text-slate-950'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-900'
           }`}
           title="Geniş Ekran Modu"
         >
@@ -81,8 +81,8 @@ const MainLayout: React.FC = () => {
           onClick={() => setIsTelegramMobileFrame(true)}
           className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg transition ${
             isTelegramMobileFrame
-              ? 'bg-cyan-500 text-slate-950'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-900'
           }`}
           title="Telegram Mini App Çerçeve Modu"
         >
@@ -95,7 +95,7 @@ const MainLayout: React.FC = () => {
       <div
         className={`mx-auto w-full transition-all duration-300 relative z-10 flex flex-col flex-1 ${
           isTelegramMobileFrame
-            ? 'max-w-md my-4 border border-indigo-500/40 rounded-3xl shadow-2xl bg-slate-950/95 overflow-hidden'
+            ? 'max-w-md my-4 border border-teal-200 rounded-3xl shadow-2xl bg-white/95 overflow-hidden'
             : 'max-w-5xl'
         }`}
       >

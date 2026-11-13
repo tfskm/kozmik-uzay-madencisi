@@ -1,0 +1,6 @@
+{
+  "name": "Kozmik Yolculuk - Web3 Uzay Madencisi",
+  "description": "Telegram tarzı renkli uzay temalı Web3 madencilik oyunu. Gezegen keşifleri, paket yatırımları, tamir sistemi, şans çarkı, pazar yeri ve gelişmiş admin yönetim paneli.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

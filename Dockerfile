@@ -1,5 +1,6 @@
 # Kozmik Yolculuk - sunucu destekli sürüm (kz/)
-# Express + SQLite + Vite istemcisi. Eski statik (nginx) sürümün yerini alır.
+# Express + SQLite + Vite istemcisi. Derleme araçları yalnızca build aşamasında kullanılır;
+# çalışma aşaması derlenmiş node_modules'ı devralır (daha küçük ve hızlı derleme).
 
 # ---- Build aşaması ----
 FROM node:22-bookworm-slim AS build
@@ -21,11 +22,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
+# Derlenmiş bağımlılıkları build aşamasından al; burada derleme aracı GEREKMEZ.
+# (better-sqlite3 ikilisi build aşamasında hazırlanmış olarak gelir.)
 COPY kz/package*.json ./
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
-  && npm install --omit=dev \
-  && apt-get purge -y python3 make g++ && apt-get autoremove -y \
-  && rm -rf /var/lib/apt/lists/*
+COPY --from=build /app/node_modules ./node_modules
+RUN npm prune --omit=dev || echo "prune atlandi"
 
 COPY --from=build /app/dist ./dist
 COPY kz/server ./server

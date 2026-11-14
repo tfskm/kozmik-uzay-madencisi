@@ -69,7 +69,7 @@ export const Guide: React.FC = () => {
       <Section icon={Target} title="4) Arenada Yolculuk (Roket, Silah, Kalkan, Taş)" tone="border-sky-500/30">
         <p><strong>Hareket:</strong> Roketi yukarı-aşağı sürükleyerek yıldız/kristal topla veya taşlardan kaç.</p>
         <p><strong>Silah:</strong> Ateş etmek için silah gerekir (yoksa "SİLAH YOK"). Sev.N silah, Sev.1–N taşları kırar ve ödül verir. Seviye yetersizse "YETERSİZ SİLAH SEVİYESİ" yazar.</p>
-        <p><strong>Kalkan:</strong> Sev.N kalkan, Sev.1–N taşları durdurur. Taş kalkanda patlar → <span className="text-cyan-300">hasar engellenir</span> ve <span className="text-amber-300">ödül alınır</span>. Kalkanın ömrü vardır, çarptıkça tükenir. Yetersiz/tükenmişse gövde hasarı olur.</p>
+        <p><strong>Kalkan:</strong> Sev.N kalkan, Sev.1–N taşları durdurur. Taş kalkanın dış çizgisinde patlar → <span className="text-cyan-300">hasar engellenir</span> (ekstra puan vermez). Kalkanın ömrü vardır, çarptıkça tükenir. Yetersiz/tükenmişse gövde hasarı olur.</p>
         <div className="grid grid-cols-1 gap-1 pt-1">
           <Row label="Taş Sev.1" value="-%6 hasar • +10 ödül" accent="text-rose-300" />
           <Row label="Taş Sev.2" value="-%10 hasar • +20 ödül" accent="text-rose-300" />

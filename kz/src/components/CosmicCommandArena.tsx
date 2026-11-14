@@ -366,9 +366,12 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         // Move object from right to left
         const newX = ent.x - ent.speed * (dt * 60);
 
-        // Check collision with Hero Rocket (Rocket is at X ≈ 20%)
-        const isAtRocketX = newX <= rocketXPos + 6 && newX >= rocketXPos - 6;
-        const isAtRocketY = Math.abs(ent.y - currentRocketY) < 14;
+        // Çarpışma: kalkan varsa dış çizgisinde, yoksa roket gövdesinde
+        const shieldActive = shieldHealthRef.current > 0 && !!user.equippedShield;
+        const hitRadiusX = shieldActive ? 10 : 6;
+        const hitRadiusY = shieldActive ? 18 : 14;
+        const isAtRocketX = newX <= rocketXPos + hitRadiusX && newX >= rocketXPos - 6;
+        const isAtRocketY = Math.abs(ent.y - currentRocketY) < hitRadiusY;
 
         if (isAtRocketX && isAtRocketY) {
           if (ent.type === 'star' || ent.type === 'crystal') {
@@ -427,7 +430,7 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         const impactCost = 10 + asteroidTier * 8; // kalkan ömründen düşen miktar
 
         if (shieldHealthRef.current > 0 && shieldHolds) {
-          // Kalkan yeterli: taş kalkanın dışında patlar, hasar engellenir, puan alınır
+          // Kalkan yeterli: taş kalkanın dış çizgisinde patlar, hasar engellenir (puan yok)
           const newShield = Math.max(0, shieldHealthRef.current - impactCost);
           shieldHealthRef.current = newShield;
           setShieldHealth(newShield);
@@ -439,11 +442,10 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
             origin: { x: 0.22, y: asteroidHitEvent.y / 100 },
             colors: [shd?.color || '#38bdf8', '#fbbf24', '#ffffff'],
           });
-          const earned = destroyVoyageAsteroid(asteroidHitEvent.rewardPoints);
-          addFloatingNumber(rocketXPos + 6, asteroidHitEvent.y - 10, `🛡️ ${hullDamage}% HASAR ENGELLENDİ`, '#38bdf8');
-          addFloatingNumber(rocketXPos + 6, asteroidHitEvent.y + 2, `+${earned} PUAN ALINDI (Sev.${asteroidTier} taş)`, '#fbbf24');
+          addFloatingNumber(rocketXPos + 8, asteroidHitEvent.y - 6, `🛡️ ${hullDamage}% HASAR ENGELLENDİ`, '#38bdf8');
+          addFloatingNumber(rocketXPos + 8, asteroidHitEvent.y + 4, `Taş kalkanın dışında patladı`, '#94a3b8');
           if (newShield <= 0) {
-            addFloatingNumber(rocketXPos + 6, asteroidHitEvent.y + 14, `Kalkan tükendi`, '#f87171');
+            addFloatingNumber(rocketXPos + 8, asteroidHitEvent.y + 14, `Kalkan tükendi`, '#f87171');
           }
         } else {
           // Kalkan yok, kırık veya yetersiz seviye: gövde hasarı
@@ -1085,25 +1087,25 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
                     transformOrigin: '0 50%',
                   }}
                 >
-                  {/* Dış alev püskürmesi */}
+                  {/* Dış alev püskürmesi - tıklanan noktaya kadar */}
                   <div
                     className={`${shot.tier >= 4 ? 'animate-rocket-flame' : ''}`}
                     style={{
-                      width: Math.min(len, 50 + shot.tier * 22),
+                      width: len,
                       height: 12 + shot.tier * 7,
-                      background: `linear-gradient(90deg, ${shot.core} 0%, ${shot.color} 30%, ${shot.tier >= 5 ? '#60a5fa' : '#fb923c'} 60%, transparent 100%)`,
+                      background: `linear-gradient(90deg, ${shot.core} 0%, ${shot.color} 25%, ${shot.tier >= 5 ? '#60a5fa' : '#fb923c'} 55%, ${shot.color}88 85%, transparent 100%)`,
                       borderRadius: '999px',
                       filter: `blur(${shot.tier >= 4 ? 3 : 2}px)`,
                       opacity: 0.9,
                     }}
                   />
-                  {/* İç sıcak çekirdek jet */}
+                  {/* İç sıcak çekirdek jet - hedefe kadar */}
                   <div
                     className="absolute top-1/2 left-0 -translate-y-1/2"
                     style={{
-                      width: Math.min(len, 28 + shot.tier * 12),
+                      width: len,
                       height: 5 + shot.tier * 3,
-                      background: `linear-gradient(90deg, #ffffff 0%, ${shot.core} 40%, ${shot.color} 80%, transparent 100%)`,
+                      background: `linear-gradient(90deg, #ffffff 0%, ${shot.core} 30%, ${shot.color} 70%, transparent 100%)`,
                       borderRadius: '999px',
                       filter: 'blur(1px)',
                       opacity: 0.95,

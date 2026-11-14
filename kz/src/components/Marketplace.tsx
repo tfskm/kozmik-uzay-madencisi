@@ -276,7 +276,7 @@ export const Marketplace: React.FC = () => {
                   <div className="text-cyan-200 text-[11px]">Silah≥S{s.tier} kırar • Kalkan≥S{s.tier} korur</div>
                 </div>
                 <div className="mt-2 text-[11px] text-teal-100/70 bg-[#06222c] border border-teal-500/20 rounded-lg p-2">
-                  Kalkan yeterliyse taş kalkanda patlar: <span className="text-cyan-300 font-bold">%{s.damage} hasar engellenir</span> ve <span className="text-amber-300 font-bold">+{s.reward} puan alınır</span>. Yetersizse gövdeye <span className="text-rose-300 font-bold">%{s.damage} hasar</span>.
+                  Kalkan yeterliyse taş kalkanın dış çizgisinde patlar: <span className="text-cyan-300 font-bold">%{s.damage} hasar engellenir</span> (ekstra puan yok). Yetersizse gövdeye <span className="text-rose-300 font-bold">%{s.damage} hasar</span>.
                 </div>
               </div>
             ))}

@@ -1022,10 +1022,8 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
 
         {/* ACTIVE LASER BEAMS SHOT FROM ROCKET TO TARGETS */}
         {lasers.map((shot) => (
-          <svg
-            key={shot.id}
-            className="absolute inset-0 w-full h-full pointer-events-none z-30"
-          >
+          <div key={shot.id} className="absolute inset-0 w-full h-full pointer-events-none z-30">
+          <svg className="w-full h-full">
             {/* Outer glow */}
             <line
               x1={shot.startX}
@@ -1060,6 +1058,17 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
               strokeLinecap="round"
             />
           </svg>
+          {/* Impact flash at target */}
+          <div
+            className="absolute w-5 h-5 rounded-full animate-ping pointer-events-none"
+            style={{
+              left: shot.targetX,
+              top: shot.targetY,
+              transform: 'translate(-50%, -50%)',
+              background: `radial-gradient(circle, ${shot.core}, ${shot.color} 55%, transparent 75%)`,
+            }}
+          />
+          </div>
         ))}
         {/* Muzzle flash at rocket nose while firing */}
         {lasers.length > 0 && (
@@ -1088,23 +1097,28 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         >
           {/* Subtle hovering float */}
           <div className="relative animate-rocket-hover">
-            {/* Kalkan balonu — seviyeye göre görsel değişir */}
+            {/* Kalkan balonu — seviyeye göre gerçekçi görsel */}
             {user.equippedShield && SHIELDS[user.equippedShield] && (
               <>
                 <div
-                  className="absolute -inset-8 rounded-full pointer-events-none animate-pulse"
+                  className="absolute rounded-full pointer-events-none"
                   style={{
+                    inset: '-18px',
+                    background: `radial-gradient(circle at 50% 50%, ${SHIELDS[user.equippedShield].color}22 0%, ${SHIELDS[user.equippedShield].color}44 55%, ${SHIELDS[user.equippedShield].color}11 70%, transparent 75%)`,
                     border: `${SHIELDS[user.equippedShield].tier >= 3 ? 3 : 2}px solid ${SHIELDS[user.equippedShield].color}`,
-                    boxShadow: `0 0 ${SHIELDS[user.equippedShield].tier >= 3 ? 40 : 28}px ${SHIELDS[user.equippedShield].color}, inset 0 0 14px ${SHIELDS[user.equippedShield].color}55`,
-                    opacity: 0.75,
+                    boxShadow: `0 0 ${SHIELDS[user.equippedShield].tier >= 3 ? 42 : 28}px ${SHIELDS[user.equippedShield].color}, inset 0 0 18px ${SHIELDS[user.equippedShield].color}66`,
+                    opacity: 0.85,
+                    animation: 'pulse-subtle 2.2s ease-in-out infinite',
                   }}
                 />
                 {SHIELDS[user.equippedShield].tier >= 3 && (
                   <div
-                    className="absolute -inset-10 rounded-full pointer-events-none animate-ping"
+                    className="absolute rounded-full pointer-events-none"
                     style={{
-                      border: `1px solid ${SHIELDS[user.equippedShield].color}`,
-                      opacity: 0.4,
+                      inset: '-24px',
+                      border: `1px dashed ${SHIELDS[user.equippedShield].color}`,
+                      opacity: 0.5,
+                      animation: 'radar-sweep 6s linear infinite',
                     }}
                   />
                 )}

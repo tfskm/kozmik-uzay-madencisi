@@ -22,6 +22,7 @@ import { Rocket, RefreshCw, Wrench } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
   const { activeTab, isAdminMode, ready, error, refreshServer, adminSettings, isAdmin } = useGame();
+  const isMiningScreen = !isAdminMode && (activeTab === 'mining' || !activeTab);
 
   useEffect(() => {
     try {
@@ -115,8 +116,6 @@ const MainLayout: React.FC = () => {
       </div>
     );
   }
-
-  const isMiningScreen = !isAdminMode && (activeTab === 'mining' || !activeTab);
 
   return (
     <div className={`${isMiningScreen ? 'h-[100dvh] overflow-hidden' : 'min-h-screen overflow-x-hidden'} w-full max-w-[100vw] bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-slate-950`}>

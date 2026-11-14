@@ -283,8 +283,9 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     const arenaW = rect?.width || 360;
     const arenaH = rect?.height || 380;
 
-    // Beam origin = rocket nose (right side of ship), not the hull center
-    const shipScreenX = arenaW * 0.30;
+    // Beam origin = rocket nose (right tip), computed from ship size
+    const rocketW = arenaW < 640 ? 112 : 144; // w-28 / w-36
+    const shipScreenX = arenaW * 0.20 + rocketW / 2;
     const shipScreenY = (arenaH * rocketY) / 100;
 
     const shot: LaserShot = {
@@ -418,12 +419,20 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
           setShieldHealth(newShield);
           sounds.playExplosion();
           sounds.triggerHaptic('heavy');
+          // Kalkan patlaması: görsel + ödül
+          confetti({
+            particleCount: 30,
+            spread: 70,
+            origin: { x: 0.22, y: asteroidHitEvent.y / 100 },
+            colors: ['#f97316', '#fbbf24', '#38bdf8', '#ffffff'],
+          });
           if (bigAsteroid) {
             addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `🛡️ KALKAN AŞILDI! (SEVİYE ${asteroidTier} TAŞ)`, '#f87171');
             takeAsteroidHit(Math.max(1, Math.round(hullDecay * 0.6)), ptPenalty);
             addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y + 5, `⚠️ GÖVDE HASARI (-%${Math.round(hullDecay * 0.6)})`, '#ef4444');
           } else {
-            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `🛡️ KALKAN TUTTU (SEVİYE ${asteroidTier})`, '#38bdf8');
+            const earned = destroyVoyageAsteroid(asteroidHitEvent.rewardPoints);
+            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `🛡️ KALKAN PATLATTI! +${earned} PUAN`, '#38bdf8');
           }
         } else {
           takeAsteroidHit(hullDecay, ptPenalty);
@@ -461,12 +470,13 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
       entitiesRef.current = updated;
       setEntities(updated);
       const earned = destroyVoyageAsteroid(ent.rewardPoints);
-      addFloatingNumber(ent.x, ent.y - 5, `💥 GÖKTAŞI İMHA! +${earned} CEVHER PUANI`, '#f97316');
+      const w = user.equippedWeapon ? WEAPONS[user.equippedWeapon] : null;
+      addFloatingNumber(ent.x, ent.y - 5, `💥 GÖKTAŞI İMHA! +${earned} CEVHER PUANI`, w?.color || '#f97316');
       confetti({
-        particleCount: 25,
+        particleCount: w ? w.tier * 10 : 25,
         spread: 60,
         origin: { x: ent.x / 100, y: ent.y / 100 },
-        colors: ['#f97316', '#fbbf24', '#ffffff'],
+        colors: w ? [w.color, w.core, '#ffffff'] : ['#f97316', '#fbbf24', '#ffffff'],
       });
     } else {
       entitiesRef.current = updated;
@@ -1055,7 +1065,11 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         {lasers.length > 0 && (
           <div
             className="absolute z-30 pointer-events-none"
-            style={{ left: '30%', top: `${rocketY}%`, transform: 'translate(-50%, -50%)' }}
+            style={{
+              left: `${(arenaRef.current ? arenaRef.current.clientWidth * 0.20 + (arenaRef.current.clientWidth < 640 ? 56 : 72) : 144) / (arenaRef.current?.clientWidth || 360) * 100}%`,
+              top: `${rocketY}%`,
+              transform: 'translate(-50%, -50%)',
+            }}
           >
             <div
               className="w-6 h-6 rounded-full animate-ping"
@@ -1074,16 +1088,27 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         >
           {/* Subtle hovering float */}
           <div className="relative animate-rocket-hover">
-            {/* Kalkan balonu */}
+            {/* Kalkan balonu — seviyeye göre görsel değişir */}
             {user.equippedShield && SHIELDS[user.equippedShield] && (
-              <div
-                className="absolute -inset-8 rounded-full pointer-events-none animate-pulse"
-                style={{
-                  border: `2px solid ${SHIELDS[user.equippedShield].color}`,
-                  boxShadow: `0 0 28px ${SHIELDS[user.equippedShield].color}, inset 0 0 14px ${SHIELDS[user.equippedShield].color}55`,
-                  opacity: 0.75,
-                }}
-              />
+              <>
+                <div
+                  className="absolute -inset-8 rounded-full pointer-events-none animate-pulse"
+                  style={{
+                    border: `${SHIELDS[user.equippedShield].tier >= 3 ? 3 : 2}px solid ${SHIELDS[user.equippedShield].color}`,
+                    boxShadow: `0 0 ${SHIELDS[user.equippedShield].tier >= 3 ? 40 : 28}px ${SHIELDS[user.equippedShield].color}, inset 0 0 14px ${SHIELDS[user.equippedShield].color}55`,
+                    opacity: 0.75,
+                  }}
+                />
+                {SHIELDS[user.equippedShield].tier >= 3 && (
+                  <div
+                    className="absolute -inset-10 rounded-full pointer-events-none animate-ping"
+                    style={{
+                      border: `1px solid ${SHIELDS[user.equippedShield].color}`,
+                      opacity: 0.4,
+                    }}
+                  />
+                )}
+              </>
             )}
             {/* Plasma Thruster Flame & Particle Trail at the Rocket Tail */}
             <div className="absolute top-1/2 -left-12 sm:-left-16 -translate-y-1/2 flex items-center pointer-events-none">

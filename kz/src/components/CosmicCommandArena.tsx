@@ -48,13 +48,12 @@ interface InFlightEntity {
 
 interface LaserShot {
   id: number;
-  startX: number;
-  startY: number;
   targetX: number;
   targetY: number;
   color: string;
   core: string;
   width: number;
+  tier: number;
 }
 
 export interface CosmicCommandArenaProps {
@@ -65,18 +64,18 @@ export interface CosmicCommandArenaProps {
 }
 
 const WEAPONS: Record<string, { name: string; tier: number; color: string; core: string; width: number; damage: number }> = {
-  'wpn-1': { name: '1. Temel Lazer', tier: 1, color: '#fb923c', core: '#ffffff', width: 3, damage: 1 },
-  'wpn-2': { name: '2. Çift Lazer', tier: 2, color: '#f97316', core: '#fde68a', width: 5, damage: 2 },
-  'wpn-3': { name: '3. Plazma Topu', tier: 3, color: '#ef4444', core: '#fbbf24', width: 7, damage: 3 },
-  'wpn-4': { name: '4. Alev Püskürtücü', tier: 4, color: '#dc2626', core: '#fde68a', width: 10, damage: 4 },
-  'wpn-5': { name: '5. Kuantum Işını', tier: 5, color: '#a855f7', core: '#e9d5ff', width: 13, damage: 5 },
+  'wpn-1': { name: '1. Temel Lazer', tier: 1, color: '#f59e0b', core: '#fff7ed', width: 2.5, damage: 1 },
+  'wpn-2': { name: '2. Çift Lazer', tier: 2, color: '#fb923c', core: '#ffedd5', width: 4, damage: 2 },
+  'wpn-3': { name: '3. Plazma Topu', tier: 3, color: '#ef4444', core: '#fde68a', width: 7, damage: 3 },
+  'wpn-4': { name: '4. Alev Püskürtücü', tier: 4, color: '#dc2626', core: '#fef08a', width: 11, damage: 4 },
+  'wpn-5': { name: '5. Kuantum Alev', tier: 5, color: '#3b82f6', core: '#e0f2fe', width: 14, damage: 5 },
   // Eski id uyumluluğu
-  'wpn-laser': { name: '1. Temel Lazer', tier: 1, color: '#fb923c', core: '#ffffff', width: 3, damage: 1 },
-  'wpn-plasma': { name: '2. Çift Lazer', tier: 2, color: '#f97316', core: '#fde68a', width: 5, damage: 2 },
-  'wpn-flame': { name: '3. Plazma Topu', tier: 3, color: '#ef4444', core: '#fbbf24', width: 7, damage: 3 },
-  'wpn-quantum': { name: '4. Alev Püskürtücü', tier: 4, color: '#dc2626', core: '#fde68a', width: 10, damage: 4 },
-  'wpn-nova': { name: '5. Kuantum Işını', tier: 5, color: '#a855f7', core: '#e9d5ff', width: 13, damage: 5 },
-  'wpn-saber': { name: '5. Kuantum Işını', tier: 5, color: '#a855f7', core: '#e9d5ff', width: 13, damage: 5 },
+  'wpn-laser': { name: '1. Temel Lazer', tier: 1, color: '#f59e0b', core: '#fff7ed', width: 2.5, damage: 1 },
+  'wpn-plasma': { name: '2. Çift Lazer', tier: 2, color: '#fb923c', core: '#ffedd5', width: 4, damage: 2 },
+  'wpn-flame': { name: '3. Plazma Topu', tier: 3, color: '#ef4444', core: '#fde68a', width: 7, damage: 3 },
+  'wpn-quantum': { name: '4. Alev Püskürtücü', tier: 4, color: '#dc2626', core: '#fef08a', width: 11, damage: 4 },
+  'wpn-nova': { name: '5. Kuantum Alev', tier: 5, color: '#3b82f6', core: '#e0f2fe', width: 14, damage: 5 },
+  'wpn-saber': { name: '5. Kuantum Alev', tier: 5, color: '#3b82f6', core: '#e0f2fe', width: 14, damage: 5 },
 };
 
 const SHIELDS: Record<string, { tier: number; color: string; name: string }> = {
@@ -303,30 +302,21 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     sounds.playLaser();
     sounds.triggerHaptic('light');
 
-    const rect = arenaRef.current?.getBoundingClientRect();
-    const arenaW = rect?.width || 360;
-    const arenaH = rect?.height || 380;
-
-    // Beam origin = rocket nose (right tip), computed from ship size
-    const rocketW = arenaW < 640 ? 112 : 144; // w-28 / w-36
-    const shipScreenX = arenaW * 0.20 + rocketW / 2;
-    const shipScreenY = (arenaH * rocketY) / 100;
-
     const shot: LaserShot = {
       id: Date.now() + Math.random(),
-      startX: shipScreenX,
-      startY: shipScreenY,
       targetX,
       targetY,
       color: w.color,
       core: w.core,
       width: w.width,
+      tier: w.tier,
     };
 
     setLasers((prev) => [...prev.slice(-4), shot]);
+    const life = 200 + w.tier * 40;
     setTimeout(() => {
       setLasers((prev) => prev.filter((l) => l.id !== shot.id));
-    }, 220);
+    }, life);
     return true;
   };
 
@@ -1056,89 +1046,97 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         })}
 
         {/* ACTIVE LASER BEAMS SHOT FROM ROCKET TO TARGETS */}
-        {lasers.map((shot) => (
-          <div key={shot.id} className="absolute inset-0 w-full h-full pointer-events-none z-30">
-          <svg className="w-full h-full">
-            {/* Outer glow */}
-            <line
-              x1={shot.startX}
-              y1={shot.startY}
-              x2={shot.targetX}
-              y2={shot.targetY}
-              stroke={shot.color}
-              strokeWidth={shot.width + 6}
-              strokeLinecap="round"
-              opacity={0.35}
-              className="blur-sm"
-            />
-            {/* Main beam */}
-            <line
-              x1={shot.startX}
-              y1={shot.startY}
-              x2={shot.targetX}
-              y2={shot.targetY}
-              stroke={shot.color}
-              strokeWidth={shot.width}
-              strokeLinecap="round"
-              className="drop-shadow-[0_0_10px_currentColor] animate-pulse"
-            />
-            {/* Hot core */}
-            <line
-              x1={shot.startX}
-              y1={shot.startY}
-              x2={shot.targetX}
-              y2={shot.targetY}
-              stroke={shot.core}
-              strokeWidth={Math.max(1, shot.width - 2)}
-              strokeLinecap="round"
-            />
-          </svg>
-          {/* Impact flash at target */}
-          <div
-            className="absolute w-5 h-5 rounded-full animate-ping pointer-events-none"
-            style={{
-              left: shot.targetX,
-              top: shot.targetY,
-              transform: 'translate(-50%, -50%)',
-              background: `radial-gradient(circle, ${shot.core}, ${shot.color} 55%, transparent 75%)`,
-            }}
-          />
-          {/* Alev/enerji parçacıkları (kalın silahlarda) */}
-          {(shot.width >= 6) &&
-            [0.25, 0.5, 0.75].map((t, i) => (
-              <span
-                key={i}
+        {lasers.map((shot) => {
+          const arenaW = arenaRef.current?.clientWidth || 360;
+          const arenaH = arenaRef.current?.clientHeight || 380;
+          const rocketW = arenaW < 640 ? 112 : 144;
+          const startX = arenaW * 0.20 + rocketW / 2; // roket burnu (sabit X)
+          const startY = (arenaH * rocketY) / 100;    // roket hareketini takip eder
+          const dx = shot.targetX - startX;
+          const dy = shot.targetY - startY;
+          const len = Math.max(1, Math.hypot(dx, dy));
+          const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+          const flame = shot.tier >= 3;
+          return (
+            <div key={shot.id} className="absolute inset-0 w-full h-full pointer-events-none z-30">
+              <svg className="w-full h-full overflow-visible">
+                <defs>
+                  <linearGradient id={`beam-${shot.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor={shot.core} stopOpacity="0.95" />
+                    <stop offset={flame ? '35%' : '60%'} stopColor={shot.color} stopOpacity="0.9" />
+                    <stop offset="100%" stopColor={shot.color} stopOpacity="0.15" />
+                  </linearGradient>
+                </defs>
+                {/* Dış parlama */}
+                <line x1={startX} y1={startY} x2={shot.targetX} y2={shot.targetY} stroke={shot.color} strokeWidth={shot.width + (flame ? 10 : 6)} strokeLinecap="round" opacity={0.28} className="blur-sm" />
+                {/* Ana ışın/alev gövdesi */}
+                <line x1={startX} y1={startY} x2={shot.targetX} y2={shot.targetY} stroke={`url(#beam-${shot.id})`} strokeWidth={shot.width} strokeLinecap="round" className="drop-shadow-[0_0_12px_currentColor]" />
+                {/* Sıcak çekirdek */}
+                <line x1={startX} y1={startY} x2={shot.targetX} y2={shot.targetY} stroke={shot.core} strokeWidth={Math.max(1, shot.width - (flame ? 3 : 2))} strokeLinecap="round" opacity={0.95} />
+              </svg>
+              {/* Roketten çıkan alev/enerji konisi (seviye arttıkça belirgin) */}
+              {shot.tier >= 2 && (
+                <div
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: startX,
+                    top: startY,
+                    width: Math.min(len, 40 + shot.tier * 18),
+                    height: 10 + shot.tier * 6,
+                    transform: `translate(0, -50%) rotate(${angle}deg)`,
+                    transformOrigin: '0 50%',
+                    background: `linear-gradient(90deg, ${shot.core}ee 0%, ${shot.color}cc 35%, ${shot.tier >= 4 ? '#60a5fa88' : shot.color + '66'} 70%, transparent 100%)`,
+                    borderRadius: '999px',
+                    filter: `blur(${shot.tier >= 4 ? 2 : 1}px)`,
+                    opacity: 0.9,
+                  }}
+                />
+              )}
+              {/* Güçlü alev/plazma dalgaları (yüksek seviye) */}
+              {flame && [0.2, 0.45, 0.7].map((t, i) => (
+                <span
+                  key={i}
+                  className="absolute rounded-full pointer-events-none"
+                  style={{
+                    left: startX + dx * t,
+                    top: startY + dy * t,
+                    width: 8 + shot.tier * 3 + i * 2,
+                    height: 8 + shot.tier * 3 + i * 2,
+                    transform: 'translate(-50%, -50%)',
+                    background: `radial-gradient(circle, ${shot.core}, ${shot.color} 45%, ${shot.tier >= 5 ? '#60a5fa' : 'transparent'} 75%, transparent 100%)`,
+                    boxShadow: `0 0 ${10 + shot.tier * 2}px ${shot.color}`,
+                    opacity: 0.75,
+                  }}
+                />
+              ))}
+              {/* Namlu ağzı alevi (her atışta roket ucunda) */}
+              <div
                 className="absolute rounded-full pointer-events-none"
                 style={{
-                  left: shot.startX + (shot.targetX - shot.startX) * t,
-                  top: shot.startY + (shot.targetY - shot.startY) * t,
-                  width: 6 + shot.width,
-                  height: 6 + shot.width,
-                  transform: 'translate(-50%, -50%)',
-                  background: `radial-gradient(circle, ${shot.core}, ${shot.color} 60%, transparent 75%)`,
-                  boxShadow: `0 0 10px ${shot.color}`,
-                  animation: `pulse-subtle ${0.3 + i * 0.1}s ease-in-out infinite`,
+                  left: startX,
+                  top: startY,
+                  width: 10 + shot.tier * 4,
+                  height: 10 + shot.tier * 4,
+                  transform: 'translate(-20%, -50%)',
+                  background: `radial-gradient(circle, ${shot.core}, ${shot.color} 55%, transparent 80%)`,
+                  boxShadow: `0 0 ${12 + shot.tier * 3}px ${shot.color}`,
                 }}
               />
-            ))}
-          </div>
-        ))}
-        {/* Muzzle flash at rocket nose while firing */}
-        {lasers.length > 0 && (
-          <div
-            className="absolute z-30 pointer-events-none"
-            style={{
-              left: `${(arenaRef.current ? arenaRef.current.clientWidth * 0.20 + (arenaRef.current.clientWidth < 640 ? 56 : 72) : 144) / (arenaRef.current?.clientWidth || 360) * 100}%`,
-              top: `${rocketY}%`,
-              transform: 'translate(-50%, -50%)',
-            }}
-          >
-            <div
-              className="w-6 h-6 rounded-full animate-ping"
-              style={{ background: `radial-gradient(circle, ${lasers[lasers.length-1].core}, ${lasers[lasers.length-1].color} 60%, transparent 75%)` }}
-            />
-          </div>
-        )}
+              {/* Hedefte çarpma parlaması */}
+              <div
+                className="absolute rounded-full animate-ping pointer-events-none"
+                style={{
+                  left: shot.targetX,
+                  top: shot.targetY,
+                  width: 14 + shot.tier * 2,
+                  height: 14 + shot.tier * 2,
+                  transform: 'translate(-50%, -50%)',
+                  background: `radial-gradient(circle, ${shot.core}, ${shot.color} 55%, transparent 75%)`,
+                }}
+              />
+            </div>
+          );
+        })}
 
         {/* THE HERO: REALISTIC SCI-FI STARSHIP ROCKET CRUISING THROUGH SPACE */}
         <div

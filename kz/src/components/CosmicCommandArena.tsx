@@ -51,6 +51,9 @@ interface LaserShot {
   startY: number;
   targetX: number;
   targetY: number;
+  color: string;
+  core: string;
+  width: number;
 }
 
 export interface CosmicCommandArenaProps {
@@ -59,6 +62,22 @@ export interface CosmicCommandArenaProps {
   unclaimedYield?: number;
   onClaimAll?: () => void;
 }
+
+const WEAPONS: Record<string, { name: string; tier: number; color: string; core: string; width: number; damage: number }> = {
+  'wpn-laser':   { name: 'Temel Lazer', tier: 1, color: '#fb923c', core: '#ffffff', width: 3, damage: 1 },
+  'wpn-plasma':  { name: 'Plazma Topu', tier: 2, color: '#38bdf8', core: '#e0f2fe', width: 5, damage: 2 },
+  'wpn-flame':   { name: 'Alev Topu', tier: 3, color: '#f97316', core: '#fbbf24', width: 6, damage: 3 },
+  'wpn-quantum': { name: 'Kuantum Işını', tier: 4, color: '#a855f7', core: '#e9d5ff', width: 7, damage: 5 },
+  'wpn-nova':    { name: 'Nova Patlayıcı', tier: 5, color: '#fbbf24', core: '#ffffff', width: 9, damage: 8 },
+  'wpn-saber':   { name: 'Işın Kılıcı', tier: 6, color: '#34d399', core: '#a7f3d0', width: 11, damage: 10 },
+};
+
+const SHIELDS: Record<string, { tier: number; color: string; maxBlock: number }> = {
+  'shd-basic':  { tier: 1, color: '#38bdf8', maxBlock: 36 },
+  'shd-medium': { tier: 2, color: '#22d3ee', maxBlock: 44 },
+  'shd-heavy':  { tier: 3, color: '#34d399', maxBlock: 52 },
+  'shd-titan':  { tier: 4, color: '#fbbf24', maxBlock: 999 },
+};
 
 export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
   onOpenFleetDrawer,
@@ -238,6 +257,13 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
 
   // Rocket fires twin lasers towards a specific point
   const fireRocketLaser = (targetX: number, targetY: number) => {
+    const weaponId = user.equippedWeapon;
+    const w = weaponId ? WEAPONS[weaponId] : null;
+    if (!w) {
+      sounds.playClick();
+      addFloatingNumber(22, rocketY - 6, '⚠️ Önce marketten silah al', '#fbbf24');
+      return;
+    }
     sounds.playLaser();
     sounds.triggerHaptic('light');
 
@@ -245,7 +271,8 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     const arenaW = rect?.width || 360;
     const arenaH = rect?.height || 380;
 
-    const shipScreenX = arenaW * 0.22;
+    // Beam origin = rocket nose (right side of ship), not the hull center
+    const shipScreenX = arenaW * 0.30;
     const shipScreenY = (arenaH * rocketY) / 100;
 
     const shot: LaserShot = {
@@ -254,12 +281,15 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
       startY: shipScreenY,
       targetX,
       targetY,
+      color: w.color,
+      core: w.core,
+      width: w.width,
     };
 
     setLasers((prev) => [...prev.slice(-4), shot]);
     setTimeout(() => {
       setLasers((prev) => prev.filter((l) => l.id !== shot.id));
-    }, 250);
+    }, 220);
   };
 
   // Main In-Flight Update Loop (Physics & Collision Detection)
@@ -365,6 +395,9 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         const hullDecay = vSettings.asteroidHullDecayPercent || 2;
         const ptPenalty = vSettings.asteroidPointPenalty || 0;
 
+        const shd = user.equippedShield ? SHIELDS[user.equippedShield] : null;
+        const bigAsteroid = shd ? asteroidHitEvent.size > shd.maxBlock : true;
+
         if (shieldHealthRef.current > 20) {
           const newShield = Math.max(0, shieldHealthRef.current - shieldDmg);
           shieldHealthRef.current = newShield;
@@ -372,6 +405,11 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
           sounds.playExplosion();
           sounds.triggerHaptic('heavy');
           addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `🛡️ KALKAN PUANI (-${shieldDmg})`, '#38bdf8');
+          // Kalkan yetersizse gövde de hasar alır
+          if (bigAsteroid || !shd) {
+            takeAsteroidHit(Math.max(1, Math.round(hullDecay * 0.5)), ptPenalty);
+            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y + 5, `⚠️ AŞIRI BÜYÜK TAŞ! (-%${Math.round(hullDecay * 0.5)} HASAR)`, '#ef4444');
+          }
         } else {
           takeAsteroidHit(hullDecay, ptPenalty);
           addFloatingNumber(
@@ -934,29 +972,55 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         {lasers.map((shot) => (
           <svg
             key={shot.id}
-            className="absolute inset-0 w-full h-full pointer-events-none z-25"
+            className="absolute inset-0 w-full h-full pointer-events-none z-30"
           >
+            {/* Outer glow */}
             <line
               x1={shot.startX}
               y1={shot.startY}
               x2={shot.targetX}
               y2={shot.targetY}
-              stroke="#fb923c"
-              strokeWidth="3.5"
+              stroke={shot.color}
+              strokeWidth={shot.width + 6}
               strokeLinecap="round"
-              className="drop-shadow-[0_0_8px_rgba(251,146,60,1)] animate-pulse"
+              opacity={0.35}
+              className="blur-sm"
             />
+            {/* Main beam */}
             <line
               x1={shot.startX}
               y1={shot.startY}
               x2={shot.targetX}
               y2={shot.targetY}
-              stroke="#ffffff"
-              strokeWidth="1.5"
+              stroke={shot.color}
+              strokeWidth={shot.width}
+              strokeLinecap="round"
+              className="drop-shadow-[0_0_10px_currentColor] animate-pulse"
+            />
+            {/* Hot core */}
+            <line
+              x1={shot.startX}
+              y1={shot.startY}
+              x2={shot.targetX}
+              y2={shot.targetY}
+              stroke={shot.core}
+              strokeWidth={Math.max(1, shot.width - 2)}
               strokeLinecap="round"
             />
           </svg>
         ))}
+        {/* Muzzle flash at rocket nose while firing */}
+        {lasers.length > 0 && (
+          <div
+            className="absolute z-30 pointer-events-none"
+            style={{ left: '30%', top: `${rocketY}%`, transform: 'translate(-50%, -50%)' }}
+          >
+            <div
+              className="w-6 h-6 rounded-full animate-ping"
+              style={{ background: `radial-gradient(circle, ${lasers[lasers.length-1].core}, ${lasers[lasers.length-1].color} 60%, transparent 75%)` }}
+            />
+          </div>
+        )}
 
         {/* THE HERO: REALISTIC SCI-FI STARSHIP ROCKET CRUISING THROUGH SPACE */}
         <div
@@ -968,6 +1032,17 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         >
           {/* Subtle hovering float */}
           <div className="relative animate-rocket-hover">
+            {/* Kalkan balonu */}
+            {user.equippedShield && SHIELDS[user.equippedShield] && (
+              <div
+                className="absolute -inset-8 rounded-full pointer-events-none animate-pulse"
+                style={{
+                  border: `2px solid ${SHIELDS[user.equippedShield].color}`,
+                  boxShadow: `0 0 28px ${SHIELDS[user.equippedShield].color}, inset 0 0 14px ${SHIELDS[user.equippedShield].color}55`,
+                  opacity: 0.75,
+                }}
+              />
+            )}
             {/* Plasma Thruster Flame & Particle Trail at the Rocket Tail */}
             <div className="absolute top-1/2 -left-12 sm:-left-16 -translate-y-1/2 flex items-center pointer-events-none">
               {/* Outer Roaring Orange/Amber Flame Plume */}

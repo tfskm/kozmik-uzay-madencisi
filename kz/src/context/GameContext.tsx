@@ -184,6 +184,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       spinsAvailable: r.spins ?? 0,
       isBanned: !!r.banned,
       role: r.isAdmin ? 'admin' : 'user',
+      equippedWeapon: (r.weapon as string | null) ?? prev.equippedWeapon ?? null,
+      equippedShield: (r.shield as string | null) ?? prev.equippedShield ?? null,
     }));
 
     const cat = (r.meta?.catalog || {}) as Record<string, any>;

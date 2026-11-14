@@ -26,6 +26,8 @@ export interface User {
   referralCode: string;
   referredBy?: string;
   referralEarnings: number;
+  equippedWeapon?: string | null;
+  equippedShield?: string | null;
 }
 
 export type MiningTier = 'bronze' | 'silver' | 'gold' | 'neon' | 'quantum';
@@ -119,7 +121,7 @@ export interface MarketItem {
   id: string;
   title: string;
   description: string;
-  type: 'repair_kit' | 'energy_drink' | 'overclock_chip' | 'cosmic_pass' | 'ore_bundle';
+  type: 'repair_kit' | 'energy_drink' | 'overclock_chip' | 'cosmic_pass' | 'ore_bundle' | 'weapon' | 'shield';
   price: number;
   currency: 'KRD' | 'STARDUST';
   iconName: string;

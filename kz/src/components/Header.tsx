@@ -10,6 +10,8 @@ import {
   Volume2,
   VolumeX,
   Radio,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -25,6 +27,13 @@ export const Header: React.FC = () => {
   } = useGame();
 
   const [soundOn, setSoundOn] = React.useState(sounds.enabled);
+  const [lightMode, setLightMode] = React.useState<boolean>(() => {
+    try { return localStorage.getItem('kz_theme') === 'light'; } catch { return false; }
+  });
+  React.useEffect(() => {
+    document.documentElement.classList.toggle('theme-light', lightMode);
+    try { localStorage.setItem('kz_theme', lightMode ? 'light' : 'dark'); } catch { /* yoksay */ }
+  }, [lightMode]);
 
   const toggleSound = () => {
     sounds.enabled = !sounds.enabled;
@@ -166,6 +175,13 @@ export const Header: React.FC = () => {
             title={soundOn ? 'Sesi Kapat' : 'Sesi Aç'}
           >
             {soundOn ? <Volume2 className="w-3.5 h-3.5 text-teal-300" /> : <VolumeX className="w-3.5 h-3.5 text-slate-500" />}
+          </button>
+          <button
+            onClick={() => { sounds.playClick(); setLightMode((v) => !v); }}
+            className="p-1 text-cyan-300/70 hover:text-white rounded-lg hover:bg-cyan-500/20 transition"
+            title={lightMode ? 'Karanlık Mod' : 'Açık Mod'}
+          >
+            {lightMode ? <Moon className="w-3.5 h-3.5 text-slate-700" /> : <Sun className="w-3.5 h-3.5 text-amber-300" />}
           </button>
         </div>
       </div>

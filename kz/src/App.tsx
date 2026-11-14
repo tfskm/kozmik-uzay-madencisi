@@ -26,12 +26,18 @@ const MainLayout: React.FC = () => {
   useEffect(() => {
     try {
       const tg = (window as unknown as {
-        Telegram?: { WebApp?: { expand: () => void; ready: () => void; enableClosingConfirmation: () => void } };
+        Telegram?: { WebApp?: { expand: () => void; ready: () => void; enableClosingConfirmation: () => void; onEvent?: (e: string, cb: () => void) => void; viewportStableHeight?: number; viewportHeight?: number } };
       }).Telegram?.WebApp;
       if (tg) {
         tg.ready();
         tg.expand();
         tg.enableClosingConfirmation();
+        const applyVp = () => {
+          const h = tg.viewportStableHeight || tg.viewportHeight;
+          if (h) document.documentElement.style.setProperty('--tg-vh', `${h}px`);
+        };
+        applyVp();
+        tg.onEvent?.('viewportChanged', applyVp);
       }
     } catch {
       /* tarayıcıda çalışıyor olabilir */
@@ -41,7 +47,7 @@ const MainLayout: React.FC = () => {
   // İlk yükleme ekranı
   if (!ready && !error) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 gap-4">
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 gap-4">
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-400 via-teal-400 to-emerald-400 p-0.5 shadow-lg shadow-cyan-500/30 animate-pulse">
           <div className="w-full h-full bg-[#082834] rounded-[14px] flex items-center justify-center">
             <Rocket className="w-7 h-7 text-cyan-300" />
@@ -55,7 +61,7 @@ const MainLayout: React.FC = () => {
   // Bağlantı hatası
   if (error) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 gap-4 px-6 text-center">
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 gap-4 px-6 text-center">
         <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center">
           <Wrench className="w-6 h-6 text-rose-300" />
         </div>
@@ -79,7 +85,7 @@ const MainLayout: React.FC = () => {
   // Bakım modu
   if (adminSettings.maintenanceMode && !isAdmin) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 gap-4 px-6 text-center">
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 gap-4 px-6 text-center">
         <div className="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-3xl">
           🛠️
         </div>
@@ -92,7 +98,7 @@ const MainLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-slate-950">
+    <div className="h-[100dvh] w-full max-w-[100vw] overflow-hidden bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-slate-950">
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-b from-emerald-500/22 via-teal-400/18 to-transparent blur-[110px] rounded-full" />
         <div className="absolute top-1/3 -left-20 w-[550px] h-[550px] bg-cyan-400/22 blur-[120px] rounded-full" />
@@ -111,7 +117,7 @@ const MainLayout: React.FC = () => {
         <Header />
         <RandomEventPopup />
 
-        <main className="flex-1 px-3 sm:px-5 py-4">
+        <main className="flex-1 min-h-0 px-3 sm:px-5 py-4 overflow-y-auto overscroll-contain">
           {isAdminMode ? (
             <AdminPanel />
           ) : activeTab === 'mining' ? (

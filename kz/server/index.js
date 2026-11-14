@@ -223,6 +223,8 @@ const loadP = (id) => {
     p.exp = Number(p.exp) || 0;
     p.planet = Number(p.planet) || 0;
     p.nextId = Math.max(Number(p.nextId) || 1, ...p.miners.map((m) => (Number(m.id) || 0) + 1), 1);
+    p.weapon = p.weapon || null;
+    p.shield = p.shield || null;
     return p;
   } catch {
     return newPlayer();

@@ -110,6 +110,8 @@ export const newPlayer = (now = Date.now()) => ({
   ledger: { sources: 40, sinks: 0 },
   history: [],
   last_result: null,
+  weapon: null,
+  shield: null,
 });
 
 let histSeq = 0;
@@ -329,6 +331,8 @@ export function act(p, a, now = Date.now(), ctx = {}) {
           p.planet = n;
         }
       }
+      else if (it.type === 'weapon') { p.weapon = a.id; }
+      else if (it.type === 'shield') { p.shield = a.id; }
       p.exp += 10;
       pushHist(p, 'market_trade', it.price, 'KRD', `Pazar alışverişi: ${a.id}`);
       return null;

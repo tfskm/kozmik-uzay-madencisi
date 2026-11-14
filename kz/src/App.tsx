@@ -28,56 +28,21 @@ const MainLayout: React.FC = () => {
       const tg = (window as unknown as {
         Telegram?: { WebApp?: { expand: () => void; ready: () => void; enableClosingConfirmation: () => void; disableVerticalSwipes?: () => void; onEvent?: (e: string, cb: () => void) => void; viewportStableHeight?: number; viewportHeight?: number } };
       }).Telegram?.WebApp;
+      const applyVp = () => {
+        const h = tg?.viewportStableHeight || tg?.viewportHeight || window.innerHeight;
+        if (h) document.documentElement.style.setProperty('--tg-vh', `${h}px`);
+      };
       if (tg) {
         tg.ready();
         tg.expand();
         tg.enableClosingConfirmation();
         try { tg.disableVerticalSwipes?.(); } catch { /* yoksay */ }
-        const applyVp = () => {
-          const h = tg.viewportStableHeight || tg.viewportHeight || window.innerHeight;
-          if (h) {
-            document.documentElement.style.setProperty('--tg-vh', `${h}px`);
-            const root = document.getElementById('root');
-            if (root) {
-              root.style.height = `${h}px`;
-              const header = root.querySelector('header');
-              const nav = root.querySelector('nav');
-              const main = root.querySelector('main');
-              if (main) {
-                const hh = header ? (header as HTMLElement).offsetHeight : 0;
-                const nh = nav ? (nav as HTMLElement).offsetHeight : 0;
-                main.style.height = `${Math.max(100, h - hh - nh)}px`;
-                (main as HTMLElement).style.overflowY = 'auto';
-                (main as HTMLElement).style.WebkitOverflowScrolling = 'touch';
-              }
-            }
-          }
-        };
         applyVp();
         tg.onEvent?.('viewportChanged', applyVp);
-        window.addEventListener('resize', applyVp);
       } else {
-        const applyVp = () => {
-          const h = window.innerHeight;
-          document.documentElement.style.setProperty('--tg-vh', `${h}px`);
-          const root = document.getElementById('root');
-          if (root) {
-            root.style.height = `${h}px`;
-            const header = root.querySelector('header');
-            const nav = root.querySelector('nav');
-            const main = root.querySelector('main');
-            if (main) {
-              const hh = header ? (header as HTMLElement).offsetHeight : 0;
-              const nh = nav ? (nav as HTMLElement).offsetHeight : 0;
-              main.style.height = `${Math.max(100, h - hh - nh)}px`;
-              (main as HTMLElement).style.overflowY = 'auto';
-              (main as HTMLElement).style.WebkitOverflowScrolling = 'touch';
-            }
-          }
-        };
         applyVp();
-        window.addEventListener('resize', applyVp);
       }
+      window.addEventListener('resize', applyVp);
     } catch {
       /* tarayıcıda çalışıyor olabilir */
     }
@@ -137,7 +102,7 @@ const MainLayout: React.FC = () => {
   }
 
   return (
-    <div className="h-full w-full max-w-[100vw] overflow-hidden bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-slate-950">
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-slate-950">
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-b from-emerald-500/22 via-teal-400/18 to-transparent blur-[110px] rounded-full" />
         <div className="absolute top-1/3 -left-20 w-[550px] h-[550px] bg-cyan-400/22 blur-[120px] rounded-full" />
@@ -156,7 +121,7 @@ const MainLayout: React.FC = () => {
         <Header />
         <RandomEventPopup />
 
-    <main className="flex-1 min-h-0 px-3 sm:px-5 py-4 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <main className="flex-1 px-3 sm:px-5 py-4">
           {isAdminMode ? (
             <AdminPanel />
           ) : activeTab === 'mining' ? (

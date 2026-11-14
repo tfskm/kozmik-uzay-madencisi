@@ -655,7 +655,7 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         className={`relative ${
           isFullscreen
             ? 'fixed inset-0 z-50 w-screen h-screen rounded-none'
-            : 'h-[58vh] sm:h-[64vh] md:h-[70vh] min-h-[460px] max-h-[760px] w-full rounded-3xl'
+            : 'h-[52vh] sm:h-[58vh] min-h-[340px] max-h-[680px] w-full rounded-3xl'
         } overflow-hidden border ${
           isFullscreen ? 'border-0' : 'border-orange-500/40'
         } bg-gradient-to-r ${

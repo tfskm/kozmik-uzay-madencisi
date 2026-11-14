@@ -766,10 +766,9 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
             <span className="w-2.5 h-2.5 rounded-full bg-orange-400 animate-ping" />
             <div className="text-left">
               <div className="text-[11px] font-black text-white font-display tracking-wider uppercase flex items-center gap-1">
-                <span>{currentPlanet.name.split(' ')[0]} YOLCULUĞU</span>
-                <span className="text-amber-400 font-mono text-[10px]">
-                  (WARP {warpSpeed.toFixed(1)})
-                </span>
+                  <span className="text-amber-400 font-mono text-[10px]">
+                    WARP {warpSpeed.toFixed(1)}
+                  </span>
               </div>
               <div className="text-[9px] text-amber-200/70 font-mono">
                 {distanceKm.toLocaleString()} KM • x{currentPlanet.miningMultiplier.toFixed(2)}

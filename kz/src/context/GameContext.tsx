@@ -186,6 +186,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       role: r.isAdmin ? 'admin' : 'user',
       equippedWeapon: (r.weapon as string | null) ?? prev.equippedWeapon ?? null,
       equippedShield: (r.shield as string | null) ?? prev.equippedShield ?? null,
+      equippedRocket: (r.rocket as string | null) ?? prev.equippedRocket ?? 'rkt-1',
     }));
 
     const cat = (r.meta?.catalog || {}) as Record<string, any>;

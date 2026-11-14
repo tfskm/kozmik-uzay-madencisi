@@ -225,6 +225,7 @@ const loadP = (id) => {
     p.nextId = Math.max(Number(p.nextId) || 1, ...p.miners.map((m) => (Number(m.id) || 0) + 1), 1);
     p.weapon = p.weapon || null;
     p.shield = p.shield || null;
+    p.rocket = p.rocket || 'rkt-1';
     return p;
   } catch {
     return newPlayer();

@@ -112,6 +112,7 @@ export const newPlayer = (now = Date.now()) => ({
   last_result: null,
   weapon: null,
   shield: null,
+  rocket: 'rkt-1',
 });
 
 let histSeq = 0;
@@ -333,6 +334,7 @@ export function act(p, a, now = Date.now(), ctx = {}) {
       }
       else if (it.type === 'weapon') { p.weapon = a.id; }
       else if (it.type === 'shield') { p.shield = a.id; }
+      else if (it.type === 'rocket') { p.rocket = a.id; }
       p.exp += 10;
       pushHist(p, 'market_trade', it.price, 'KRD', `Pazar alışverişi: ${a.id}`);
       return null;

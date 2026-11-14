@@ -65,20 +65,44 @@ export interface CosmicCommandArenaProps {
 }
 
 const WEAPONS: Record<string, { name: string; tier: number; color: string; core: string; width: number; damage: number }> = {
-  'wpn-laser':   { name: '1. Temel Lazer', tier: 1, color: '#fb923c', core: '#ffffff', width: 3, damage: 1 },
-  'wpn-plasma':  { name: '2. Kalın Lazer', tier: 2, color: '#f97316', core: '#fde68a', width: 5, damage: 2 },
-  'wpn-flame':   { name: '3. Alev Topu', tier: 3, color: '#ef4444', core: '#fbbf24', width: 7, damage: 3 },
-  'wpn-quantum': { name: '4. Büyük Alev', tier: 4, color: '#dc2626', core: '#fca5a5', width: 9, damage: 5 },
-  'wpn-nova':    { name: '5. Kuantum Işını', tier: 5, color: '#a855f7', core: '#e9d5ff', width: 11, damage: 8 },
-  'wpn-saber':   { name: '6. Işın Kılıcı', tier: 6, color: '#34d399', core: '#a7f3d0', width: 13, damage: 10 },
+  'wpn-1': { name: '1. Temel Lazer', tier: 1, color: '#fb923c', core: '#ffffff', width: 3, damage: 1 },
+  'wpn-2': { name: '2. Çift Lazer', tier: 2, color: '#f97316', core: '#fde68a', width: 5, damage: 2 },
+  'wpn-3': { name: '3. Plazma Topu', tier: 3, color: '#ef4444', core: '#fbbf24', width: 7, damage: 3 },
+  'wpn-4': { name: '4. Alev Püskürtücü', tier: 4, color: '#dc2626', core: '#fde68a', width: 10, damage: 4 },
+  'wpn-5': { name: '5. Kuantum Işını', tier: 5, color: '#a855f7', core: '#e9d5ff', width: 13, damage: 5 },
+  // Eski id uyumluluğu
+  'wpn-laser': { name: '1. Temel Lazer', tier: 1, color: '#fb923c', core: '#ffffff', width: 3, damage: 1 },
+  'wpn-plasma': { name: '2. Çift Lazer', tier: 2, color: '#f97316', core: '#fde68a', width: 5, damage: 2 },
+  'wpn-flame': { name: '3. Plazma Topu', tier: 3, color: '#ef4444', core: '#fbbf24', width: 7, damage: 3 },
+  'wpn-quantum': { name: '4. Alev Püskürtücü', tier: 4, color: '#dc2626', core: '#fde68a', width: 10, damage: 4 },
+  'wpn-nova': { name: '5. Kuantum Işını', tier: 5, color: '#a855f7', core: '#e9d5ff', width: 13, damage: 5 },
+  'wpn-saber': { name: '5. Kuantum Işını', tier: 5, color: '#a855f7', core: '#e9d5ff', width: 13, damage: 5 },
 };
 
 const SHIELDS: Record<string, { tier: number; color: string; name: string }> = {
-  'shd-basic':  { tier: 1, color: '#38bdf8', name: '1. Temel Kalkan' },
-  'shd-medium': { tier: 2, color: '#22d3ee', name: '2. Orta Kalkan' },
-  'shd-heavy':  { tier: 3, color: '#34d399', name: '3. Ağır Kalkan' },
-  'shd-titan':  { tier: 4, color: '#fbbf24', name: '4. Titan Kalkan' },
+  'shd-1': { tier: 1, color: '#38bdf8', name: '1. Temel Kalkan' },
+  'shd-2': { tier: 2, color: '#22d3ee', name: '2. Güçlü Kalkan' },
+  'shd-3': { tier: 3, color: '#34d399', name: '3. Plazma Kalkan' },
+  'shd-4': { tier: 4, color: '#fb923c', name: '4. Alev Kalkan' },
+  'shd-5': { tier: 5, color: '#fbbf24', name: '5. Titan Kalkan' },
+  // Eski id uyumluluğu
+  'shd-basic': { tier: 1, color: '#38bdf8', name: '1. Temel Kalkan' },
+  'shd-medium': { tier: 2, color: '#22d3ee', name: '2. Güçlü Kalkan' },
+  'shd-heavy': { tier: 3, color: '#34d399', name: '3. Plazma Kalkan' },
+  'shd-titan': { tier: 4, color: '#fb923c', name: '4. Alev Kalkan' },
 };
+
+const ROCKETS: Record<string, { tier: number; name: string; hull: string; wing: string; accent: string }> = {
+  'rkt-1': { tier: 1, name: 'Başlangıç Roketi', hull: '#475569', wing: '#64748b', accent: '#38bdf8' },
+  'rkt-2': { tier: 2, name: 'Gelişmiş Roket', hull: '#334155', wing: '#0ea5e9', accent: '#22d3ee' },
+  'rkt-3': { tier: 3, name: 'Savaş Roketi', hull: '#1e293b', wing: '#f97316', accent: '#fb923c' },
+  'rkt-4': { tier: 4, name: 'Titan Roket', hull: '#312e81', wing: '#a855f7', accent: '#f472b6' },
+  'rkt-5': { tier: 5, name: 'Efsane Roket', hull: '#3f1d0a', wing: '#f59e0b', accent: '#fef08a' },
+};
+
+const ASTEROID_REWARDS = [0, 10, 20, 35, 55, 80]; // tier 1..5
+const ASTEROID_DAMAGE = [0, 6, 10, 15, 22, 30];  // gövde hasarı % (kalkan yok/yetersiz) tier 1..5
+const SHIELD_CAPACITY = [0, 40, 60, 80, 100, 120]; // kalkan ömrü/kapasitesi tier 1..5
 
 export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
   onOpenFleetDrawer,
@@ -163,10 +187,12 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     return () => clearInterval(distTimer);
   }, [warpSpeed]);
 
-  // Kalkan ömrü: tükenir, yenilenmez. Yeni kalkan alınca sıfırlanır.
+  // Kalkan ömrü/kapasitesi: seviyeye göre belirlenir, tükenir, yenilenmez. Yeni kalkan alınca sıfırlanır.
   useEffect(() => {
-    setShieldHealth(100);
-    shieldHealthRef.current = 100;
+    const tier = user.equippedShield ? (SHIELDS[user.equippedShield]?.tier || 0) : 0;
+    const cap = SHIELD_CAPACITY[tier] ?? 0;
+    setShieldHealth(cap);
+    shieldHealthRef.current = cap;
   }, [user.equippedShield]);
 
   // Smooth rocket Y interpolation towards targetRocketY
@@ -213,15 +239,18 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         ? vSettings.starPoints
         : vSettings.asteroidPoints;
 
-    // Göktaşı seviyesi (1-4): boyut arttıkça seviye artar
-    const asteroidTier = type === 'asteroid' ? 1 + Math.floor(Math.random() * 4) : 1;
+    // Göktaşı seviyesi (1-5)
+    const asteroidTier = type === 'asteroid' ? 1 + Math.floor(Math.random() * 5) : 1;
     const asteroidSize =
       type === 'asteroid'
-        ? asteroidTier === 1 ? 26 + Math.random() * 6
-        : asteroidTier === 2 ? 34 + Math.random() * 6
-        : asteroidTier === 3 ? 42 + Math.random() * 6
-        : 50 + Math.random() * 6
+        ? 24 + asteroidTier * 7 + Math.random() * 4
         : 30 + Math.random() * 10;
+    const reward =
+      type === 'asteroid'
+        ? (ASTEROID_REWARDS[asteroidTier] || 10)
+        : type === 'crystal'
+        ? vSettings.crystalPoints
+        : vSettings.starPoints;
 
     const newEnt: InFlightEntity = {
       id: Date.now() + Math.random(),
@@ -235,7 +264,7 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
       size: asteroidSize,
       tier: asteroidTier,
       hp: 1,
-      rewardPoints: pts,
+      rewardPoints: reward,
       rotation: Math.floor(Math.random() * 360),
     };
 
@@ -261,14 +290,15 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     setFloatingNumbers((prev) => [...prev.slice(-8), newFloat]);
   };
 
-  // Rocket fires twin lasers towards a specific point
-  const fireRocketLaser = (targetX: number, targetY: number) => {
+  // Rocket fires laser towards a specific point
+  const fireRocketLaser = (targetX: number, targetY: number): boolean => {
     const weaponId = user.equippedWeapon;
     const w = weaponId ? WEAPONS[weaponId] : null;
     if (!w) {
       sounds.playClick();
-      addFloatingNumber(22, rocketY - 6, '⚠️ Önce marketten silah al', '#fbbf24');
-      return;
+      addFloatingNumber(22, rocketY - 6, '⚠️ SİLAH YOK', '#fbbf24');
+      addFloatingNumber(22, rocketY + 2, 'Marketten silah al veya kaç/topla', '#94a3b8');
+      return false;
     }
     sounds.playLaser();
     sounds.triggerHaptic('light');
@@ -297,6 +327,7 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     setTimeout(() => {
       setLasers((prev) => prev.filter((l) => l.id !== shot.id));
     }, 220);
+    return true;
   };
 
   // Main In-Flight Update Loop (Physics & Collision Detection)
@@ -398,44 +429,48 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         setTimeout(() => setScreenShake(false), 350);
         setTimeout(() => setCollisionFlash(false), 200);
 
-        const shieldDmg = vSettings.asteroidShieldDamage || 25;
-        const hullDecay = vSettings.asteroidHullDecayPercent || 2;
-        const ptPenalty = vSettings.asteroidPointPenalty || 0;
-
         const shd = user.equippedShield ? SHIELDS[user.equippedShield] : null;
         const shieldTier = shd ? shd.tier : 0;
         const asteroidTier = asteroidHitEvent.tier || 1;
         const shieldHolds = shieldTier >= asteroidTier;
-        const saved = Math.round((vSettings.asteroidShieldDamage || 25) * (asteroidTier / Math.max(1, shieldTier || 1)));
+        const hullDamage = ASTEROID_DAMAGE[asteroidTier] ?? 10;
+        const impactCost = 10 + asteroidTier * 8; // kalkan ömründen düşen miktar
 
         if (shieldHealthRef.current > 0 && shieldHolds) {
-          const newShield = Math.max(0, shieldHealthRef.current - shieldDmg);
+          // Kalkan yeterli: taş kalkanın dışında patlar, hasar engellenir, puan alınır
+          const newShield = Math.max(0, shieldHealthRef.current - impactCost);
           shieldHealthRef.current = newShield;
           setShieldHealth(newShield);
           sounds.playExplosion();
           sounds.triggerHaptic('heavy');
           confetti({
-            particleCount: 30,
-            spread: 70,
+            particleCount: 35,
+            spread: 80,
             origin: { x: 0.22, y: asteroidHitEvent.y / 100 },
-            colors: ['#f97316', '#fbbf24', '#38bdf8', '#ffffff'],
+            colors: [shd?.color || '#38bdf8', '#fbbf24', '#ffffff'],
           });
+          const earned = destroyVoyageAsteroid(asteroidHitEvent.rewardPoints);
+          addFloatingNumber(rocketXPos + 6, asteroidHitEvent.y - 10, `🛡️ ${hullDamage}% HASAR ENGELLENDİ`, '#38bdf8');
+          addFloatingNumber(rocketXPos + 6, asteroidHitEvent.y + 2, `+${earned} PUAN ALINDI (Sev.${asteroidTier} taş)`, '#fbbf24');
           if (newShield <= 0) {
-            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `💥 KALKAN KIRILDI!`, '#f87171');
-            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y + 5, `Yeni kalkan almalisin`, '#fbbf24');
-          } else {
-            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `🛡️ TAŞ KALKANDA KAYDU! +${saved} HASAR KURTARILDI`, '#38bdf8');
+            addFloatingNumber(rocketXPos + 6, asteroidHitEvent.y + 14, `Kalkan tükendi`, '#f87171');
           }
         } else {
-          takeAsteroidHit(hullDecay, ptPenalty);
-          addFloatingNumber(
-            rocketXPos + 5,
-            asteroidHitEvent.y - 5,
-            shieldHealthRef.current <= 0
-              ? `⚠️ KALKAN YOK! GÖKTAŞI (SEVİYE ${asteroidTier}) -%${hullDecay} HASAR`
-              : `⚠️ KALKAN AŞILDI (SEVİYE ${asteroidTier}) -%${hullDecay} HASAR`,
-            '#ef4444'
-          );
+          // Kalkan yok, kırık veya yetersiz seviye: gövde hasarı
+          takeAsteroidHit(hullDamage, 0);
+          sounds.playExplosion();
+          sounds.triggerHaptic('heavy');
+          confetti({
+            particleCount: 20,
+            spread: 50,
+            origin: { x: 0.22, y: asteroidHitEvent.y / 100 },
+            colors: ['#ef4444', '#f97316', '#ffffff'],
+          });
+          const reason = shieldHealthRef.current <= 0
+            ? `Kalkan yok`
+            : `Kalkan seviyesi yetersiz (Kalkan ${shieldTier} < Taş ${asteroidTier})`;
+          addFloatingNumber(rocketXPos + 6, asteroidHitEvent.y - 8, `⚠️ -${hullDamage}% GÖVDE HASARI`, '#ef4444');
+          addFloatingNumber(rocketXPos + 6, asteroidHitEvent.y + 4, reason, '#f87171');
         }
       }
 
@@ -448,41 +483,50 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     };
   }, [isWarpBoosting, collectVoyageStar, takeAsteroidHit, spawnEntity, adminSettings.voyageSettings]);
 
-  // Handle direct tap on entity element
-  const handleEntityDirectClick = (ent: InFlightEntity) => {
-    const updated = entitiesRef.current.map((item) =>
-      item.id === ent.id ? { ...item, destroyed: true } : item
-    );
-
-    if (ent.type === 'asteroid') {
-      const weaponTier = user.equippedWeapon ? (WEAPONS[user.equippedWeapon]?.tier || 0) : 0;
-      if (weaponTier < (ent.tier || 1)) {
-        sounds.playClick();
-        addFloatingNumber(ent.x, ent.y - 5, `⚠️ SEVİYE ${ent.tier} TAŞ — SEVİYE ${ent.tier}+ SİLAH GEREK`, '#f87171');
-        return;
-      }
-      entitiesRef.current = updated;
-      setEntities(updated);
-      const earned = destroyVoyageAsteroid(ent.rewardPoints);
-      const w = user.equippedWeapon ? WEAPONS[user.equippedWeapon] : null;
-      addFloatingNumber(ent.x, ent.y - 5, `💥 GÖKTAŞI İMHA! +${earned} CEVHER PUANI`, w?.color || '#f97316');
-      confetti({
-        particleCount: w ? w.tier * 10 : 25,
-        spread: 60,
-        origin: { x: ent.x / 100, y: ent.y / 100 },
-        colors: w ? [w.color, w.core, '#ffffff'] : ['#f97316', '#fbbf24', '#ffffff'],
-      });
-    } else {
+  // Handle direct tap/shoot on entity
+  const handleEntityDirectClick = (ent: InFlightEntity, fired: boolean) => {
+    // Yıldız/kristal: toplanabilir (ateşle veya hedefleyerek)
+    if (ent.type !== 'asteroid') {
+      const updated = entitiesRef.current.map((item) =>
+        item.id === ent.id ? { ...item, destroyed: true } : item
+      );
       entitiesRef.current = updated;
       setEntities(updated);
       const earned = collectVoyageStar(ent.rewardPoints);
       addFloatingNumber(
         ent.x,
         ent.y - 5,
-        ent.type === 'crystal' ? `+${earned} KRİSTAL PUANI 💎` : `+${earned} PUAN ⭐`,
+        ent.type === 'crystal' ? `+${earned} KRİSTAL 💎` : `+${earned} PUAN ⭐`,
         ent.type === 'crystal' ? '#38bdf8' : '#fbbf24'
       );
+      return;
     }
+
+    // Asteroit: silah şart
+    if (!fired) return; // silah yoksa ateş edilemez, sadece kaç/dodge
+
+    const weaponTier = user.equippedWeapon ? (WEAPONS[user.equippedWeapon]?.tier || 0) : 0;
+    if (weaponTier < (ent.tier || 1)) {
+      sounds.playClick();
+      addFloatingNumber(ent.x, ent.y - 8, `YETERSİZ SİLAH SEVİYESİ`, '#f87171');
+      addFloatingNumber(ent.x, ent.y + 2, `Gereken: Sev.${ent.tier} silah (Sende: Sev.${weaponTier || 0})`, '#fbbf24');
+      return;
+    }
+
+    const updated = entitiesRef.current.map((item) =>
+      item.id === ent.id ? { ...item, destroyed: true } : item
+    );
+    entitiesRef.current = updated;
+    setEntities(updated);
+    const earned = destroyVoyageAsteroid(ent.rewardPoints);
+    const w = user.equippedWeapon ? WEAPONS[user.equippedWeapon] : null;
+    addFloatingNumber(ent.x, ent.y - 8, `GÖKTAŞI KIRILDI! +${earned} PUAN`, w?.color || '#f97316');
+    confetti({
+      particleCount: w ? w.tier * 10 : 25,
+      spread: 60,
+      origin: { x: ent.x / 100, y: ent.y / 100 },
+      colors: w ? [w.color, w.core, '#ffffff'] : ['#f97316', '#fbbf24', '#ffffff'],
+    });
   };
 
   // Handle tap / click inside arena
@@ -496,35 +540,24 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     const clickXPercent = (clickX / rect.width) * 100;
     const clickYPercent = (clickY / rect.height) * 100;
 
-    // Fire laser beam from rocket to click target
-    fireRocketLaser(clickX, clickY);
+    // Fire laser beam from rocket to click target (silah yoksa uyarı verir)
+    const fired = fireRocketLaser(clickX, clickY);
 
-    const vSettings = adminSettings.voyageSettings || {
-      starPoints: 15,
-      crystalPoints: 50,
-      asteroidPoints: 25,
-      asteroidShieldDamage: 25,
-      asteroidHullDecayPercent: 2,
-      asteroidPointPenalty: 0,
-      pirateBountyPoints: 500,
-      spawnIntervalSeconds: 1.5,
-      warpSpeedMultiplier: 1.8,
-      applyPlanetMultiplier: true,
-    };
+    const vSettings = adminSettings.voyageSettings || { pirateBountyPoints: 500 };
 
     // If pirate battle is active and click is near top/center, attack boss
-    if (currentBattle && !currentBattle.isDefeated && clickYPercent < 35) {
+    if (currentBattle && !currentBattle.isDefeated && clickYPercent < 35 && fired) {
       const res = attackEnemy(35);
       addFloatingNumber(
         clickXPercent,
         clickYPercent - 5,
-        res.defeated ? `🏆 KORSAN YOK EDİLDİ! +${res.loot?.stardust || vSettings.pirateBountyPoints} PUAN ⭐` : `💥 -35 HASAR!`,
+        res.defeated ? `KORSAN YOK EDİLDİ! +${res.loot?.stardust || vSettings.pirateBountyPoints} PUAN` : `-35 HASAR`,
         res.defeated ? '#fbbf24' : '#f87171'
       );
       return;
     }
 
-    // Check if clicked directly on an approaching asteroid or star
+    // Check if clicked directly on an approaching entity
     const currentList = entitiesRef.current;
     let hitObject: InFlightEntity | null = null;
 
@@ -539,9 +572,8 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     }
 
     if (hitObject) {
-      handleEntityDirectClick(hitObject);
+      handleEntityDirectClick(hitObject, fired);
     }
-    // Clean shot into space: No annoying floating text popups on empty taps!
   };
 
   // Pointer move / touch move steering for the rocket
@@ -782,25 +814,34 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
               <Shield className="w-3.5 h-3.5 text-cyan-400" />
               <div className="text-right">
                 <div className="text-[9px] text-slate-300 font-bold uppercase font-display">
-                  KALKAN
+                  KALKAN {user.equippedShield ? `S${SHIELDS[user.equippedShield]?.tier || 0}` : ''}
                 </div>
                 <div
                   className={`text-[10px] font-black font-mono leading-none ${
-                    shieldHealth > 40 ? 'text-cyan-300' : 'text-rose-400 animate-pulse'
+                    shieldHealth > 0 ? 'text-cyan-300' : 'text-rose-400'
                   }`}
                 >
-                  %{shieldHealth}
+                  {user.equippedShield ? `${shieldHealth}` : 'YOK'}
                 </div>
               </div>
             </div>
 
-            {/* Silah & kalkan seviye göstergesi */}
             <div className="bg-[#120722]/90 backdrop-blur-md px-2 py-1 rounded-xl border border-orange-500/40 flex items-center gap-1.5 pointer-events-auto shadow-md">
               <Crosshair className="w-3.5 h-3.5 text-orange-400" />
               <div className="text-right">
                 <div className="text-[9px] text-slate-300 font-bold uppercase font-display">SİLAH</div>
                 <div className="text-[10px] font-black font-mono leading-none text-orange-300">
                   {user.equippedWeapon ? `Sev.${WEAPONS[user.equippedWeapon]?.tier || 0}` : 'YOK'}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[#120722]/90 backdrop-blur-md px-2 py-1 rounded-xl border border-emerald-500/40 flex items-center gap-1.5 pointer-events-auto shadow-md">
+              <Rocket className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="text-right">
+                <div className="text-[9px] text-slate-300 font-bold uppercase font-display">ROKET</div>
+                <div className="text-[10px] font-black font-mono leading-none text-emerald-300">
+                  Sev.{ROCKETS[user.equippedRocket || 'rkt-1']?.tier || 1}
                 </div>
               </div>
             </div>
@@ -967,10 +1008,11 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
 
           if (ent.type === 'asteroid') {
             const asteroidTier = ent.tier || 1;
-            const asteroidColor = asteroidTier === 1 ? '#f97316'
-              : asteroidTier === 2 ? '#ef4444'
-              : asteroidTier === 3 ? '#dc2626'
-              : '#991b1b';
+            const asteroidColor = asteroidTier === 1 ? '#60a5fa'
+              : asteroidTier === 2 ? '#f97316'
+              : asteroidTier === 3 ? '#ef4444'
+              : asteroidTier === 4 ? '#a855f7'
+              : '#fbbf24';
             return (
               <div
                 key={ent.id}
@@ -1127,39 +1169,44 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
                     className="absolute rounded-full pointer-events-none"
                     style={{
                       inset: '-24px',
-                      border: `1px dashed ${SHIELDS[user.equippedShield].color}`,
-                      opacity: 0.5,
+                      border: `2px dashed ${SHIELDS[user.equippedShield].color}`,
+                      opacity: 0.55,
                       animation: 'radar-sweep 6s linear infinite',
                     }}
                   />
                 )}
-                {SHIELDS[user.equippedShield].tier >= 3 && (
-                  <>
-                    <div
-                      className="absolute rounded-full pointer-events-none"
-                      style={{
-                        inset: '-30px',
-                        border: `2px solid ${SHIELDS[user.equippedShield].color}`,
-                        opacity: 0.35,
-                        animation: 'pulse-subtle 1.6s ease-in-out infinite',
-                      }}
-                    />
-                    {/* Alev saçan kalkan parçacıkları */}
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                {SHIELDS[user.equippedShield].tier >= 4 && (
+                  <div
+                    className="absolute rounded-full pointer-events-none"
+                    style={{
+                      inset: '-30px',
+                      border: `2px solid ${SHIELDS[user.equippedShield].color}`,
+                      boxShadow: `0 0 18px ${SHIELDS[user.equippedShield].color}`,
+                      opacity: 0.45,
+                      animation: 'pulse-subtle 1.4s ease-in-out infinite',
+                    }}
+                  />
+                )}
+                {SHIELDS[user.equippedShield].tier >= 3 &&
+                  Array.from({ length: SHIELDS[user.equippedShield].tier + 2 }).map((_, i) => {
+                    const sh = SHIELDS[user.equippedShield!];
+                    const n = sh.tier + 2;
+                    return (
                       <span
-                        key={i}
-                        className="absolute w-1.5 h-1.5 rounded-full pointer-events-none"
+                        key={`sp-${i}`}
+                        className="absolute rounded-full pointer-events-none"
                         style={{
-                          left: `${50 + Math.cos((i * Math.PI) / 3) * 42}%`,
-                          top: `${50 + Math.sin((i * Math.PI) / 3) * 42}%`,
-                          background: SHIELDS[user.equippedShield].color,
-                          boxShadow: `0 0 8px ${SHIELDS[user.equippedShield].color}`,
-                          animation: `pulse-subtle ${1 + i * 0.15}s ease-in-out infinite`,
+                          width: sh.tier >= 4 ? 6 : 4,
+                          height: sh.tier >= 4 ? 6 : 4,
+                          left: `${50 + Math.cos((i * 2 * Math.PI) / n) * 44}%`,
+                          top: `${50 + Math.sin((i * 2 * Math.PI) / n) * 44}%`,
+                          background: sh.color,
+                          boxShadow: `0 0 ${sh.tier >= 4 ? 12 : 8}px ${sh.color}`,
+                          animation: `pulse-subtle ${0.8 + i * 0.12}s ease-in-out infinite`,
                         }}
                       />
-                    ))}
-                  </>
-                )}
+                    );
+                  })}
               </>
             )}
             {/* Plasma Thruster Flame & Particle Trail at the Rocket Tail */}
@@ -1174,104 +1221,76 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
             </div>
 
             {/* REALISTIC HIGH-FIDELITY STARSHIP ROCKET SVG */}
-            <div className="relative w-28 sm:w-36 h-14 sm:h-16 flex items-center justify-center filter drop-shadow-[0_0_16px_rgba(249,115,22,0.45)]">
+            {(() => {
+              const rk = ROCKETS[user.equippedRocket || 'rkt-1'] || ROCKETS['rkt-1'];
+              return (
+            <div className="relative w-28 sm:w-36 h-14 sm:h-16 flex items-center justify-center" style={{ filter: `drop-shadow(0 0 16px ${rk.accent}66)` }}>
               <svg
                 viewBox="0 0 160 80"
                 className="w-full h-full overflow-visible"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                {/* Defs for Metallic Gradients */}
                 <defs>
-                  <linearGradient id="fuselageGrad" x1="0%" y1="0%" x2="100%" y2="50%">
-                    <stop offset="0%" stopColor="#1e293b" />
-                    <stop offset="35%" stopColor="#334155" />
-                    <stop offset="65%" stopColor="#f8fafc" />
+                  <linearGradient id="fuselageGradDyn" x1="0%" y1="0%" x2="100%" y2="50%">
+                    <stop offset="0%" stopColor={rk.hull} />
+                    <stop offset="40%" stopColor="#475569" />
+                    <stop offset="70%" stopColor="#e2e8f0" />
                     <stop offset="100%" stopColor="#94a3b8" />
                   </linearGradient>
-
-                  <linearGradient id="wingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#ea580c" />
-                    <stop offset="60%" stopColor="#f97316" />
-                    <stop offset="100%" stopColor="#fbbf24" />
+                  <linearGradient id="wingGradDyn" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor={rk.wing} />
+                    <stop offset="100%" stopColor={rk.accent} />
                   </linearGradient>
-
-                  <linearGradient id="cockpitVisor" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#06b6d4" />
-                    <stop offset="70%" stopColor="#38bdf8" />
+                  <linearGradient id="cockpitVisorDyn" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor={rk.accent} />
                     <stop offset="100%" stopColor="#ffffff" />
                   </linearGradient>
-
-                  <linearGradient id="heatShieldGrad" x1="0%" y1="100%" x2="100%" y2="100%">
+                  <linearGradient id="heatShieldGradDyn" x1="0%" y1="100%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#0f172a" />
-                    <stop offset="100%" stopColor="#1e293b" />
+                    <stop offset="100%" stopColor={rk.hull} />
                   </linearGradient>
                 </defs>
 
-                {/* Top Swept Wing with Laser Blaster */}
-                <path
-                  d="M38 32 L15 10 L52 16 L75 32 Z"
-                  fill="url(#wingGrad)"
-                  stroke="#fb923c"
-                  strokeWidth="1.2"
-                />
-                <circle cx="15" cy="10" r="2.5" fill="#38bdf8" className="animate-pulse" />
+                {/* Top Swept Wing */}
+                <path d="M38 32 L15 10 L52 16 L75 32 Z" fill="url(#wingGradDyn)" stroke={rk.accent} strokeWidth={rk.tier >= 3 ? 1.6 : 1.2} />
+                <circle cx="15" cy="10" r={2 + rk.tier * 0.3} fill={rk.accent} className="animate-pulse" />
 
-                {/* Bottom Swept Wing with Laser Blaster */}
-                <path
-                  d="M38 48 L15 70 L52 64 L75 48 Z"
-                  fill="url(#wingGrad)"
-                  stroke="#fb923c"
-                  strokeWidth="1.2"
-                />
-                <circle cx="15" cy="70" r="2.5" fill="#38bdf8" className="animate-pulse" />
+                {/* Bottom Swept Wing */}
+                <path d="M38 48 L15 70 L52 64 L75 48 Z" fill="url(#wingGradDyn)" stroke={rk.accent} strokeWidth={rk.tier >= 3 ? 1.6 : 1.2} />
+                <circle cx="15" cy="70" r={2 + rk.tier * 0.3} fill={rk.accent} className="animate-pulse" />
 
-                {/* Main Fuselage Body (Aerodynamic Starship) */}
-                <path
-                  d="M20 30 Q50 26 110 32 L148 40 L110 48 Q50 54 20 50 Z"
-                  fill="url(#fuselageGrad)"
-                  stroke="#64748b"
-                  strokeWidth="1.5"
-                />
+                {/* Main Fuselage */}
+                <path d="M20 30 Q50 26 110 32 L148 40 L110 48 Q50 54 20 50 Z" fill="url(#fuselageGradDyn)" stroke="#64748b" strokeWidth="1.5" />
 
-                {/* Dark Heat Shield Underside */}
-                <path
-                  d="M25 44 Q60 51 110 48 L148 40 L110 44 Q50 48 25 44 Z"
-                  fill="url(#heatShieldGrad)"
-                  opacity="0.85"
-                />
+                {/* Heat Shield Underside */}
+                <path d="M25 44 Q60 51 110 48 L148 40 L110 44 Q50 48 25 44 Z" fill="url(#heatShieldGradDyn)" opacity="0.85" />
 
-                {/* Glowing Cockpit Visor / Command Bridge */}
-                <path
-                  d="M92 34 Q115 35 128 40 Q115 45 92 46 Q100 40 92 34 Z"
-                  fill="url(#cockpitVisor)"
-                  filter="drop-shadow(0 0 4px #06b6d4)"
-                />
+                {/* Cockpit */}
+                <path d="M92 34 Q115 35 128 40 Q115 45 92 46 Q100 40 92 34 Z" fill="url(#cockpitVisorDyn)" filter={`drop-shadow(0 0 4px ${rk.accent})`} />
 
-                {/* Central Mining Ion Reactor Core */}
-                <ellipse cx="62" cy="40" rx="8" ry="4.5" fill="#f97316" className="animate-pulse" />
-                <ellipse cx="62" cy="40" rx="4" ry="2.2" fill="#fef08a" />
+                {/* Reactor Core */}
+                <ellipse cx="62" cy="40" rx={7 + rk.tier} ry={4 + rk.tier * 0.3} fill={rk.wing} className="animate-pulse" />
+                <ellipse cx="62" cy="40" rx={3 + rk.tier * 0.4} ry={2} fill={rk.accent} />
 
-                {/* Thruster Engine Bell Nozzle */}
-                <path
-                  d="M18 32 L8 28 L8 52 L18 48 Z"
-                  fill="#0f172a"
-                  stroke="#f97316"
-                  strokeWidth="1.5"
-                />
+                {/* Thruster Nozzle */}
+                <path d="M18 32 L8 28 L8 52 L18 48 Z" fill="#0f172a" stroke={rk.wing} strokeWidth="1.5" />
 
-                {/* Hull Panel Seams & Solar Flare Decals */}
+                {/* Hull seams */}
                 <line x1="45" y1="30" x2="45" y2="50" stroke="#cbd5e1" strokeWidth="0.8" opacity="0.6" />
                 <line x1="78" y1="31" x2="78" y2="49" stroke="#cbd5e1" strokeWidth="0.8" opacity="0.6" />
                 <line x1="110" y1="33" x2="110" y2="47" stroke="#cbd5e1" strokeWidth="0.8" opacity="0.6" />
+                {rk.tier >= 4 && <line x1="130" y1="36" x2="130" y2="44" stroke={rk.accent} strokeWidth="1.2" opacity="0.9" />}
               </svg>
             </div>
+              );
+            })()}
 
-            {/* Ship Name & Mini Health Indicator */}
-            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-[#120722]/90 border border-orange-500/40 px-2 py-0.5 rounded-full whitespace-nowrap shadow-md">
+            {/* Roket seviyesi göstergesi */}
+            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-[#120722]/90 border border-emerald-500/40 px-2 py-0.5 rounded-full whitespace-nowrap shadow-md">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[9px] font-black font-display text-white tracking-wide">
-                AMİRAL GEMİSİ
+              <span className="text-[9px] font-black font-display text-emerald-200 tracking-wide">
+                ROKET SEV.{ROCKETS[user.equippedRocket || 'rkt-1']?.tier || 1}
               </span>
             </div>
           </div>
@@ -1299,11 +1318,8 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
                 {/* Mini Thruster Flame */}
                 <span className="w-4 h-1.5 rounded-l-full bg-gradient-to-l from-orange-400 to-transparent blur-[1px] animate-pulse" />
                 {/* Drone Body */}
-                <div className="p-1 rounded-lg bg-[#200e33]/90 border border-amber-400/70 text-amber-300 shadow-md flex items-center gap-1 scale-90 sm:scale-100">
+                <div className="p-1 rounded-lg bg-[#200e33]/90 border border-amber-400/70 text-amber-300 shadow-md flex items-center justify-center scale-90 sm:scale-100">
                   <Bot className="w-3 h-3 text-orange-400" />
-                  <span className="text-[8px] font-mono font-bold truncate max-w-[50px]">
-                    {miner.packageName.split(' ')[0]}
-                  </span>
                 </div>
               </div>
             </div>

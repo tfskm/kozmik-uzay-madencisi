@@ -18,18 +18,24 @@ export const MARKET = {
   'mkt-dust-pack-1k':  { price: 3.5, cur: 'krd', stock: 120, type: 'ore_bundle' },
   'mkt-plasma-cooler': { price: 8,   cur: 'krd', stock: 15,  type: 'overclock_chip' },
   'mkt-warp-fuel':     { price: 25,  cur: 'krd', stock: 8,   type: 'cosmic_pass' },
-  // Silahlar (ucuzdan pahaliya, seviye artar)
-  'wpn-laser':   { price: 5,   cur: 'krd', stock: 999, type: 'weapon', tier: 1, name: '1. Temel Lazer' },
-  'wpn-plasma':  { price: 15,  cur: 'krd', stock: 999, type: 'weapon', tier: 2, name: '2. Kalın Lazer' },
-  'wpn-flame':   { price: 35,  cur: 'krd', stock: 999, type: 'weapon', tier: 3, name: '3. Alev Topu' },
-  'wpn-quantum': { price: 80,  cur: 'krd', stock: 999, type: 'weapon', tier: 4, name: '4. Büyük Alev' },
-  'wpn-nova':    { price: 180, cur: 'krd', stock: 999, type: 'weapon', tier: 5, name: '5. Kuantum Işını' },
-  'wpn-saber':   { price: 350, cur: 'krd', stock: 999, type: 'weapon', tier: 6, name: '6. Işın Kılıcı' },
-  // Kalkanlar (ucuzdan pahaliya, seviye artar)
-  'shd-basic':  { price: 5,   cur: 'krd', stock: 999, type: 'shield', tier: 1, name: '1. Temel Kalkan' },
-  'shd-medium': { price: 20,  cur: 'krd', stock: 999, type: 'shield', tier: 2, name: '2. Orta Kalkan' },
-  'shd-heavy':  { price: 50,  cur: 'krd', stock: 999, type: 'shield', tier: 3, name: '3. Ağır Kalkan' },
-  'shd-titan':  { price: 120, cur: 'krd', stock: 999, type: 'shield', tier: 4, name: '4. Titan Kalkan' },
+  // Silahlar (5 seviye)
+  'wpn-1': { price: 5,   cur: 'krd', stock: 999, type: 'weapon', tier: 1, name: '1. Temel Lazer' },
+  'wpn-2': { price: 20,  cur: 'krd', stock: 999, type: 'weapon', tier: 2, name: '2. Çift Lazer' },
+  'wpn-3': { price: 50,  cur: 'krd', stock: 999, type: 'weapon', tier: 3, name: '3. Plazma Topu' },
+  'wpn-4': { price: 120, cur: 'krd', stock: 999, type: 'weapon', tier: 4, name: '4. Alev Püskürtücü' },
+  'wpn-5': { price: 250, cur: 'krd', stock: 999, type: 'weapon', tier: 5, name: '5. Kuantum Işını' },
+  // Kalkanlar (5 seviye)
+  'shd-1': { price: 5,   cur: 'krd', stock: 999, type: 'shield', tier: 1, name: '1. Temel Kalkan' },
+  'shd-2': { price: 20,  cur: 'krd', stock: 999, type: 'shield', tier: 2, name: '2. Güçlü Kalkan' },
+  'shd-3': { price: 50,  cur: 'krd', stock: 999, type: 'shield', tier: 3, name: '3. Plazma Kalkan' },
+  'shd-4': { price: 120, cur: 'krd', stock: 999, type: 'shield', tier: 4, name: '4. Alev Kalkan' },
+  'shd-5': { price: 250, cur: 'krd', stock: 999, type: 'shield', tier: 5, name: '5. Titan Kalkan' },
+  // Roketler (5 seviye)
+  'rkt-1': { price: 0,   cur: 'krd', stock: 999, type: 'rocket', tier: 1, name: '1. Başlangıç Roketi' },
+  'rkt-2': { price: 25,  cur: 'krd', stock: 999, type: 'rocket', tier: 2, name: '2. Gelişmiş Roket' },
+  'rkt-3': { price: 60,  cur: 'krd', stock: 999, type: 'rocket', tier: 3, name: '3. Savaş Roketi' },
+  'rkt-4': { price: 140, cur: 'krd', stock: 999, type: 'rocket', tier: 4, name: '4. Titan Roket' },
+  'rkt-5': { price: 300, cur: 'krd', stock: 999, type: 'rocket', tier: 5, name: '5. Efsane Roket' },
 };
 const r = (a, b) => a + Math.random() * (b - a);
 export function spinPrize() { let x = Math.random(), acc = 0; for (const w of WHEEL) { acc += w.p; if (x <= acc) return w; } return WHEEL[0]; }

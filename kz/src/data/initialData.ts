@@ -385,18 +385,24 @@ export const INITIAL_MARKET_ITEMS: MarketItem[] = [
     stock: 8,
     seller: 'Galaktik Konsorsiyum',
   },
-  // ---- SİLAHLAR (ucuzdan pahaliya, seviye artar) ----
-  { id: 'wpn-laser', title: '1. Temel Lazer', description: 'İnce turuncu lazer ışını. Seviye 1 göktaşlarını imha eder.', type: 'weapon', price: 5, currency: 'KRD', iconName: 'Zap', rarity: 'common', effectDescription: 'Sev.1+ taşları vurur', stock: 999, seller: 'Kozmik Tedarik Birliği' },
-  { id: 'wpn-plasma', title: '2. Kalın Lazer', description: 'Daha kalın ve güçlü lazer ışını. Seviye 2 göktaşlarını imha eder.', type: 'weapon', price: 15, currency: 'KRD', iconName: 'Zap', rarity: 'rare', effectDescription: 'Sev.2+ taşları vurur', stock: 999, seller: 'Siber Nebula Teknolojileri' },
-  { id: 'wpn-flame', title: '3. Alev Topu', description: 'Alevli mermiler. Seviye 3 göktaşlarını parçalar.', type: 'weapon', price: 35, currency: 'KRD', iconName: 'Flame', rarity: 'epic', effectDescription: 'Sev.3+ taşları vurur', stock: 999, seller: 'Volkanik Bazalt Forge' },
-  { id: 'wpn-quantum', title: '4. Büyük Alev', description: 'Büyük alev topu. Seviye 4 göktaşlarını yok eder.', type: 'weapon', price: 80, currency: 'KRD', iconName: 'Flame', rarity: 'epic', effectDescription: 'Sev.4+ taşları vurur', stock: 999, seller: 'Kuantum Araştırma Enstitüsü' },
-  { id: 'wpn-nova', title: '5. Kuantum Işını', description: 'Yüksek enerjili kuantum ışını. Tüm göktaşlarını vurur.', type: 'weapon', price: 180, currency: 'KRD', iconName: 'Zap', rarity: 'legendary', effectDescription: 'Tüm taşları vurur', stock: 999, seller: 'Galaktik Konsorsiyum' },
-  { id: 'wpn-saber', title: '6. Işın Kılıcı', description: 'En güçlü silah. Işın kılıcı ile süpürme saldırısı.', type: 'weapon', price: 350, currency: 'KRD', iconName: 'Zap', rarity: 'legendary', effectDescription: 'Tüm taşları süpürür', stock: 999, seller: 'Galaktik Konsorsiyum' },
-  // ---- KALKANLAR (ucuzdan pahaliya, seviye artar) ----
-  { id: 'shd-basic', title: '1. Temel Kalkan', description: 'İnce mavi kalkan. Seviye 1 göktaşlarına karşı korur.', type: 'shield', price: 5, currency: 'KRD', iconName: 'Shield', rarity: 'common', effectDescription: 'Sev.1 taşları engeller', stock: 999, seller: 'Kozmik Tedarik Birliği' },
-  { id: 'shd-medium', title: '2. Orta Kalkan', description: 'Orta kalınlıkta cyan kalkan. Seviye 2 göktaşlarına karşı korur.', type: 'shield', price: 20, currency: 'KRD', iconName: 'Shield', rarity: 'rare', effectDescription: 'Sev.2 taşları engeller', stock: 999, seller: 'Ay Limanı Ticaret İstasyonu' },
-  { id: 'shd-heavy', title: '3. Ağır Kalkan', description: 'Kalın yeşil kalkan. Seviye 3 göktaşlarına karşı korur.', type: 'shield', price: 50, currency: 'KRD', iconName: 'Shield', rarity: 'epic', effectDescription: 'Sev.3 taşları engeller', stock: 999, seller: 'Siber Nebula Teknolojileri' },
-  { id: 'shd-titan', title: '4. Titan Kalkan', description: 'En kalın altın kalkan. Tüm göktaşlarını durdurur.', type: 'shield', price: 120, currency: 'KRD', iconName: 'Shield', rarity: 'legendary', effectDescription: 'Tüm taşları engeller', stock: 999, seller: 'Galaktik Konsorsiyum' },
+  // ---- SİLAHLAR (5 seviye: sev.N silah sev.N taşı kırar) ----
+  { id: 'wpn-1', title: '1. Temel Lazer', description: 'İnce turuncu lazer. Seviye 1 göktaşlarını kırar.', type: 'weapon', price: 5, currency: 'KRD', iconName: 'Zap', rarity: 'common', effectDescription: 'Sev.1 taşları kırar', stock: 999, seller: 'Kozmik Tedarik Birliği' },
+  { id: 'wpn-2', title: '2. Çift Lazer', description: 'Daha güçlü çift ışın. Seviye 2 göktaşlarını kırar.', type: 'weapon', price: 20, currency: 'KRD', iconName: 'Zap', rarity: 'rare', effectDescription: 'Sev.1-2 taşları kırar', stock: 999, seller: 'Siber Nebula Teknolojileri' },
+  { id: 'wpn-3', title: '3. Plazma Topu', description: 'Plazma atışı. Seviye 3 göktaşlarını kırar.', type: 'weapon', price: 50, currency: 'KRD', iconName: 'Flame', rarity: 'epic', effectDescription: 'Sev.1-3 taşları kırar', stock: 999, seller: 'Volkanik Bazalt Forge' },
+  { id: 'wpn-4', title: '4. Alev Püskürtücü', description: 'Yoğun alev dalgası. Seviye 4 göktaşlarını kırar.', type: 'weapon', price: 120, currency: 'KRD', iconName: 'Flame', rarity: 'epic', effectDescription: 'Sev.1-4 taşları kırar', stock: 999, seller: 'Kuantum Araştırma Enstitüsü' },
+  { id: 'wpn-5', title: '5. Kuantum Işını', description: 'En güçlü enerji ışını. Seviye 5 göktaşlarını kırar.', type: 'weapon', price: 250, currency: 'KRD', iconName: 'Zap', rarity: 'legendary', effectDescription: 'Tüm taşları kırar', stock: 999, seller: 'Galaktik Konsorsiyum' },
+  // ---- KALKANLAR (5 seviye: sev.N kalkan sev.N taştan korur) ----
+  { id: 'shd-1', title: '1. Temel Kalkan', description: 'İnce enerji halkası. Seviye 1 göktaşlarını durdurur.', type: 'shield', price: 5, currency: 'KRD', iconName: 'Shield', rarity: 'common', effectDescription: 'Sev.1 taşları engeller', stock: 999, seller: 'Kozmik Tedarik Birliği' },
+  { id: 'shd-2', title: '2. Güçlü Kalkan', description: 'Daha kalın enerji alanı. Seviye 2 göktaşlarını durdurur.', type: 'shield', price: 20, currency: 'KRD', iconName: 'Shield', rarity: 'rare', effectDescription: 'Sev.1-2 taşları engeller', stock: 999, seller: 'Ay Limanı Ticaret İstasyonu' },
+  { id: 'shd-3', title: '3. Plazma Kalkan', description: 'Plazma kaplı koruma. Seviye 3 göktaşlarını durdurur.', type: 'shield', price: 50, currency: 'KRD', iconName: 'Shield', rarity: 'epic', effectDescription: 'Sev.1-3 taşları engeller', stock: 999, seller: 'Siber Nebula Teknolojileri' },
+  { id: 'shd-4', title: '4. Alev Kalkan', description: 'Alev saçan güçlü bariyer. Seviye 4 göktaşlarını durdurur.', type: 'shield', price: 120, currency: 'KRD', iconName: 'Shield', rarity: 'epic', effectDescription: 'Sev.1-4 taşları engeller', stock: 999, seller: 'Kuantum Araştırma Enstitüsü' },
+  { id: 'shd-5', title: '5. Titan Kalkan', description: 'En güçlü koruma. Tüm göktaşlarını durdurur.', type: 'shield', price: 250, currency: 'KRD', iconName: 'Shield', rarity: 'legendary', effectDescription: 'Tüm taşları engeller', stock: 999, seller: 'Galaktik Konsorsiyum' },
+  // ---- ROKETLER (5 seviye: görünüm ve dayanım artar) ----
+  { id: 'rkt-1', title: '1. Başlangıç Roketi', description: 'Basit keşif roketi. Yolculuğa başlamak için yeterli.', type: 'rocket', price: 0, currency: 'KRD', iconName: 'Rocket', rarity: 'common', effectDescription: 'Roket Seviyesi 1', stock: 999, seller: 'Kozmik Tedarik Birliği' },
+  { id: 'rkt-2', title: '2. Gelişmiş Roket', description: 'Daha hızlı ve sağlam gövde.', type: 'rocket', price: 25, currency: 'KRD', iconName: 'Rocket', rarity: 'rare', effectDescription: 'Roket Seviyesi 2', stock: 999, seller: 'Ay Limanı Ticaret İstasyonu' },
+  { id: 'rkt-3', title: '3. Savaş Roketi', description: 'Güçlendirilmiş zırh ve motor.', type: 'rocket', price: 60, currency: 'KRD', iconName: 'Rocket', rarity: 'epic', effectDescription: 'Roket Seviyesi 3', stock: 999, seller: 'Siber Nebula Teknolojileri' },
+  { id: 'rkt-4', title: '4. Titan Roket', description: 'Ağır zırhlı ileri seviye roket.', type: 'rocket', price: 140, currency: 'KRD', iconName: 'Rocket', rarity: 'epic', effectDescription: 'Roket Seviyesi 4', stock: 999, seller: 'Kuantum Araştırma Enstitüsü' },
+  { id: 'rkt-5', title: '5. Efsane Roket', description: 'En güçlü amiral gemisi.', type: 'rocket', price: 300, currency: 'KRD', iconName: 'Rocket', rarity: 'legendary', effectDescription: 'Roket Seviyesi 5', stock: 999, seller: 'Galaktik Konsorsiyum' },
 ];
 
 export const INITIAL_ADMIN_SETTINGS: AdminSystemStats = {
@@ -453,4 +459,7 @@ export const INITIAL_USER: User = {
   spinsAvailable: 2,
   referralCode: '',
   referralEarnings: 0,
+  equippedWeapon: null,
+  equippedShield: null,
+  equippedRocket: 'rkt-1',
 };

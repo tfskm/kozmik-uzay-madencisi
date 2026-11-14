@@ -39,6 +39,7 @@ interface InFlightEntity {
   y: number; // percentage 10 - 90
   speed: number;
   size: number;
+  tier: number; // 1-4 for asteroids (size/severity), 1 for stars/crystals
   hp: number;
   rewardPoints: number;
   rotation: number;
@@ -64,19 +65,19 @@ export interface CosmicCommandArenaProps {
 }
 
 const WEAPONS: Record<string, { name: string; tier: number; color: string; core: string; width: number; damage: number }> = {
-  'wpn-laser':   { name: 'Temel Lazer', tier: 1, color: '#fb923c', core: '#ffffff', width: 3, damage: 1 },
-  'wpn-plasma':  { name: 'Plazma Topu', tier: 2, color: '#38bdf8', core: '#e0f2fe', width: 5, damage: 2 },
-  'wpn-flame':   { name: 'Alev Topu', tier: 3, color: '#f97316', core: '#fbbf24', width: 6, damage: 3 },
-  'wpn-quantum': { name: 'Kuantum Işını', tier: 4, color: '#a855f7', core: '#e9d5ff', width: 7, damage: 5 },
-  'wpn-nova':    { name: 'Nova Patlayıcı', tier: 5, color: '#fbbf24', core: '#ffffff', width: 9, damage: 8 },
-  'wpn-saber':   { name: 'Işın Kılıcı', tier: 6, color: '#34d399', core: '#a7f3d0', width: 11, damage: 10 },
+  'wpn-laser':   { name: '1. Temel Lazer', tier: 1, color: '#fb923c', core: '#ffffff', width: 3, damage: 1 },
+  'wpn-plasma':  { name: '2. Kalın Lazer', tier: 2, color: '#f97316', core: '#fde68a', width: 5, damage: 2 },
+  'wpn-flame':   { name: '3. Alev Topu', tier: 3, color: '#ef4444', core: '#fbbf24', width: 7, damage: 3 },
+  'wpn-quantum': { name: '4. Büyük Alev', tier: 4, color: '#dc2626', core: '#fca5a5', width: 9, damage: 5 },
+  'wpn-nova':    { name: '5. Kuantum Işını', tier: 5, color: '#a855f7', core: '#e9d5ff', width: 11, damage: 8 },
+  'wpn-saber':   { name: '6. Işın Kılıcı', tier: 6, color: '#34d399', core: '#a7f3d0', width: 13, damage: 10 },
 };
 
-const SHIELDS: Record<string, { tier: number; color: string; maxBlock: number }> = {
-  'shd-basic':  { tier: 1, color: '#38bdf8', maxBlock: 36 },
-  'shd-medium': { tier: 2, color: '#22d3ee', maxBlock: 44 },
-  'shd-heavy':  { tier: 3, color: '#34d399', maxBlock: 52 },
-  'shd-titan':  { tier: 4, color: '#fbbf24', maxBlock: 999 },
+const SHIELDS: Record<string, { tier: number; color: string; name: string }> = {
+  'shd-basic':  { tier: 1, color: '#38bdf8', name: '1. Temel Kalkan' },
+  'shd-medium': { tier: 2, color: '#22d3ee', name: '2. Orta Kalkan' },
+  'shd-heavy':  { tier: 3, color: '#34d399', name: '3. Ağır Kalkan' },
+  'shd-titan':  { tier: 4, color: '#fbbf24', name: '4. Titan Kalkan' },
 };
 
 export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
@@ -218,6 +219,16 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         ? vSettings.starPoints
         : vSettings.asteroidPoints;
 
+    // Göktaşı seviyesi (1-4): boyut arttıkça seviye artar
+    const asteroidTier = type === 'asteroid' ? 1 + Math.floor(Math.random() * 4) : 1;
+    const asteroidSize =
+      type === 'asteroid'
+        ? asteroidTier === 1 ? 26 + Math.random() * 6
+        : asteroidTier === 2 ? 34 + Math.random() * 6
+        : asteroidTier === 3 ? 42 + Math.random() * 6
+        : 50 + Math.random() * 6
+        : 30 + Math.random() * 10;
+
     const newEnt: InFlightEntity = {
       id: Date.now() + Math.random(),
       type,
@@ -227,7 +238,8 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
       speed:
         (type === 'asteroid' ? 0.20 + Math.random() * 0.08 : 0.18 + Math.random() * 0.06) *
         (isWarpBoosting ? (vSettings.warpSpeedMultiplier || 1.6) : 1),
-      size: type === 'asteroid' ? 38 + Math.random() * 12 : 30 + Math.random() * 10,
+      size: asteroidSize,
+      tier: asteroidTier,
       hp: 1,
       rewardPoints: pts,
       rotation: Math.floor(Math.random() * 360),
@@ -396,7 +408,9 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         const ptPenalty = vSettings.asteroidPointPenalty || 0;
 
         const shd = user.equippedShield ? SHIELDS[user.equippedShield] : null;
-        const bigAsteroid = shd ? asteroidHitEvent.size > shd.maxBlock : true;
+        const shieldTier = shd ? shd.tier : 0;
+        const asteroidTier = asteroidHitEvent.tier || 1;
+        const bigAsteroid = shieldTier < asteroidTier;
 
         if (shieldHealthRef.current > 20) {
           const newShield = Math.max(0, shieldHealthRef.current - shieldDmg);
@@ -404,18 +418,19 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
           setShieldHealth(newShield);
           sounds.playExplosion();
           sounds.triggerHaptic('heavy');
-          addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `🛡️ KALKAN PUANI (-${shieldDmg})`, '#38bdf8');
-          // Kalkan yetersizse gövde de hasar alır
-          if (bigAsteroid || !shd) {
-            takeAsteroidHit(Math.max(1, Math.round(hullDecay * 0.5)), ptPenalty);
-            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y + 5, `⚠️ AŞIRI BÜYÜK TAŞ! (-%${Math.round(hullDecay * 0.5)} HASAR)`, '#ef4444');
+          if (bigAsteroid) {
+            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `🛡️ KALKAN AŞILDI! (SEVİYE ${asteroidTier} TAŞ)`, '#f87171');
+            takeAsteroidHit(Math.max(1, Math.round(hullDecay * 0.6)), ptPenalty);
+            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y + 5, `⚠️ GÖVDE HASARI (-%${Math.round(hullDecay * 0.6)})`, '#ef4444');
+          } else {
+            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `🛡️ KALKAN TUTTU (SEVİYE ${asteroidTier})`, '#38bdf8');
           }
         } else {
           takeAsteroidHit(hullDecay, ptPenalty);
           addFloatingNumber(
             rocketXPos + 5,
             asteroidHitEvent.y - 5,
-            `⚠️ GÖKTAŞI ÇARPMASI (-%${hullDecay} HASAR${ptPenalty > 0 ? ` -${ptPenalty} PUAN` : ''})`,
+            `⚠️ GÖKTAŞI ÇARPMASI (SEVİYE ${asteroidTier}) -%${hullDecay} HASAR`,
             '#ef4444'
           );
         }
@@ -435,10 +450,16 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     const updated = entitiesRef.current.map((item) =>
       item.id === ent.id ? { ...item, destroyed: true } : item
     );
-    entitiesRef.current = updated;
-    setEntities(updated);
 
     if (ent.type === 'asteroid') {
+      const weaponTier = user.equippedWeapon ? (WEAPONS[user.equippedWeapon]?.tier || 0) : 0;
+      if (weaponTier < (ent.tier || 1)) {
+        sounds.playClick();
+        addFloatingNumber(ent.x, ent.y - 5, `⚠️ SEVİYE ${ent.tier} TAŞ — SEVİYE ${ent.tier}+ SİLAH GEREK`, '#f87171');
+        return;
+      }
+      entitiesRef.current = updated;
+      setEntities(updated);
       const earned = destroyVoyageAsteroid(ent.rewardPoints);
       addFloatingNumber(ent.x, ent.y - 5, `💥 GÖKTAŞI İMHA! +${earned} CEVHER PUANI`, '#f97316');
       confetti({
@@ -448,6 +469,8 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         colors: ['#f97316', '#fbbf24', '#ffffff'],
       });
     } else {
+      entitiesRef.current = updated;
+      setEntities(updated);
       const earned = collectVoyageStar(ent.rewardPoints);
       addFloatingNumber(
         ent.x,
@@ -768,6 +791,17 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
               </div>
             </div>
 
+            {/* Silah & kalkan seviye göstergesi */}
+            <div className="bg-[#120722]/90 backdrop-blur-md px-2 py-1 rounded-xl border border-orange-500/40 flex items-center gap-1.5 pointer-events-auto shadow-md">
+              <Crosshair className="w-3.5 h-3.5 text-orange-400" />
+              <div className="text-right">
+                <div className="text-[9px] text-slate-300 font-bold uppercase font-display">SİLAH</div>
+                <div className="text-[10px] font-black font-mono leading-none text-orange-300">
+                  {user.equippedWeapon ? `Sev.${WEAPONS[user.equippedWeapon]?.tier || 0}` : 'YOK'}
+                </div>
+              </div>
+            </div>
+
             {/* Pirate Raid Summon / Alert */}
             {!currentBattle ? (
               <button
@@ -929,6 +963,11 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
           }
 
           if (ent.type === 'asteroid') {
+            const asteroidTier = ent.tier || 1;
+            const asteroidColor = asteroidTier === 1 ? '#f97316'
+              : asteroidTier === 2 ? '#ef4444'
+              : asteroidTier === 3 ? '#dc2626'
+              : '#991b1b';
             return (
               <div
                 key={ent.id}
@@ -952,14 +991,17 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
                   className="w-full h-full flex items-center justify-center animate-asteroid-spin transition-transform group-hover:scale-125"
                   style={{ transform: `rotate(${ent.rotation}deg)` }}
                 >
-                  <span className="text-2xl sm:text-3xl drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
+                  <span className="drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]" style={{ fontSize: `${Math.max(16, ent.size * 0.6)}px` }}>
                     ☄️
                   </span>
                 </div>
 
-                {/* Target Reticle on hover/tap */}
-                <span className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-bold text-rose-300 bg-rose-950/80 px-1.5 py-0.2 rounded border border-rose-500/40 whitespace-nowrap">
-                  +{ent.rewardPoints} Puan • Vur!
+                {/* Tier badge */}
+                <span
+                  className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-bold px-1.5 py-0.2 rounded border whitespace-nowrap"
+                  style={{ color: asteroidColor, borderColor: asteroidColor, backgroundColor: 'rgba(0,0,0,0.7)' }}
+                >
+                  Sev.{asteroidTier} • +{ent.rewardPoints}
                 </span>
               </div>
             );

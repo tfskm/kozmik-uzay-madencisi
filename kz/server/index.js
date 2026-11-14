@@ -40,6 +40,8 @@ const ALLOW_ALL_ADMINS = ADMIN_IDS.trim() === '*';
 const isAdmin = (uid) => DEV === '1' || ALLOW_ALL_ADMINS || ADMIN_LIST.includes(Number(uid));
 
 if (!TREASURY_ADDRESS) console.warn('UYARI: TREASURY_ADDRESS yok, TON ödemeleri alınamaz.');
+console.log(`BOT_TOKEN: ${BOT_TOKEN ? 'tanımlı ✓' : 'YOK ✗ — Telegram doğrulaması çalışmaz!'}`);
+console.log(`ADMIN_IDS: ${ALLOW_ALL_ADMINS ? '*' : ADMIN_LIST.length ? `${ADMIN_LIST.length} yönetici ✓` : 'boş'}`);
 
 const db = new Database(process.env.DB_PATH || 'game.db');
 db.pragma('journal_mode = WAL');
@@ -65,22 +67,34 @@ addColumn('ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0');
 addColumn('ALTER TABLE users ADD COLUMN created INTEGER');
 
 // ---- Telegram initData doğrulama ----
+// Başarısız olunca sebep loglanır (token gizli tutulur): Coolify loglarında [auth] ile görünür.
 function verify(initData) {
-  if (!initData || !BOT_TOKEN) return null;
+  if (!BOT_TOKEN) return { fail: 'sunucuda BOT_TOKEN tanımlı degil' };
+  if (!initData) return { fail: 'initData bos (uygulama Telegram disinda mi acildi?)' };
   const p = new URLSearchParams(initData);
   const hash = p.get('hash');
   p.delete('hash');
   const str = [...p.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join('\n');
   const key = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
   const ok = crypto.createHmac('sha256', key).update(str).digest('hex') === hash;
-  if (!ok || Date.now() / 1000 - Number(p.get('auth_date')) > 86400) return null;
-  try { return JSON.parse(p.get('user')); } catch { return null; }
+  if (!ok) return { fail: 'hash uyusmadi (BOT_TOKEN baska bir bota ait olabilir)' };
+  if (Date.now() / 1000 - Number(p.get('auth_date')) > 86400) return { fail: 'initData 24 saatten eski' };
+  try { return { user: JSON.parse(p.get('user')) }; } catch { return { fail: 'initData user verisi bozuk' }; }
 }
 
 const auth = (req, res, next) => {
   const h = req.headers['x-init-data'];
-  const u = DEV === '1' && !h ? { id: 1, first_name: 'dev' } : verify(h);
-  if (!u) return res.status(401).json({ error: 'auth' });
+  let u;
+  if (DEV === '1' && !h) {
+    u = { id: 1, first_name: 'dev' };
+  } else {
+    const v = verify(h);
+    if (v.fail) {
+      console.warn(`[auth] reddedildi: ${v.fail}`);
+      return res.status(401).json({ error: 'auth' });
+    }
+    u = v.user;
+  }
   db.prepare('INSERT OR IGNORE INTO users(id,name,created) VALUES(?,?,?)').run(
     u.id,
     u.username || u.first_name || '',

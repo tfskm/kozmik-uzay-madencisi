@@ -26,7 +26,7 @@ const MainLayout: React.FC = () => {
   useEffect(() => {
     try {
       const tg = (window as unknown as {
-        Telegram?: { WebApp?: { expand: () => void; ready: () => void; enableClosingConfirmation: () => void; disableVerticalSwipes?: () => void; onEvent?: (e: string, cb: () => void) => void; viewportStableHeight?: number; viewportHeight?: number } };
+        Telegram?: { WebApp?: { expand: () => void; ready: () => void; enableClosingConfirmation: () => void; disableVerticalSwipes?: () => void; enableVerticalSwipes?: () => void; onEvent?: (e: string, cb: () => void) => void; viewportStableHeight?: number; viewportHeight?: number } };
       }).Telegram?.WebApp;
       const applyVp = () => {
         const h = tg?.viewportStableHeight || tg?.viewportHeight || window.innerHeight;
@@ -46,6 +46,22 @@ const MainLayout: React.FC = () => {
       /* tarayıcıda çalışıyor olabilir */
     }
   }, []);
+
+  useEffect(() => {
+    try {
+      const tg = (window as unknown as {
+        Telegram?: { WebApp?: { disableVerticalSwipes?: () => void; enableVerticalSwipes?: () => void } };
+      }).Telegram?.WebApp;
+      if (!tg) return;
+      if (isMiningScreen) {
+        tg.disableVerticalSwipes?.();
+      } else {
+        tg.enableVerticalSwipes?.();
+      }
+    } catch {
+      /* yoksay */
+    }
+  }, [isMiningScreen]);
 
   // İlk yükleme ekranı
   if (!ready && !error) {
@@ -100,7 +116,7 @@ const MainLayout: React.FC = () => {
     );
   }
 
-  const isMiningScreen = !isAdminMode && activeTab === 'mining';
+  const isMiningScreen = !isAdminMode && (activeTab === 'mining' || !activeTab);
 
   return (
     <div className={`${isMiningScreen ? 'h-[100dvh] overflow-hidden' : 'min-h-screen overflow-x-hidden'} w-full max-w-[100vw] bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-slate-950`}>

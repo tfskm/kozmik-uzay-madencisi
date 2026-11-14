@@ -550,8 +550,8 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     if (!rect) return;
     const pointerY = e.clientY - rect.top;
     const percentY = (pointerY / rect.height) * 100;
-    // Clamp rocket altitude - üstte HUD (Europa/Silah/Kalkan) alanına girmesin
-    const clampedY = Math.max(28, Math.min(84, percentY));
+    // Clamp rocket altitude - üst/alt HUD ve yazı alanlarına girmesin
+    const clampedY = Math.max(32, Math.min(76, percentY));
     setTargetRocketY(clampedY);
   };
 

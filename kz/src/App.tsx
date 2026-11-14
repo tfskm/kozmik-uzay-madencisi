@@ -100,8 +100,10 @@ const MainLayout: React.FC = () => {
     );
   }
 
+  const isMiningScreen = !isAdminMode && activeTab === 'mining';
+
   return (
-    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-slate-950">
+    <div className={`${isMiningScreen ? 'h-[100dvh] overflow-hidden' : 'min-h-screen overflow-x-hidden'} w-full max-w-[100vw] bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-slate-950`}>
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-b from-emerald-500/22 via-teal-400/18 to-transparent blur-[110px] rounded-full" />
         <div className="absolute top-1/3 -left-20 w-[550px] h-[550px] bg-cyan-400/22 blur-[120px] rounded-full" />
@@ -120,7 +122,7 @@ const MainLayout: React.FC = () => {
         <Header />
         <RandomEventPopup />
 
-    <main className="flex-1 px-3 sm:px-5 py-4">
+    <main className={`flex-1 px-3 sm:px-5 py-4 ${isMiningScreen ? 'min-h-0 overflow-hidden' : ''}`}>
           {isAdminMode ? (
             <AdminPanel />
           ) : activeTab === 'mining' ? (

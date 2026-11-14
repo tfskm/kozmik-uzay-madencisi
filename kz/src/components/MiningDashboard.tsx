@@ -83,7 +83,7 @@ export const MiningDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col w-full max-w-full h-screen overflow-hidden select-none">
+    <div className="flex flex-col w-full max-w-full h-full min-h-0 overflow-hidden select-none">
       {/* 1. TOP FULLSCREEN 3D COSMIC COMMAND ARENA */}
       <CosmicCommandArena
         onOpenFleetDrawer={() => setIsFleetDrawerOpen(true)}

@@ -163,17 +163,11 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     return () => clearInterval(distTimer);
   }, [warpSpeed]);
 
-  // Shield regeneration
+  // Kalkan ömrü: tükenir, yenilenmez. Yeni kalkan alınca sıfırlanır.
   useEffect(() => {
-    const shieldTimer = setInterval(() => {
-      setShieldHealth((prev) => {
-        const next = Math.min(100, prev + 1);
-        shieldHealthRef.current = next;
-        return next;
-      });
-    }, 1500);
-    return () => clearInterval(shieldTimer);
-  }, []);
+    setShieldHealth(100);
+    shieldHealthRef.current = 100;
+  }, [user.equippedShield]);
 
   // Smooth rocket Y interpolation towards targetRocketY
   useEffect(() => {
@@ -411,35 +405,35 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         const shd = user.equippedShield ? SHIELDS[user.equippedShield] : null;
         const shieldTier = shd ? shd.tier : 0;
         const asteroidTier = asteroidHitEvent.tier || 1;
-        const bigAsteroid = shieldTier < asteroidTier;
+        const shieldHolds = shieldTier >= asteroidTier;
+        const saved = Math.round((vSettings.asteroidShieldDamage || 25) * (asteroidTier / Math.max(1, shieldTier || 1)));
 
-        if (shieldHealthRef.current > 20) {
+        if (shieldHealthRef.current > 0 && shieldHolds) {
           const newShield = Math.max(0, shieldHealthRef.current - shieldDmg);
           shieldHealthRef.current = newShield;
           setShieldHealth(newShield);
           sounds.playExplosion();
           sounds.triggerHaptic('heavy');
-          // Kalkan patlaması: görsel + ödül
           confetti({
             particleCount: 30,
             spread: 70,
             origin: { x: 0.22, y: asteroidHitEvent.y / 100 },
             colors: ['#f97316', '#fbbf24', '#38bdf8', '#ffffff'],
           });
-          if (bigAsteroid) {
-            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `🛡️ KALKAN AŞILDI! (SEVİYE ${asteroidTier} TAŞ)`, '#f87171');
-            takeAsteroidHit(Math.max(1, Math.round(hullDecay * 0.6)), ptPenalty);
-            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y + 5, `⚠️ GÖVDE HASARI (-%${Math.round(hullDecay * 0.6)})`, '#ef4444');
+          if (newShield <= 0) {
+            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `💥 KALKAN KIRILDI!`, '#f87171');
+            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y + 5, `Yeni kalkan almalisin`, '#fbbf24');
           } else {
-            const earned = destroyVoyageAsteroid(asteroidHitEvent.rewardPoints);
-            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `🛡️ KALKAN PATLATTI! +${earned} PUAN`, '#38bdf8');
+            addFloatingNumber(rocketXPos + 5, asteroidHitEvent.y - 5, `🛡️ TAŞ KALKANDA KAYDU! +${saved} HASAR KURTARILDI`, '#38bdf8');
           }
         } else {
           takeAsteroidHit(hullDecay, ptPenalty);
           addFloatingNumber(
             rocketXPos + 5,
             asteroidHitEvent.y - 5,
-            `⚠️ GÖKTAŞI ÇARPMASI (SEVİYE ${asteroidTier}) -%${hullDecay} HASAR`,
+            shieldHealthRef.current <= 0
+              ? `⚠️ KALKAN YOK! GÖKTAŞI (SEVİYE ${asteroidTier}) -%${hullDecay} HASAR`
+              : `⚠️ KALKAN AŞILDI (SEVİYE ${asteroidTier}) -%${hullDecay} HASAR`,
             '#ef4444'
           );
         }
@@ -556,8 +550,8 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     if (!rect) return;
     const pointerY = e.clientY - rect.top;
     const percentY = (pointerY / rect.height) * 100;
-    // Clamp rocket altitude between 16% and 84%
-    const clampedY = Math.max(16, Math.min(84, percentY));
+    // Clamp rocket altitude - üstte HUD (Europa/Silah/Kalkan) alanına girmesin
+    const clampedY = Math.max(28, Math.min(84, percentY));
     setTargetRocketY(clampedY);
   };
 
@@ -1068,6 +1062,24 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
               background: `radial-gradient(circle, ${shot.core}, ${shot.color} 55%, transparent 75%)`,
             }}
           />
+          {/* Alev/enerji parçacıkları (kalın silahlarda) */}
+          {(shot.width >= 6) &&
+            [0.25, 0.5, 0.75].map((t, i) => (
+              <span
+                key={i}
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                  left: shot.startX + (shot.targetX - shot.startX) * t,
+                  top: shot.startY + (shot.targetY - shot.startY) * t,
+                  width: 6 + shot.width,
+                  height: 6 + shot.width,
+                  transform: 'translate(-50%, -50%)',
+                  background: `radial-gradient(circle, ${shot.core}, ${shot.color} 60%, transparent 75%)`,
+                  boxShadow: `0 0 10px ${shot.color}`,
+                  animation: `pulse-subtle ${0.3 + i * 0.1}s ease-in-out infinite`,
+                }}
+              />
+            ))}
           </div>
         ))}
         {/* Muzzle flash at rocket nose while firing */}
@@ -1097,21 +1109,21 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         >
           {/* Subtle hovering float */}
           <div className="relative animate-rocket-hover">
-            {/* Kalkan balonu — seviyeye göre gerçekçi görsel */}
+            {/* Kalkan balonu — seviyeye göre şekil değişir */}
             {user.equippedShield && SHIELDS[user.equippedShield] && (
               <>
                 <div
                   className="absolute rounded-full pointer-events-none"
                   style={{
                     inset: '-18px',
-                    background: `radial-gradient(circle at 50% 50%, ${SHIELDS[user.equippedShield].color}22 0%, ${SHIELDS[user.equippedShield].color}44 55%, ${SHIELDS[user.equippedShield].color}11 70%, transparent 75%)`,
+                    background: `radial-gradient(circle at 50% 50%, ${SHIELDS[user.equippedShield].color}22 0%, ${SHIELDS[user.equippedShield].color}55 55%, ${SHIELDS[user.equippedShield].color}11 70%, transparent 75%)`,
                     border: `${SHIELDS[user.equippedShield].tier >= 3 ? 3 : 2}px solid ${SHIELDS[user.equippedShield].color}`,
-                    boxShadow: `0 0 ${SHIELDS[user.equippedShield].tier >= 3 ? 42 : 28}px ${SHIELDS[user.equippedShield].color}, inset 0 0 18px ${SHIELDS[user.equippedShield].color}66`,
+                    boxShadow: `0 0 ${SHIELDS[user.equippedShield].tier >= 3 ? 46 : 28}px ${SHIELDS[user.equippedShield].color}, inset 0 0 18px ${SHIELDS[user.equippedShield].color}88`,
                     opacity: 0.85,
                     animation: 'pulse-subtle 2.2s ease-in-out infinite',
                   }}
                 />
-                {SHIELDS[user.equippedShield].tier >= 3 && (
+                {SHIELDS[user.equippedShield].tier >= 2 && (
                   <div
                     className="absolute rounded-full pointer-events-none"
                     style={{
@@ -1121,6 +1133,33 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
                       animation: 'radar-sweep 6s linear infinite',
                     }}
                   />
+                )}
+                {SHIELDS[user.equippedShield].tier >= 3 && (
+                  <>
+                    <div
+                      className="absolute rounded-full pointer-events-none"
+                      style={{
+                        inset: '-30px',
+                        border: `2px solid ${SHIELDS[user.equippedShield].color}`,
+                        opacity: 0.35,
+                        animation: 'pulse-subtle 1.6s ease-in-out infinite',
+                      }}
+                    />
+                    {/* Alev saçan kalkan parçacıkları */}
+                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                      <span
+                        key={i}
+                        className="absolute w-1.5 h-1.5 rounded-full pointer-events-none"
+                        style={{
+                          left: `${50 + Math.cos((i * Math.PI) / 3) * 42}%`,
+                          top: `${50 + Math.sin((i * Math.PI) / 3) * 42}%`,
+                          background: SHIELDS[user.equippedShield].color,
+                          boxShadow: `0 0 8px ${SHIELDS[user.equippedShield].color}`,
+                          animation: `pulse-subtle ${1 + i * 0.15}s ease-in-out infinite`,
+                        }}
+                      />
+                    ))}
+                  </>
                 )}
               </>
             )}

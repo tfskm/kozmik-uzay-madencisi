@@ -1,23 +1,40 @@
-FROM node:20-alpine AS builder
+# Kozmik Yolculuk - sunucu destekli sürüm (kz/)
+# Express + SQLite + Vite istemcisi. Eski statik (nginx) sürümün yerini alır.
 
+# ---- Build aşaması ----
+FROM node:22-bookworm-slim AS build
 WORKDIR /app
 
-COPY . .
+# better-sqlite3 için derleme araçları
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
 
-# Dosyalar alt klasördeyse ana dizine al
-RUN if [ -d "./kozmik-yolculuk---web3-uzay-madencisi" ]; then \
-      cp -r ./kozmik-yolculuk---web3-uzay-madencisi/* ./; \
-    fi
+COPY kz/package*.json ./
+RUN npm install
 
-RUN npm install --legacy-peer-deps
+COPY kz/ ./
 RUN npm run build
 
-FROM nginx:alpine
-RUN rm -f /etc/nginx/conf.d/default.conf
+# ---- Çalışma aşaması ----
+FROM node:22-bookworm-slim
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
 
-# Nginx ayarını kopyala
-COPY --from=builder /app/nginx.conf* /etc/nginx/conf.d/default.conf
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY kz/package*.json ./
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+  && npm install --omit=dev \
+  && apt-get purge -y python3 make g++ && apt-get autoremove -y \
+  && rm -rf /var/lib/apt/lists/*
 
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+COPY --from=build /app/dist ./dist
+COPY kz/server ./server
+
+# SQLite veritabanı bu klasörde tutulur (Coolify'da /data volume bağlayın)
+RUN mkdir -p /data
+ENV DB_PATH=/data/game.db
+
+# 3000: varsayılan, 80: eski kurulumun portuyla uyumluluk için
+EXPOSE 3000 80
+
+CMD ["node", "server/index.js"]

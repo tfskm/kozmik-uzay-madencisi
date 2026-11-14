@@ -1,0 +1,12 @@
+.git
+.gitignore
+**/node_modules
+**/dist
+*.zip
+**/*.zip
+en sons
+kozmik-uzay-madencisi
+.env
+.env.*
+!kz/.env.example
+*.log

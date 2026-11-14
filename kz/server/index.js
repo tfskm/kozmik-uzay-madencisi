@@ -497,4 +497,12 @@ app.get('*', (_, res) =>
   })
 );
 
-app.listen(PORT, () => console.log(`Kozmik Yolculuk sunucusu: ${PORT}`));
+// Hem PORT (varsayılan 3000) hem de 80 üzerinden dinleriz. Böylece platform
+// konteynerin portunu 80 ya da 3000 olarak yönlendirse de uygulama açılır.
+const listenPorts = [...new Set([Number(PORT) || 3000, 80])];
+for (const p of listenPorts) {
+  const srv = app.listen(p, () => console.log(`Kozmik Yolculuk sunucusu: ${p}`));
+  srv.on('error', (e) => {
+    if (p !== 80) console.error(`Port ${p} dinlenemedi: ${e.message}`);
+  });
+}

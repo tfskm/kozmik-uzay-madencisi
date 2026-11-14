@@ -36,6 +36,11 @@ export const MARKET = {
   'rkt-3': { price: 60,  cur: 'krd', stock: 999, type: 'rocket', tier: 3, name: '3. Savaş Roketi' },
   'rkt-4': { price: 140, cur: 'krd', stock: 999, type: 'rocket', tier: 4, name: '4. Titan Roket' },
   'rkt-5': { price: 300, cur: 'krd', stock: 999, type: 'rocket', tier: 5, name: '5. Efsane Roket' },
+  // Paketler (indirimli setler)
+  'bndl-1': { price: 9,   cur: 'krd', stock: 999, type: 'bundle', name: 'Başlangıç Seti', items: { weapon: 'wpn-1', shield: 'shd-1', stardust: 500 }, separate: 11 },
+  'bndl-2': { price: 55,  cur: 'krd', stock: 999, type: 'bundle', name: 'Kaşif Seti', items: { rocket: 'rkt-2', weapon: 'wpn-2', shield: 'shd-2', stardust: 1000 }, separate: 67 },
+  'bndl-3': { price: 135, cur: 'krd', stock: 999, type: 'bundle', name: 'Savaş Seti', items: { rocket: 'rkt-3', weapon: 'wpn-3', shield: 'shd-3', stardust: 2000 }, separate: 164 },
+  'bndl-4': { price: 650, cur: 'krd', stock: 999, type: 'bundle', name: 'Efsane Set', items: { rocket: 'rkt-5', weapon: 'wpn-5', shield: 'shd-5', stardust: 5000 }, separate: 810 },
 };
 const r = (a, b) => a + Math.random() * (b - a);
 export function spinPrize() { let x = Math.random(), acc = 0; for (const w of WHEEL) { acc += w.p; if (x <= acc) return w; } return WHEEL[0]; }

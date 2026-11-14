@@ -17,13 +17,14 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-type TabId = 'rockets' | 'weapons' | 'shields' | 'stones' | 'support';
+type TabId = 'rockets' | 'weapons' | 'shields' | 'stones' | 'bundles' | 'support';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'rockets', label: 'Roketler', icon: Rocket },
   { id: 'weapons', label: 'Silahlar', icon: Zap },
   { id: 'shields', label: 'Kalkanlar', icon: Shield },
   { id: 'stones', label: 'Taşlar', icon: Target },
+  { id: 'bundles', label: 'Paketler', icon: Gem },
   { id: 'support', label: 'Destek', icon: Wrench },
 ];
 
@@ -53,10 +54,11 @@ export const Marketplace: React.FC = () => {
     const rockets = marketItems.filter((i) => i.type === 'rocket').sort((a, b) => a.price - b.price);
     const weapons = marketItems.filter((i) => i.type === 'weapon').sort((a, b) => a.price - b.price);
     const shields = marketItems.filter((i) => i.type === 'shield').sort((a, b) => a.price - b.price);
+    const bundles = marketItems.filter((i) => i.type === 'bundle').sort((a, b) => a.price - b.price);
     const support = marketItems
       .filter((i) => ['repair_kit', 'ore_bundle', 'overclock_chip', 'cosmic_pass', 'energy_drink'].includes(i.type))
       .sort((a, b) => a.price - b.price);
-    return { rockets, weapons, shields, support };
+    return { rockets, weapons, shields, bundles, support };
   }, [marketItems]);
 
   const equipped = {
@@ -278,6 +280,61 @@ export const Marketplace: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {tab === 'bundles' && (
+          <div className="bg-[#083546]/90 border border-teal-500/35 rounded-2xl p-3 space-y-2">
+            <div className="mb-1">
+              <h3 className="text-sm font-black text-white font-display">İndirimli Paketler</h3>
+              <p className="text-[11px] text-teal-100/70 mt-0.5">Set halinde alım tek tek alımdan daha ucuzdur. İçerikler otomatik kuşanılır/eklenir.</p>
+            </div>
+            {byType.bundles.map((item) => {
+              const open = expanded === item.id;
+              const canAfford = user.krdBalance >= item.price;
+              const separate = item.id === 'bndl-1' ? 11 : item.id === 'bndl-2' ? 67 : item.id === 'bndl-3' ? 164 : item.id === 'bndl-4' ? 810 : item.price;
+              const contents = item.id === 'bndl-1' ? ['Silah S1', 'Kalkan S1', '500 Toz']
+                : item.id === 'bndl-2' ? ['Roket S2', 'Silah S2', 'Kalkan S2', '1000 Toz']
+                : item.id === 'bndl-3' ? ['Roket S3', 'Silah S3', 'Kalkan S3', '2000 Toz']
+                : ['Roket S5', 'Silah S5', 'Kalkan S5', '5000 Toz'];
+              const save = Math.max(0, separate - item.price);
+              return (
+                <div key={item.id} className="rounded-xl border border-teal-500/30 bg-[#052430]/80">
+                  <button onClick={() => { sounds.playClick(); setExpanded(open ? null : item.id); }} className="w-full text-left p-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-white font-display truncate">{item.title}</div>
+                      <div className="text-[11px] text-emerald-300 truncate">{contents.join(' • ')}</div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <div className="text-[10px] text-teal-300/60 line-through">{separate} KRD</div>
+                        <div className="text-sm font-black text-amber-300 font-mono">{item.price} KRD</div>
+                      </div>
+                      {open ? <ChevronUp className="w-4 h-4 text-teal-300" /> : <ChevronDown className="w-4 h-4 text-teal-300" />}
+                    </div>
+                  </button>
+                  {open && (
+                    <div className="px-3 pb-3 pt-0 border-t border-teal-500/20">
+                      <p className="text-xs text-teal-100/80 mt-2">{item.description}</p>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                        <div className="bg-[#06222c] border border-teal-500/20 rounded-lg p-2"><span className="text-teal-300/70">Ayrı toplam</span><div className="text-white font-bold font-mono">{separate} KRD</div></div>
+                        <div className="bg-[#06222c] border border-teal-500/20 rounded-lg p-2"><span className="text-teal-300/70">Paket fiyatı</span><div className="text-amber-300 font-bold font-mono">{item.price} KRD</div></div>
+                        <div className="bg-[#06222c] border border-emerald-500/30 rounded-lg p-2 col-span-2"><span className="text-teal-300/70">Kazancın</span><div className="text-emerald-300 font-bold">{save} KRD indirim ({Math.round((save / separate) * 100)}%)</div></div>
+                      </div>
+                      <div className="mt-2 text-[11px] text-cyan-200">İçerik: {contents.join(', ')}</div>
+                      <button
+                        onClick={() => handleBuy(item.id)}
+                        disabled={busy || item.stock <= 0 || !canAfford}
+                        className={`mt-3 w-full py-2 rounded-xl text-xs font-black transition active:scale-95 ${canAfford ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950' : 'bg-[#062430] text-teal-200/40'}`}
+                      >
+                        {item.stock <= 0 ? 'Tükendi' : !canAfford ? `Yetersiz KRD (${item.price})` : `Paketi Al (${item.price} KRD)`}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {byType.bundles.length === 0 && <div className="text-xs text-teal-200/60">Paket bulunamadı.</div>}
           </div>
         )}
 

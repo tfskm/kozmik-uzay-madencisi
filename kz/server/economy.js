@@ -335,6 +335,12 @@ export function act(p, a, now = Date.now(), ctx = {}) {
       else if (it.type === 'weapon') { p.weapon = a.id; }
       else if (it.type === 'shield') { p.shield = a.id; }
       else if (it.type === 'rocket') { p.rocket = a.id; }
+      else if (it.type === 'bundle' && it.items) {
+        if (it.items.weapon) p.weapon = it.items.weapon;
+        if (it.items.shield) p.shield = it.items.shield;
+        if (it.items.rocket) p.rocket = it.items.rocket;
+        if (it.items.stardust) p.stardust += Number(it.items.stardust) || 0;
+      }
       p.exp += 10;
       pushHist(p, 'market_trade', it.price, 'KRD', `Pazar alışverişi: ${a.id}`);
       return null;

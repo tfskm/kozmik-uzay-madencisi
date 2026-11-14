@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   Wallet,
   ShieldAlert,
+  BookOpen,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -23,6 +24,7 @@ export const Navbar: React.FC = () => {
     { id: 'packages', label: 'Paketler', icon: PackageCheck, highlight: true },
     { id: 'luck', label: 'Şans', icon: Disc3, accent: true },
     { id: 'market', label: 'Pazar', icon: ShoppingBag },
+    { id: 'guide', label: 'Rehber', icon: BookOpen },
     { id: 'wallet', label: 'Cüzdan', icon: Wallet },
     ...(isAdmin ? [{ id: 'admin', label: 'Yönetim', icon: ShieldAlert, isAdminTab: true }] : []),
   ];

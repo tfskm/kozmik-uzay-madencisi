@@ -14,6 +14,7 @@ import { LuckyWheelAndBoxes } from './components/LuckyWheelAndBoxes';
 import { Marketplace } from './components/Marketplace';
 import { WalletAndHistory } from './components/WalletAndHistory';
 import { AdminPanel } from './components/AdminPanel';
+import { Guide } from './components/Guide';
 import { WalletModal } from './components/WalletModal';
 import { DepositModal } from './components/DepositModal';
 import { RepairModal } from './components/RepairModal';
@@ -150,6 +151,8 @@ const MainLayout: React.FC = () => {
             <LuckyWheelAndBoxes />
           ) : activeTab === 'market' ? (
             <Marketplace />
+          ) : activeTab === 'guide' ? (
+            <Guide />
           ) : activeTab === 'wallet' ? (
             <WalletAndHistory />
           ) : (

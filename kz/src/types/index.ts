@@ -122,7 +122,7 @@ export interface MarketItem {
   id: string;
   title: string;
   description: string;
-  type: 'repair_kit' | 'energy_drink' | 'overclock_chip' | 'cosmic_pass' | 'ore_bundle' | 'weapon' | 'shield' | 'rocket';
+  type: 'repair_kit' | 'energy_drink' | 'overclock_chip' | 'cosmic_pass' | 'ore_bundle' | 'weapon' | 'shield' | 'rocket' | 'bundle';
   price: number;
   currency: 'KRD' | 'STARDUST';
   iconName: string;

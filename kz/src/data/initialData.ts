@@ -403,6 +403,11 @@ export const INITIAL_MARKET_ITEMS: MarketItem[] = [
   { id: 'rkt-3', title: '3. Savaş Roketi', description: 'Güçlendirilmiş zırh ve motor.', type: 'rocket', price: 60, currency: 'KRD', iconName: 'Rocket', rarity: 'epic', effectDescription: 'Roket Seviyesi 3', stock: 999, seller: 'Siber Nebula Teknolojileri' },
   { id: 'rkt-4', title: '4. Titan Roket', description: 'Ağır zırhlı ileri seviye roket.', type: 'rocket', price: 140, currency: 'KRD', iconName: 'Rocket', rarity: 'epic', effectDescription: 'Roket Seviyesi 4', stock: 999, seller: 'Kuantum Araştırma Enstitüsü' },
   { id: 'rkt-5', title: '5. Efsane Roket', description: 'En güçlü amiral gemisi.', type: 'rocket', price: 300, currency: 'KRD', iconName: 'Rocket', rarity: 'legendary', effectDescription: 'Roket Seviyesi 5', stock: 999, seller: 'Galaktik Konsorsiyum' },
+  // ---- PAKETLER (set halinde indirimli) ----
+  { id: 'bndl-1', title: 'Başlangıç Seti', description: 'Silah Sev.1 + Kalkan Sev.1 + 500 Yıldız Tozu. Ayrı alımdan daha ucuz.', type: 'bundle', price: 9, currency: 'KRD', iconName: 'Package', rarity: 'common', effectDescription: 'Ayrı: 11 KRD → Paket: 9 KRD (indirimli)', stock: 999, seller: 'Kozmik Tedarik Birliği' },
+  { id: 'bndl-2', title: 'Kaşif Seti', description: 'Roket Sev.2 + Silah Sev.2 + Kalkan Sev.2 + 1000 Yıldız Tozu.', type: 'bundle', price: 55, currency: 'KRD', iconName: 'Package', rarity: 'rare', effectDescription: 'Ayrı: 67 KRD → Paket: 55 KRD (indirimli)', stock: 999, seller: 'Kozmik Tedarik Birliği' },
+  { id: 'bndl-3', title: 'Savaş Seti', description: 'Roket Sev.3 + Silah Sev.3 + Kalkan Sev.3 + 2000 Yıldız Tozu.', type: 'bundle', price: 135, currency: 'KRD', iconName: 'Package', rarity: 'epic', effectDescription: 'Ayrı: 164 KRD → Paket: 135 KRD (indirimli)', stock: 999, seller: 'Galaktik Konsorsiyum' },
+  { id: 'bndl-4', title: 'Efsane Set', description: 'Roket Sev.5 + Silah Sev.5 + Kalkan Sev.5 + 5000 Yıldız Tozu.', type: 'bundle', price: 650, currency: 'KRD', iconName: 'Package', rarity: 'legendary', effectDescription: 'Ayrı: 810 KRD → Paket: 650 KRD (indirimli)', stock: 999, seller: 'Galaktik Konsorsiyum' },
 ];
 
 export const INITIAL_ADMIN_SETTINGS: AdminSystemStats = {

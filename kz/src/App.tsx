@@ -26,18 +26,32 @@ const MainLayout: React.FC = () => {
   useEffect(() => {
     try {
       const tg = (window as unknown as {
-        Telegram?: { WebApp?: { expand: () => void; ready: () => void; enableClosingConfirmation: () => void; onEvent?: (e: string, cb: () => void) => void; viewportStableHeight?: number; viewportHeight?: number } };
+        Telegram?: { WebApp?: { expand: () => void; ready: () => void; enableClosingConfirmation: () => void; disableVerticalSwipes?: () => void; onEvent?: (e: string, cb: () => void) => void; viewportStableHeight?: number; viewportHeight?: number } };
       }).Telegram?.WebApp;
       if (tg) {
         tg.ready();
         tg.expand();
         tg.enableClosingConfirmation();
+        try { tg.disableVerticalSwipes?.(); } catch { /* yoksay */ }
         const applyVp = () => {
-          const h = tg.viewportStableHeight || tg.viewportHeight;
-          if (h) document.documentElement.style.setProperty('--tg-vh', `${h}px`);
+          const h = tg.viewportStableHeight || tg.viewportHeight || window.innerHeight;
+          if (h) {
+            document.documentElement.style.setProperty('--tg-vh', `${h}px`);
+            const root = document.getElementById('root');
+            if (root) root.style.height = `${h}px`;
+          }
         };
         applyVp();
         tg.onEvent?.('viewportChanged', applyVp);
+        window.addEventListener('resize', applyVp);
+      } else {
+        const applyVp = () => {
+          document.documentElement.style.setProperty('--tg-vh', `${window.innerHeight}px`);
+          const root = document.getElementById('root');
+          if (root) root.style.height = `${window.innerHeight}px`;
+        };
+        applyVp();
+        window.addEventListener('resize', applyVp);
       }
     } catch {
       /* tarayıcıda çalışıyor olabilir */

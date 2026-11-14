@@ -490,6 +490,15 @@ app.get('/tonconnect-manifest.json', (req, res) => {
 
 // ---- Statik dosyalar ----
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), '../dist');
+
+// Telegram Web App eski HTML'i önbellekte tutmasın; her açılışta güncel sürüm gelsin.
+app.use((req, res, next) => {
+  if (req.path === '/' || req.path === '/index.html' || req.path === '/tonconnect-manifest.json') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  }
+  next();
+});
+
 app.use(express.static(dist));
 app.get('*', (_, res) =>
   res.sendFile(path.join(dist, 'index.html'), (err) => {

@@ -1074,54 +1074,82 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
                 {/* Sıcak çekirdek */}
                 <line x1={startX} y1={startY} x2={shot.targetX} y2={shot.targetY} stroke={shot.core} strokeWidth={Math.max(1, shot.width - (flame ? 3 : 2))} strokeLinecap="round" opacity={0.95} />
               </svg>
-              {/* Roketten çıkan alev/enerji konisi (seviye arttıkça belirgin) */}
+              {/* Roketten çıkan alev/enerji (güçlendikçe arkadaki thruster gibi) */}
               {shot.tier >= 2 && (
                 <div
                   className="absolute pointer-events-none"
                   style={{
                     left: startX,
                     top: startY,
-                    width: Math.min(len, 40 + shot.tier * 18),
-                    height: 10 + shot.tier * 6,
                     transform: `translate(0, -50%) rotate(${angle}deg)`,
                     transformOrigin: '0 50%',
-                    background: `linear-gradient(90deg, ${shot.core}ee 0%, ${shot.color}cc 35%, ${shot.tier >= 4 ? '#60a5fa88' : shot.color + '66'} 70%, transparent 100%)`,
-                    borderRadius: '999px',
-                    filter: `blur(${shot.tier >= 4 ? 2 : 1}px)`,
-                    opacity: 0.9,
                   }}
-                />
+                >
+                  {/* Dış alev püskürmesi */}
+                  <div
+                    className={`${shot.tier >= 4 ? 'animate-rocket-flame' : ''}`}
+                    style={{
+                      width: Math.min(len, 50 + shot.tier * 22),
+                      height: 12 + shot.tier * 7,
+                      background: `linear-gradient(90deg, ${shot.core} 0%, ${shot.color} 30%, ${shot.tier >= 5 ? '#60a5fa' : '#fb923c'} 60%, transparent 100%)`,
+                      borderRadius: '999px',
+                      filter: `blur(${shot.tier >= 4 ? 3 : 2}px)`,
+                      opacity: 0.9,
+                    }}
+                  />
+                  {/* İç sıcak çekirdek jet */}
+                  <div
+                    className="absolute top-1/2 left-0 -translate-y-1/2"
+                    style={{
+                      width: Math.min(len, 28 + shot.tier * 12),
+                      height: 5 + shot.tier * 3,
+                      background: `linear-gradient(90deg, #ffffff 0%, ${shot.core} 40%, ${shot.color} 80%, transparent 100%)`,
+                      borderRadius: '999px',
+                      filter: 'blur(1px)',
+                      opacity: 0.95,
+                    }}
+                  />
+                </div>
               )}
-              {/* Güçlü alev/plazma dalgaları (yüksek seviye) */}
-              {flame && [0.2, 0.45, 0.7].map((t, i) => (
+              {/* Alev dalgaları / kıvılcımlar (yüksek seviye) */}
+              {shot.tier >= 3 && [0.15, 0.35, 0.55, 0.75].slice(0, shot.tier).map((t, i) => (
                 <span
                   key={i}
                   className="absolute rounded-full pointer-events-none"
                   style={{
                     left: startX + dx * t,
-                    top: startY + dy * t,
-                    width: 8 + shot.tier * 3 + i * 2,
-                    height: 8 + shot.tier * 3 + i * 2,
+                    top: startY + dy * t + Math.sin(i * 2) * (shot.tier * 1.5),
+                    width: 6 + shot.tier * 3,
+                    height: 6 + shot.tier * 3,
                     transform: 'translate(-50%, -50%)',
-                    background: `radial-gradient(circle, ${shot.core}, ${shot.color} 45%, ${shot.tier >= 5 ? '#60a5fa' : 'transparent'} 75%, transparent 100%)`,
-                    boxShadow: `0 0 ${10 + shot.tier * 2}px ${shot.color}`,
-                    opacity: 0.75,
+                    background: `radial-gradient(circle, ${shot.core}, ${shot.color} 45%, ${shot.tier >= 5 ? '#93c5fd' : '#f97316'} 80%, transparent 100%)`,
+                    boxShadow: `0 0 ${8 + shot.tier * 3}px ${shot.color}`,
+                    opacity: 0.8 - i * 0.08,
                   }}
                 />
               ))}
-              {/* Namlu ağzı alevi (her atışta roket ucunda) */}
+              {/* Namlu ağzı (roket ucundan çıkan alev) */}
               <div
-                className="absolute rounded-full pointer-events-none"
+                className="absolute pointer-events-none"
                 style={{
                   left: startX,
                   top: startY,
-                  width: 10 + shot.tier * 4,
-                  height: 10 + shot.tier * 4,
-                  transform: 'translate(-20%, -50%)',
-                  background: `radial-gradient(circle, ${shot.core}, ${shot.color} 55%, transparent 80%)`,
-                  boxShadow: `0 0 ${12 + shot.tier * 3}px ${shot.color}`,
+                  transform: `translate(-10%, -50%) rotate(${angle}deg)`,
+                  transformOrigin: '0 50%',
                 }}
-              />
+              >
+                <div
+                  className="animate-rocket-flame"
+                  style={{
+                    width: 18 + shot.tier * 8,
+                    height: 10 + shot.tier * 5,
+                    background: `linear-gradient(90deg, #fff 0%, ${shot.core} 25%, ${shot.color} 55%, ${shot.tier >= 5 ? '#60a5fa' : 'transparent'} 85%, transparent 100%)`,
+                    borderRadius: '999px',
+                    filter: 'blur(2px)',
+                    boxShadow: `0 0 ${14 + shot.tier * 4}px ${shot.color}`,
+                  }}
+                />
+              </div>
               {/* Hedefte çarpma parlaması */}
               <div
                 className="absolute rounded-full animate-ping pointer-events-none"

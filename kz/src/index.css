@@ -2,29 +2,22 @@
 
 @layer base {
   html {
-    height: 100%;
-    overflow: hidden;
+    overflow-x: hidden;
     overscroll-behavior: none;
   }
   body {
-    height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
-    position: relative;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     background: radial-gradient(circle at 50% 0%, #201138 0%, #130a24 40%, #0a0614 100%);
     color: #f1f5f9;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     -webkit-user-select: none;
+    overscroll-behavior: none;
   }
   #root {
-    height: 100vh;
-    height: var(--tg-vh, 100vh);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    overscroll-behavior: none;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
   }
   h1, h2, h3, h4, .font-display {
     font-family: 'Chakra Petch', sans-serif;

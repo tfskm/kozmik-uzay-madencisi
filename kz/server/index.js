@@ -24,9 +24,9 @@ import {
   maxMiners,
 } from './economy.js';
 import { MARKET } from './shop.js';
+import { verifyInitData, normalizeToken, botIdOf, TG_PUBLIC_KEYS_HEX } from './auth.js';
 
 const {
-  BOT_TOKEN,
   TREASURY_ADDRESS,
   TONCENTER_URL = 'https://toncenter.com',
   TONCENTER_KEY,
@@ -35,12 +35,23 @@ const {
   ADMIN_IDS = '',
 } = process.env;
 
+// BOT_TOKEN normalleştirilir (tırnak/boşluk temizliği) ve TELEGRAM_BOT_TOKEN takma adı da kabul edilir.
+const BOT_TOKEN = normalizeToken(process.env.BOT_TOKEN ?? process.env.TELEGRAM_BOT_TOKEN ?? '');
+const VERSION = 'v4-imzali-auth';
+
 const ADMIN_LIST = ADMIN_IDS.split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n) && n > 0);
 const ALLOW_ALL_ADMINS = ADMIN_IDS.trim() === '*';
 const isAdmin = (uid) => DEV === '1' || ALLOW_ALL_ADMINS || ADMIN_LIST.includes(Number(uid));
 
 if (!TREASURY_ADDRESS) console.warn('UYARI: TREASURY_ADDRESS yok, TON ödemeleri alınamaz.');
-console.log(`BOT_TOKEN: ${BOT_TOKEN ? 'tanımlı ✓' : 'YOK ✗ — Telegram doğrulaması çalışmaz!'}`);
+console.log(`[start] Kozmik Yolculuk sunucusu sürüm: ${VERSION}`);
+console.log(
+  `BOT_TOKEN: ${
+    BOT_TOKEN
+      ? `tanımlı ✓ (uzunluk ${BOT_TOKEN.length}, bot_id ${botIdOf(BOT_TOKEN) ?? 'biçim?'})`
+      : 'YOK ✗ — hash doğrulaması çalışmaz, yalnızca Telegram imzası kullanılabilir!'
+  }`
+);
 console.log(`ADMIN_IDS: ${ALLOW_ALL_ADMINS ? '*' : ADMIN_LIST.length ? `${ADMIN_LIST.length} yönetici ✓` : 'boş'}`);
 
 const db = new Database(process.env.DB_PATH || 'game.db');
@@ -67,28 +78,15 @@ addColumn('ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0');
 addColumn('ALTER TABLE users ADD COLUMN created INTEGER');
 
 // ---- Telegram initData doğrulama ----
-// Başarısız olunca sebep loglanır (token gizli tutulur): Coolify loglarında [auth] ile görünür.
-function verify(initData) {
-  if (!BOT_TOKEN) return { fail: 'sunucuda BOT_TOKEN tanımlı degil' };
-  if (!initData) return { fail: 'initData bos (uygulama Telegram disinda mi acildi?)' };
-  const p = new URLSearchParams(initData);
-  const hash = p.get('hash');
-  p.delete('hash');
-  const str = [...p.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join('\n');
-  const key = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
-  const ok = crypto.createHmac('sha256', key).update(str).digest('hex') === hash;
-  if (!ok) return { fail: 'hash uyusmadi (BOT_TOKEN baska bir bota ait olabilir)' };
-  if (Date.now() / 1000 - Number(p.get('auth_date')) > 86400) return { fail: 'initData 24 saatten eski' };
-  try { return { user: JSON.parse(p.get('user')) }; } catch { return { fail: 'initData user verisi bozuk' }; }
-}
-
+// auth.js'deki verifyInitData kullanılır: önce hash (BOT_TOKEN), olmazsa Telegram imzası.
+// Reddedilme sebebi loglanır (token gizli tutulur): Coolify loglarında [auth] ile görünür.
 const auth = (req, res, next) => {
   const h = req.headers['x-init-data'];
   let u;
   if (DEV === '1' && !h) {
     u = { id: 1, first_name: 'dev' };
   } else {
-    const v = verify(h);
+    const v = verifyInitData(h, BOT_TOKEN);
     if (v.fail) {
       console.warn(`[auth] reddedildi: ${v.fail}`);
       return res.status(401).json({ error: 'auth' });
@@ -252,6 +250,58 @@ const absorb = (id, p) =>
 // ---- API ----
 const app = express();
 app.use(express.json({ limit: '256kb' }));
+
+// ---- Teşhis uçları (gizli bilgi döndürmez) ----
+const startedAt = Date.now();
+let tokenBotCache = null;
+let tokenBotAt = 0;
+async function tokenBotInfo() {
+  if (!BOT_TOKEN) return null;
+  if (tokenBotCache && Date.now() - tokenBotAt < 300000) return tokenBotCache;
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`, {
+      signal: AbortSignal.timeout(6000),
+    });
+    const j = await r.json();
+    tokenBotCache = j.ok
+      ? { ok: true, id: j.result.id, username: j.result.username }
+      : { ok: false, code: j.error_code, desc: j.description || '' };
+  } catch (e) {
+    tokenBotCache = { ok: false, desc: 'getMe erisilemedi: ' + (e?.message || 'bilinmeyen') };
+  }
+  tokenBotAt = Date.now();
+  return tokenBotCache;
+}
+
+app.get('/api/diag', (req, res) =>
+  res.json({
+    version: VERSION,
+    now: Date.now(),
+    uptimeS: Math.round((Date.now() - startedAt) / 1000),
+    token: { set: !!BOT_TOKEN, len: BOT_TOKEN.length, botId: botIdOf(BOT_TOKEN) },
+    sigKeys: TG_PUBLIC_KEYS_HEX.length,
+    admins: ADMIN_LIST.length,
+    allowAllAdmins: ALLOW_ALL_ADMINS,
+    dev: DEV === '1',
+    treasury: !!TREASURY_ADDRESS,
+    dbPath: process.env.DB_PATH || 'game.db',
+  })
+);
+
+// ?initData=<URL-kodlu initData> → doğrulama sonucu + token'ın ait olduğu bot (getMe)
+app.get('/api/diag/verify', async (req, res) => {
+  const initData = String(req.query.initData || '');
+  const v = verifyInitData(initData, BOT_TOKEN);
+  const out = v.ok
+    ? {
+        ok: true,
+        method: v.method,
+        user: { id: v.user.id, username: v.user.username || null, first_name: v.user.first_name || null },
+      }
+    : { ok: false, reason: v.fail };
+  out.tokenBot = await tokenBotInfo();
+  res.json(out);
+});
 
 app.get('/api/config', auth, (req, res) =>
   res.json({

@@ -38,7 +38,19 @@ const MainLayout: React.FC = () => {
           if (h) {
             document.documentElement.style.setProperty('--tg-vh', `${h}px`);
             const root = document.getElementById('root');
-            if (root) root.style.height = `${h}px`;
+            if (root) {
+              root.style.height = `${h}px`;
+              const header = root.querySelector('header');
+              const nav = root.querySelector('nav');
+              const main = root.querySelector('main');
+              if (main) {
+                const hh = header ? (header as HTMLElement).offsetHeight : 0;
+                const nh = nav ? (nav as HTMLElement).offsetHeight : 0;
+                main.style.height = `${Math.max(100, h - hh - nh)}px`;
+                (main as HTMLElement).style.overflowY = 'auto';
+                (main as HTMLElement).style.WebkitOverflowScrolling = 'touch';
+              }
+            }
           }
         };
         applyVp();
@@ -46,9 +58,22 @@ const MainLayout: React.FC = () => {
         window.addEventListener('resize', applyVp);
       } else {
         const applyVp = () => {
-          document.documentElement.style.setProperty('--tg-vh', `${window.innerHeight}px`);
+          const h = window.innerHeight;
+          document.documentElement.style.setProperty('--tg-vh', `${h}px`);
           const root = document.getElementById('root');
-          if (root) root.style.height = `${window.innerHeight}px`;
+          if (root) {
+            root.style.height = `${h}px`;
+            const header = root.querySelector('header');
+            const nav = root.querySelector('nav');
+            const main = root.querySelector('main');
+            if (main) {
+              const hh = header ? (header as HTMLElement).offsetHeight : 0;
+              const nh = nav ? (nav as HTMLElement).offsetHeight : 0;
+              main.style.height = `${Math.max(100, h - hh - nh)}px`;
+              (main as HTMLElement).style.overflowY = 'auto';
+              (main as HTMLElement).style.WebkitOverflowScrolling = 'touch';
+            }
+          }
         };
         applyVp();
         window.addEventListener('resize', applyVp);

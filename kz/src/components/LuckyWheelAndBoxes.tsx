@@ -34,7 +34,7 @@ export const LuckyWheelAndBoxes: React.FC = () => {
   const [isOpeningBox, setIsOpeningBox] = useState(false);
   const [openedBoxResult, setOpenedBoxResult] = useState<{
     prizeName: string;
-    usdtAmount: number;
+    krdAmount: number;
     stardustAmount: number;
   } | null>(null);
 
@@ -89,8 +89,8 @@ export const LuckyWheelAndBoxes: React.FC = () => {
   };
 
   const handleOpenBox = async (box: MysteryBox) => {
-    if (user.usdtBalance < box.price) {
-      if (confirm(`Yetersiz KRD bakiyesi! Bu sandık $${box.price} KRD gerektirir.\n\nYatırım yapmak ister misiniz?`)) {
+    if (user.krdBalance < box.price) {
+      if (confirm(`Yetersiz KRD bakiyesi! Bu sandık ${box.price} KRD gerektirir.\n\nTON ile KRD yüklemek ister misin?`)) {
         setIsDepositModalOpen(true);
       }
       return;
@@ -132,7 +132,7 @@ export const LuckyWheelAndBoxes: React.FC = () => {
             Şans Çarkı ve Gizemli Sandıklar
           </h2>
           <p className="text-xs text-teal-100/90 mt-1">
-            Her gün şansınızı deneyin; anında nakit KRD, bedava tamir kitleri, yıldız tozu ve efsanevi bonuslar kazanın!
+            Şansını dene; KRD, tamir kiti, Yıldız Tozu ve bonuslar kazan. Tüm ödüller oyun içidir.
           </p>
         </div>
 
@@ -335,7 +335,7 @@ export const LuckyWheelAndBoxes: React.FC = () => {
                   </h3>
 
                   <div className="text-center text-xl font-black text-amber-300 font-mono mt-1">
-                    ${box.price} <span className="text-xs text-teal-200/60 font-sans">KRD</span>
+                    {box.price} <span className="text-xs text-teal-200/60 font-sans">KRD</span>
                   </div>
 
                   {/* Drop Table Preview */}
@@ -359,7 +359,7 @@ export const LuckyWheelAndBoxes: React.FC = () => {
                   disabled={isOpeningBox}
                   className="mt-4 w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider font-display transition active:scale-95 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black shadow-md"
                 >
-                  {isOpeningBox ? 'Açılıyor...' : `Sandığı Aç ($${box.price})`}
+                  {isOpeningBox ? 'Açılıyor...' : `Sandığı Aç (${box.price} KRD)`}
                 </button>
               </div>
             ))}

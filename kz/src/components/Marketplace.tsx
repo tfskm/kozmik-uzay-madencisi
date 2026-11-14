@@ -8,7 +8,6 @@ import {
   Zap,
   Rocket,
   Shield,
-  Coins,
   ArrowRightLeft,
   CheckCircle2,
 } from 'lucide-react';
@@ -23,13 +22,19 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 export const Marketplace: React.FC = () => {
-  const { user, marketItems, buyMarketItem, adminAdjustBalance } = useGame();
+  const { user, marketItems, buyMarketItem, exchangeStardust, adminSettings } = useGame();
 
   const [sellDustAmount, setSellDustAmount] = useState<number>(250);
   const [exchangeMsg, setExchangeMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const handleBuy = (itemId: string) => {
-    const res = buyMarketItem(itemId);
+  const rate = Math.max(1, adminSettings.stPerKrd);
+
+  const handleBuy = async (itemId: string) => {
+    if (busy) return;
+    setBusy(true);
+    const res = await buyMarketItem(itemId);
+    setBusy(false);
     if (res.success) {
       confetti({
         particleCount: 50,
@@ -37,27 +42,24 @@ export const Marketplace: React.FC = () => {
         origin: { y: 0.7 },
         colors: ['#06b6d4', '#10b981', '#a855f7'],
       });
-      alert(res.message);
-    } else {
-      alert(res.message);
     }
+    alert(res.message);
   };
 
-  // Convert Stardust to KRD: 500 Stardust = 1 KRD
-  const dustToUsdtRate = 0.002;
-  const usdtReturn = Number((sellDustAmount * dustToUsdtRate).toFixed(2));
+  const krdReturn = Number((sellDustAmount / rate).toFixed(2));
 
-  const handleSellDust = () => {
+  const handleSellDust = async () => {
     if (user.stardustBalance < sellDustAmount) {
       alert('Yetersiz Yıldız Tozu!');
       return;
     }
+    if (busy) return;
+    setBusy(true);
     sounds.playCoin();
     sounds.triggerHaptic('success');
-
-    // Adjust user
-    adminAdjustBalance(user.id, usdtReturn, -sellDustAmount);
-    setExchangeMsg(`${sellDustAmount} Yıldız Tozu başarıyla satıldı! +$${usdtReturn} KRD cüzdanınıza eklendi.`);
+    const res = await exchangeStardust(sellDustAmount);
+    setBusy(false);
+    setExchangeMsg(res.message);
     setTimeout(() => setExchangeMsg(null), 4000);
   };
 
@@ -69,54 +71,43 @@ export const Marketplace: React.FC = () => {
           <div>
             <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-300 uppercase tracking-wider">
               <ShoppingBag className="w-4 h-4 text-teal-300" />
-              <span>Galaktik Serbest Ticaret İstasyonu</span>
+              <span>Galaktik Ticaret İstasyonu</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white font-display mt-0.5">
-              Pazar Yeri (Al & Sat)
-            </h2>
+            <h2 className="text-xl sm:text-2xl font-black text-white font-display mt-0.5">Pazar Yeri</h2>
             <p className="text-xs text-teal-100/90 mt-1 max-w-xl">
-              Madencilik ve şans çarkından topladığınız madenleri ve yıldız tozunu satın ya da madenci filonuzu güçlendirecek özel teçhizatları edinin.
+              Yıldız Tozunu KRD'ye çevir veya filonu güçlendirecek teçhizatları KRD ile satın al. Tüm işlemler oyun içidir.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <div className="bg-[#052632] border border-cyan-400/40 rounded-xl p-2.5 text-right">
-              <div className="text-[10px] text-cyan-300">Yıldız Tozunuz</div>
-              <div className="text-sm font-bold text-amber-300 font-mono">
-                {user.stardustBalance} Toz
-              </div>
+              <div className="text-[10px] text-cyan-300">Yıldız Tozun</div>
+              <div className="text-sm font-bold text-amber-300 font-mono">{user.stardustBalance} Toz</div>
             </div>
             <div className="bg-[#052632] border border-emerald-400/50 rounded-xl p-2.5 text-right">
-              <div className="text-[10px] text-emerald-300">KRD Bakiyeniz</div>
-              <div className="text-sm font-bold text-emerald-300 font-mono">
-                ${user.usdtBalance.toFixed(2)}
-              </div>
+              <div className="text-[10px] text-emerald-300">KRD Bakiyen</div>
+              <div className="text-sm font-bold text-emerald-300 font-mono">{user.krdBalance.toFixed(2)}</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* STARDUST TO KRD EXCHANGE BOOTH */}
+      {/* STARDUST TO KRD EXCHANGE */}
       <div className="bg-gradient-to-r from-[#0b3848] via-[#072c39] to-[#0b3848] border border-teal-400/40 rounded-2xl p-4 sm:p-5 shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-teal-300 shrink-0">
-              <ArrowRightLeft className="w-6 h-6 animate-pulse" />
+              <ArrowRightLeft className="w-6 h-6" />
             </div>
             <div>
-              <div className="text-xs font-bold text-teal-300 uppercase tracking-wider">
-                Maden Bozdurma Gişesi (Stardust ➔ KRD)
-              </div>
-              <h3 className="text-base font-bold text-white font-display">
-                Yıldız Tozunu Nakit KRD'ye Dönüştür
-              </h3>
+              <div className="text-xs font-bold text-teal-300 uppercase tracking-wider">Toz → KRD Gişesi</div>
+              <h3 className="text-base font-bold text-white font-display">Yıldız Tozunu KRD'ye Çevir</h3>
               <p className="text-[11px] text-teal-100/80">
-                Sabit Kur: 500 Yıldız Tozu = 1.00 KRD (Geri Alım Garantili)
+                Sabit kur: {rate} Yıldız Tozu = 1.00 KRD
               </p>
             </div>
           </div>
 
-          {/* Sell Form */}
           <div className="flex flex-wrap items-center gap-2">
             {[100, 250, 500, 1000].map((amt) => (
               <button
@@ -137,9 +128,10 @@ export const Marketplace: React.FC = () => {
 
             <button
               onClick={handleSellDust}
-              className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs px-4 py-2 rounded-xl shadow-md transition active:scale-95"
+              disabled={busy}
+              className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs px-4 py-2 rounded-xl shadow-md transition active:scale-95 disabled:opacity-50"
             >
-              Sat ➔ +${usdtReturn} KRD Al
+              Çevir → +{krdReturn} KRD
             </button>
           </div>
         </div>
@@ -154,9 +146,7 @@ export const Marketplace: React.FC = () => {
 
       {/* Equipment Marketplace Grid */}
       <div>
-        <h3 className="text-base font-bold text-white font-display mb-3">
-          Özel Teçhizat ve Destek Parçaları
-        </h3>
+        <h3 className="text-base font-bold text-white font-display mb-3">Özel Teçhizat ve Destek Parçaları</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {marketItems.map((item) => {
@@ -186,7 +176,7 @@ export const Marketplace: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-2">
                           <span
-                            className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded font-mono ${
+                            className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded font-mono ${
                               item.rarity === 'legendary'
                                 ? 'bg-amber-500/20 text-amber-300'
                                 : item.rarity === 'epic'
@@ -196,29 +186,21 @@ export const Marketplace: React.FC = () => {
                           >
                             {item.rarity}
                           </span>
-                          <span className="text-[10px] text-teal-300/60 font-mono">
-                            Stok: {item.stock}
-                          </span>
+                          <span className="text-[10px] text-teal-300/60 font-mono">Stok: {item.stock}</span>
                         </div>
-                        <h4 className="font-bold text-sm text-white font-display mt-0.5">
-                          {item.title}
-                        </h4>
+                        <h4 className="font-bold text-sm text-white font-display mt-0.5">{item.title}</h4>
                       </div>
                     </div>
 
                     <div className="text-right">
                       <div className="text-base font-black text-amber-300 font-mono leading-none">
-                        ${item.price}
+                        {item.price}
                       </div>
-                      <div className="text-[10px] text-teal-300/60 font-mono">
-                        {item.currency}
-                      </div>
+                      <div className="text-[10px] text-teal-300/60 font-mono">{item.currency}</div>
                     </div>
                   </div>
 
-                  <p className="text-xs text-teal-100/70 mt-2.5">
-                    {item.description}
-                  </p>
+                  <p className="text-xs text-teal-100/70 mt-2.5">{item.description}</p>
 
                   <div className="mt-2.5 bg-[#05222c] rounded-lg p-2 border border-teal-500/25 text-[11px] text-emerald-300 font-medium">
                     ⚡ <strong>Etki:</strong> {item.effectDescription}
@@ -226,16 +208,18 @@ export const Marketplace: React.FC = () => {
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-teal-500/20 flex items-center justify-between gap-2">
-                  <span className="text-[10px] text-teal-300/60 font-mono">
-                    Satıcı: {item.seller}
-                  </span>
+                  <span className="text-[10px] text-teal-300/60 font-mono">Satıcı: {item.seller}</span>
 
                   <button
                     onClick={() => handleBuy(item.id)}
-                    disabled={item.stock <= 0}
+                    disabled={item.stock <= 0 || busy || user.krdBalance < item.price}
                     className="px-4 py-1.5 rounded-xl text-xs font-black transition active:scale-95 bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 shadow-md disabled:bg-[#062430] disabled:text-teal-200/40"
                   >
-                    {item.stock > 0 ? `Satın Al (${item.price} ${item.currency})` : 'Tükendi'}
+                    {item.stock <= 0
+                      ? 'Tükendi'
+                      : user.krdBalance < item.price
+                      ? `Yetersiz KRD (${item.price})`
+                      : `Satın Al (${item.price} ${item.currency})`}
                   </button>
                 </div>
               </div>

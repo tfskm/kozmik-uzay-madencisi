@@ -1,6 +1,6 @@
 import React from 'react';
 import { useGame } from '../context/GameContext';
-import { Sparkles, Zap, Flame } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export const RandomEventPopup: React.FC = () => {
@@ -32,13 +32,11 @@ export const RandomEventPopup: React.FC = () => {
             <div>
               <div className="text-[10px] text-cyan-300 font-bold uppercase tracking-wider animate-pulse flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-cyan-300" />
-                <span>Sürpriz Uzay Olayı! (Tıkla & Al)</span>
+                <span>Sürpriz uzay olayı! (Tıkla & al)</span>
               </div>
-              <h4 className="text-xs font-black text-white leading-tight font-display">
-                {randomEvent.title}
-              </h4>
+              <h4 className="text-xs font-black text-white leading-tight font-display">{randomEvent.title}</h4>
               <div className="text-[11px] text-emerald-300 font-mono font-bold mt-0.5">
-                Ödül: +${randomEvent.rewardUsdt} KRD & +{randomEvent.rewardStardust} Toz
+                Ödül: +{randomEvent.rewardKrd.toFixed(2)} KRD & +{randomEvent.rewardStardust} Toz
               </div>
             </div>
           </div>

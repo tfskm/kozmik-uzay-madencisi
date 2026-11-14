@@ -59,8 +59,8 @@ export const MiningDashboard: React.FC = () => {
 
   const totalUnclaimed = userMiners.reduce((acc, m) => acc + m.unclaimedYield, 0);
   const totalDailyYield = userMiners.reduce((acc, m) => {
-    const factor = Math.max(0.1, m.durability / 100);
-    return acc + m.dailyYield * currentPlanet.miningMultiplier * factor;
+    const factor = Math.max(0, m.durability / 100);
+    return acc + m.dailyYield * factor;
   }, 0);
 
   const avgDurability = userMiners.length
@@ -69,8 +69,8 @@ export const MiningDashboard: React.FC = () => {
 
   const activeMinersCount = userMiners.filter((m) => m.durability > 0).length;
 
-  const handleClaimAll = () => {
-    const res = claimAllMiners();
+  const handleClaimAll = async () => {
+    const res = await claimAllMiners();
     if (res.totalClaimed > 0) {
       sounds.playCoin();
       confetti({
@@ -104,7 +104,7 @@ export const MiningDashboard: React.FC = () => {
                   Bekleyen Hasat
                 </div>
                 <div className="text-sm sm:text-base font-black text-emerald-300 font-mono leading-tight">
-                  ${totalUnclaimed.toFixed(4)} <span className="text-[10px] text-teal-200/70 font-sans">KRD</span>
+                  {totalUnclaimed.toFixed(4)} <span className="text-[10px] text-teal-200/70 font-sans">KRD</span>
                 </div>
               </div>
             </div>
@@ -128,7 +128,7 @@ export const MiningDashboard: React.FC = () => {
           <div className="hidden sm:flex items-center gap-2 font-mono text-xs">
             <div className="bg-[#052430]/90 border border-cyan-500/25 px-2.5 py-1.5 rounded-xl text-teal-100">
               <span className="text-teal-300/70 text-[10px]">Günlük: </span>
-              <strong className="text-emerald-300">+${totalDailyYield.toFixed(2)}</strong>
+              <strong className="text-emerald-300">+{totalDailyYield.toFixed(2)} KRD</strong>
             </div>
 
             <div className="bg-[#052430]/90 border border-cyan-500/25 px-2.5 py-1.5 rounded-xl text-teal-100">
@@ -218,11 +218,11 @@ export const MiningDashboard: React.FC = () => {
             <div className="p-3 bg-[#05222c]/80 border-b border-cyan-500/20 grid grid-cols-3 gap-2 text-center text-xs font-mono">
               <div className="bg-[#082e3c] p-2 rounded-xl border border-teal-400/25">
                 <div className="text-[10px] text-teal-300/70">Günlük Üretim</div>
-                <div className="font-bold text-emerald-300">+${totalDailyYield.toFixed(2)}</div>
+                <div className="font-bold text-emerald-300">+{totalDailyYield.toFixed(2)} KRD</div>
               </div>
               <div className="bg-[#082e3c] p-2 rounded-xl border border-teal-400/25">
                 <div className="text-[10px] text-teal-300/70">Bekleyen Hasılat</div>
-                <div className="font-bold text-amber-300">${totalUnclaimed.toFixed(4)}</div>
+                <div className="font-bold text-amber-300">{totalUnclaimed.toFixed(4)} KRD</div>
               </div>
               <div className="bg-[#082e3c] p-2 rounded-xl border border-teal-400/25">
                 <div className="text-[10px] text-teal-300/70">Sektör Çarpanı</div>
@@ -276,7 +276,7 @@ export const MiningDashboard: React.FC = () => {
                               {miner.packageName}
                             </div>
                             <div className="text-[10px] text-teal-200/70 font-mono">
-                              Üretim: <strong className="text-emerald-300">+${miner.dailyYield.toFixed(2)}/gün</strong> • Maliyet: ${miner.price}
+                              Üretim: <strong className="text-emerald-300">+{miner.dailyYield.toFixed(2)}/gün</strong> • Maliyet: {miner.price} KRD
                             </div>
                           </div>
                         </div>
@@ -327,7 +327,7 @@ export const MiningDashboard: React.FC = () => {
                       {/* Controls */}
                       <div className="mt-2.5 pt-2 border-t border-teal-500/20 flex items-center justify-between gap-2">
                         <div className="font-mono text-xs text-amber-300">
-                          ${miner.unclaimedYield.toFixed(4)} <span className="text-[10px] text-teal-200/60">KRD</span>
+                          {miner.unclaimedYield.toFixed(4)} <span className="text-[10px] text-teal-200/60">KRD</span>
                         </div>
 
                         <div className="flex items-center gap-1.5">

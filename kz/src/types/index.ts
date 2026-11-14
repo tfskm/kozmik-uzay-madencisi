@@ -4,10 +4,11 @@ export interface User {
   telegramId: string;
   avatar: string;
   walletAddress: string;
-  walletType: 'ton' | 'metamask' | 'phantom' | 'telegram' | null;
+  walletName?: string;
+  walletType: 'ton' | null;
   isConnected: boolean;
-  usdtBalance: number;       // Main stable balance for deposits/withdrawals/packages
-  stardustBalance: number;   // In-game cosmic dust for repairs, boosts & mini-rewards
+  krdBalance: number;        // Oyun içi KRD (nakde çevrilemez)
+  stardustBalance: number;   // Oyun içi Yıldız Tozu
   level: number;
   exp: number;
   maxExp: number;
@@ -35,12 +36,15 @@ export interface MiningPackage {
   subtitle: string;
   planetId: number;
   tier: MiningTier;
-  price: number;              // In KRD
-  dailyReturnPercent: number; // e.g. 0.55% daily (~180 days to 100% cover)
-  coverDays: number;          // e.g. 180 days (6 months amorti süresi)
-  lifespanDays: number;       // e.g. 365 days or unlimited with repairs
-  durabilityDecayPerDay: number; // % durability lost per 24h (e.g. 1.5% -> needs occasional repair)
-  dailyProduction: number;    // KRD per day
+  price: number;                 // Sıradaki alım fiyatı (KRD)
+  basePrice: number;             // Katalog taban fiyatı
+  dailyReturnPercent: number;    // Tam kondisyonda günlük %
+  dailyRate: number;             // 0.006 gibi
+  coverDays: number;
+  lifespanDays: number;
+  durabilityDecayPerDay: number;
+  planetMultiplier: number;
+  dailyProduction: number;       // Tam kondisyonda KRD/gün
   description: string;
   iconName: string;
   badge: string;
@@ -54,8 +58,10 @@ export interface UserMiner {
   packageName: string;
   tier: MiningTier;
   price: number;
-  dailyYield: number;
-  durability: number;        // 0 - 100%
+  dailyYield: number;            // Tam kondisyonda KRD/gün (gezegen + yükseltme dahil)
+  dailyRate: number;
+  decayPerDay: number;
+  durability: number;            // 0 - 100
   planetId: number;
   purchaseDate: number;
   lastClaimedAt: number;
@@ -71,7 +77,7 @@ export interface Planet {
   codeName: string;
   tagline: string;
   description: string;
-  miningMultiplier: number;  // Multiplier on production or unlocks higher tier packages
+  miningMultiplier: number;
   requiredLevel: number;
   unlockCostKRD: number;
   unlockCostStardust: number;
@@ -88,7 +94,18 @@ export interface Transaction {
   id: string;
   userId: string;
   userName: string;
-  type: 'deposit' | 'withdraw' | 'package_buy' | 'mine_claim' | 'repair' | 'spin_win' | 'box_open' | 'market_trade' | 'admin_adjustment';
+  type:
+    | 'deposit'
+    | 'withdraw'
+    | 'package_buy'
+    | 'mine_claim'
+    | 'repair'
+    | 'spin_win'
+    | 'box_open'
+    | 'market_trade'
+    | 'admin_adjustment'
+    | 'planet_unlock'
+    | 'daily';
   amount: number;
   currency: 'KRD' | 'TON' | 'STARDUST';
   status: 'completed' | 'pending' | 'rejected';
@@ -133,29 +150,31 @@ export interface MysteryBox {
 }
 
 export interface VoyageSettings {
-  starPoints: number; // default: 15
-  crystalPoints: number; // default: 50
-  asteroidPoints: number; // default: 25
-  asteroidShieldDamage: number; // default: 25
-  asteroidHullDecayPercent: number; // default: 2
-  asteroidPointPenalty: number; // default: 0
-  pirateBountyPoints: number; // default: 500
-  spawnIntervalSeconds: number; // default: 1.5
-  warpSpeedMultiplier: number; // default: 1.8
-  applyPlanetMultiplier: boolean; // default: true
+  starPoints: number;
+  crystalPoints: number;
+  asteroidPoints: number;
+  asteroidShieldDamage: number;
+  asteroidHullDecayPercent: number;
+  asteroidPointPenalty: number;
+  pirateBountyPoints: number;
+  spawnIntervalSeconds: number;
+  warpSpeedMultiplier: number;
+  applyPlanetMultiplier: boolean;
 }
 
 export interface AdminSystemStats {
   maintenanceMode: boolean;
   announcementText: string;
   showAnnouncement: boolean;
-  minWithdrawal: number;
-  withdrawalFeePercent: number;
-  autoApproveWithdrawalsUnder: number;
-  repairCostPerPercent: number; // Stardust or KRD needed per 1% repair
+  repairCostPerPercent: number;
+  stRepairCostPerPercent: number;
   luckyWheelCostStardust: number;
   telegramChannelUrl: string;
   telegramSupportUrl: string;
+  krdPerTon: number;
+  minTon: number;
+  stPerKrd: number;
+  dailyStardust: number;
   voyageSettings: VoyageSettings;
 }
 
@@ -172,3 +191,51 @@ export interface SpaceBattle {
   avatar: string;
 }
 
+// Admin panelinin sunucudan aldığı tam durum
+export interface AdminState {
+  config: Record<string, unknown> & {
+    announcementText: string;
+    showAnnouncement: boolean;
+    maintenanceMode: boolean;
+    telegramChannelUrl: string;
+    telegramSupportUrl: string;
+    krdPerTon: number;
+    minTon: number;
+    repairCostPerPct: number;
+    stRepairCostPerPct: number;
+    wheelCost: number;
+    dailyStardust: number;
+    stPerKrd: number;
+    planetUnlock: number[];
+    planetMult: number[];
+    requiredLevel: number[];
+    dailyFaucet: number[];
+  };
+  catalog: Record<string, {
+    name: string;
+    planetId: number;
+    tier: MiningTier;
+    price: number;
+    daily: number;
+    decay: number;
+    iconName: string;
+    active?: boolean;
+  }>;
+  players: Array<{
+    id: number;
+    name: string;
+    wallet: string;
+    banned: boolean;
+    krd: number;
+    stardust: number;
+    level: number;
+    miners: number;
+    planet: number;
+    unlocked: number;
+    pending: number;
+  }>;
+  totals: { krd: number; stardust: number; players: number };
+  stock: Record<string, number>;
+  treasury: string;
+  adminId: number;
+}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { sounds } from '../utils/audio';
-import { Wrench, X, Sparkles, Coins, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Wrench, X, Sparkles, Coins } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export const RepairModal: React.FC = () => {
@@ -15,15 +15,24 @@ export const RepairModal: React.FC = () => {
   } = useGame();
 
   const [useCurrency, setUseCurrency] = useState<'KRD' | 'STARDUST'>('STARDUST');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
 
   if (!isRepairModalOpen || !selectedMinerForRepair) return null;
 
   const missingPercent = Math.max(0, 100 - selectedMinerForRepair.durability);
-  const costKRD = Number((missingPercent * adminSettings.repairCostPerPercent).toFixed(2));
-  const costStardust = Math.ceil(missingPercent * 8);
+  const costKRD = Number(
+    (selectedMinerForRepair.price * adminSettings.repairCostPerPercent * missingPercent).toFixed(2)
+  );
+  const costStardust = Math.ceil(
+    selectedMinerForRepair.price * adminSettings.stRepairCostPerPercent * missingPercent
+  );
 
-  const handleRepair = () => {
-    const res = repairMiner(selectedMinerForRepair.instanceId, useCurrency);
+  const handleRepair = async () => {
+    if (busy) return;
+    setBusy(true);
+    const res = await repairMiner(selectedMinerForRepair.instanceId, useCurrency);
+    setBusy(false);
     if (res.success) {
       confetti({
         particleCount: 40,
@@ -31,16 +40,19 @@ export const RepairModal: React.FC = () => {
         origin: { y: 0.6 },
         colors: ['#38bdf8', '#fbbf24', '#34d399'],
       });
-      alert(res.message);
+      setMsg(res.message);
+      setTimeout(() => setIsRepairModalOpen(false), 700);
     } else {
-      alert(res.message);
+      setMsg(res.message);
     }
   };
+
+  const canPay =
+    useCurrency === 'KRD' ? user.krdBalance >= costKRD : user.stardustBalance >= costStardust;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#03141c]/80 backdrop-blur-md p-4 animate-in fade-in">
       <div className="bg-gradient-to-b from-[#0a3848] via-[#08303e] to-[#062430] border border-cyan-400/50 rounded-3xl max-w-md w-full p-6 shadow-2xl shadow-cyan-950/60 relative">
-        {/* Close Button */}
         <button
           onClick={() => {
             sounds.playClick();
@@ -56,16 +68,13 @@ export const RepairModal: React.FC = () => {
             <Wrench className="w-5 h-5 stroke-[2.5]" />
           </div>
           <div>
-            <h3 className="text-base font-black text-white font-display">
-              Madenci Bakım & Tamir Hangarı
-            </h3>
+            <h3 className="text-base font-black text-white font-display">Madenci Tamir Hangarı</h3>
             <p className="text-xs text-teal-100/70">
-              {selectedMinerForRepair.packageName} ünitesini %100 kondisyona getirin
+              {selectedMinerForRepair.packageName} ünitesini %100 kondisyona getir
             </p>
           </div>
         </div>
 
-        {/* Current Condition Card */}
         <div className="my-3.5 bg-[#05222d] border border-teal-500/30 rounded-2xl p-3.5">
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span className="text-teal-200/70">Mevcut Kondisyon:</span>
@@ -88,15 +97,14 @@ export const RepairModal: React.FC = () => {
           </div>
 
           <div className="mt-2 text-[11px] text-teal-200/75">
-            Aşınma: <strong className="text-rose-300">%{Math.round(missingPercent)}</strong> performans kaybı oluşturur. Tamir sonrası madenciniz tam kapasiteyle (+${selectedMinerForRepair.dailyYield.toFixed(2)}/gün) üretmeye devam eder.
+            Kondisyon düştükçe üretim azalır. Tamir sonrası tam kapasiteyle (
+            {selectedMinerForRepair.dailyYield.toFixed(2)} KRD/gün) üretmeye devam eder.
           </div>
         </div>
 
-        {/* Payment Method Selector */}
         <div className="space-y-2 mb-4">
-          <div className="text-xs font-semibold text-teal-100">Ödeme Yöntemi Seçin:</div>
+          <div className="text-xs font-semibold text-teal-100">Ödeme Yöntemi:</div>
 
-          {/* Stardust option */}
           <button
             onClick={() => {
               sounds.playClick();
@@ -112,22 +120,15 @@ export const RepairModal: React.FC = () => {
               <Sparkles className="w-4 h-4 text-cyan-300 stroke-[2.5]" />
               <div>
                 <div className="text-xs font-bold text-white">Yıldız Tozu ile Tamir</div>
-                <div className="text-[10px] text-teal-200/60">
-                  Madenlerden bedava toplanan tozları kullanın
-                </div>
+                <div className="text-[10px] text-teal-200/60">Oyun içi tozlarını kullan</div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm font-black font-mono text-cyan-300">
-                {costStardust} Toz
-              </div>
-              <div className="text-[10px] text-teal-300/70 font-mono">
-                Mevcut: {user.stardustBalance}
-              </div>
+              <div className="text-sm font-black font-mono text-cyan-300">{costStardust} Toz</div>
+              <div className="text-[10px] text-teal-300/70 font-mono">Mevcut: {user.stardustBalance}</div>
             </div>
           </button>
 
-          {/* KRD option */}
           <button
             onClick={() => {
               sounds.playClick();
@@ -142,30 +143,26 @@ export const RepairModal: React.FC = () => {
             <div className="flex items-center gap-2.5">
               <Coins className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
               <div>
-                <div className="text-xs font-bold text-white">KRD Bakiyesi ile Tamir</div>
-                <div className="text-[10px] text-teal-200/60">
-                  Doğrudan ana cüzdan bakiyenizden düşer
-                </div>
+                <div className="text-xs font-bold text-white">KRD ile Tamir</div>
+                <div className="text-[10px] text-teal-200/60">KRD bakiyenden düşer</div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm font-black font-mono text-emerald-300">
-                ${costKRD} KRD
-              </div>
-              <div className="text-[10px] text-teal-300/70 font-mono">
-                Mevcut: ${user.usdtBalance.toFixed(2)}
-              </div>
+              <div className="text-sm font-black font-mono text-emerald-300">{costKRD.toFixed(2)} KRD</div>
+              <div className="text-[10px] text-teal-300/70 font-mono">Mevcut: {user.krdBalance.toFixed(2)}</div>
             </div>
           </button>
         </div>
 
-        {/* Action Button */}
+        {msg && <p className="text-xs text-amber-300 mb-3 text-center">{msg}</p>}
+
         <button
           onClick={handleRepair}
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs font-display uppercase tracking-wider transition shadow-lg shadow-teal-950 active:scale-95 flex items-center justify-center gap-2"
+          disabled={busy || !canPay}
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black text-xs font-display uppercase tracking-wider transition shadow-lg shadow-teal-950 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-40"
         >
           <Wrench className="w-4 h-4 stroke-[2.5]" />
-          <span>Madenciyi %100 Yenile ve Tamir Et</span>
+          <span>{busy ? 'Tamir ediliyor…' : canPay ? 'Madenciyi %100 Tamir Et' : 'Yetersiz bakiye'}</span>
         </button>
       </div>
     </div>

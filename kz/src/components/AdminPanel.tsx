@@ -1,1434 +1,717 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { sounds } from '../utils/audio';
-import { MiningPackage, User, Planet } from '../types';
+import { INITIAL_MARKET_ITEMS } from '../data/initialData';
 import {
-  ShieldAlert,
-  Users,
-  PackagePlus,
-  Coins,
+  LayoutDashboard,
   Settings,
-  Ban,
-  UserCheck,
-  CheckCircle,
-  XCircle,
-  Search,
-  Plus,
-  Trash2,
-  Edit,
-  DollarSign,
-  TrendingUp,
-  AlertTriangle,
-  Radio,
-  RefreshCw,
+  PackageCheck,
   Globe2,
-  Rocket,
-  Zap,
+  Users,
+  Store,
+  Save,
+  RefreshCw,
+  Ban,
+  RotateCcw,
+  ShieldAlert,
+  Coins,
   Sparkles,
-  Shield,
-  Flame,
-  Sliders,
+  Megaphone,
+  Wrench,
+  Search,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+
+type Tab = 'overview' | 'general' | 'economy' | 'packages' | 'planets' | 'market' | 'players';
+
+const TABS: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
+  { id: 'overview', label: 'Genel Bakış', icon: LayoutDashboard },
+  { id: 'general', label: 'Duyuru & Bakım', icon: Megaphone },
+  { id: 'economy', label: 'Ekonomi', icon: Coins },
+  { id: 'packages', label: 'Paketler', icon: PackageCheck },
+  { id: 'planets', label: 'Gezegenler', icon: Globe2 },
+  { id: 'market', label: 'Pazar Stoğu', icon: Store },
+  { id: 'players', label: 'Oyuncular', icon: Users },
+];
+
+const num = (v: string, fallback = 0) => {
+  const n = Number(String(v).replace(',', '.'));
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const parseList = (v: string, len: number, fallback: number[] = []) => {
+  const arr = String(v)
+    .split(/[,\s]+/)
+    .map((s) => Number(s.replace(',', '.')))
+    .filter((n) => Number.isFinite(n));
+  while (arr.length < len) arr.push(fallback[arr.length] ?? 0);
+  return arr.slice(0, len);
+};
+
+const Card: React.FC<{ title: string; icon?: React.ElementType; children: React.ReactNode; desc?: string }> = ({
+  title,
+  icon: Icon,
+  children,
+  desc,
+}) => (
+  <div className="bg-[#083444]/90 border border-cyan-400/35 rounded-2xl p-4 shadow-lg">
+    <div className="flex items-center gap-2 mb-1">
+      {Icon && <Icon className="w-4 h-4 text-cyan-300" />}
+      <h3 className="text-sm font-bold text-white font-display">{title}</h3>
+    </div>
+    {desc && <p className="text-[11px] text-teal-200/60 mb-3">{desc}</p>}
+    <div className="space-y-3">{children}</div>
+  </div>
+);
+
+const Field: React.FC<{
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  hint?: string;
+  type?: string;
+  step?: string;
+}> = ({ label, value, onChange, hint, type = 'text', step }) => (
+  <label className="block">
+    <span className="text-[11px] font-semibold text-teal-200/80">{label}</span>
+    <input
+      type={type}
+      step={step}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="mt-1 w-full bg-[#05222d] border border-teal-500/30 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none focus:border-cyan-400/70"
+    />
+    {hint && <span className="block text-[10px] text-teal-300/50 mt-1">{hint}</span>}
+  </label>
+);
+
+const Toggle: React.FC<{ label: string; value: boolean; onChange: (v: boolean) => void; desc?: string }> = ({
+  label,
+  value,
+  onChange,
+  desc,
+}) => (
+  <button
+    onClick={() => onChange(!value)}
+    className="w-full flex items-center justify-between gap-3 bg-[#05222d] border border-teal-500/30 rounded-xl px-3 py-2.5 text-left"
+  >
+    <div>
+      <div className="text-xs font-bold text-white">{label}</div>
+      {desc && <div className="text-[10px] text-teal-300/60">{desc}</div>}
+    </div>
+    <span
+      className={`w-10 h-5 rounded-full relative transition shrink-0 ${
+        value ? 'bg-emerald-400' : 'bg-[#0a2c38] border border-teal-500/40'
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${
+          value ? 'left-5' : 'left-0.5'
+        }`}
+      />
+    </span>
+  </button>
+);
 
 export const AdminPanel: React.FC = () => {
   const {
-    users,
-    packages,
-    transactions,
-    planets,
-    adminSettings,
-    adminApproveWithdrawal,
-    adminRejectWithdrawal,
-    adminToggleBanUser,
-    adminAdjustBalance,
-    adminCreatePackage,
-    adminUpdatePackage,
-    adminDeletePackage,
+    adminState,
+    adminRefresh,
     adminUpdateSettings,
-    resetToDefaults,
-    setIsAdminMode,
+    adminUpdateCatalog,
+    adminUpdatePlayer,
+    adminUpdateStock,
+    isAdmin,
   } = useGame();
 
-  const [currentAdminTab, setCurrentAdminTab] = useState<
-    'overview' | 'users' | 'packages' | 'withdrawals' | 'planets' | 'voyage' | 'settings'
-  >('overview');
+  const [tab, setTab] = useState<Tab>('overview');
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState('');
+  const [catEdit, setCatEdit] = useState<Record<string, { name: string; price: string; daily: string; decay: string; active: boolean }>>({});
+  const [openPlayer, setOpenPlayer] = useState<number | null>(null);
+  const [adjust, setAdjust] = useState<{ krd: string; stardust: string }>({ krd: '0', stardust: '0' });
 
-  // Search & filter for users
-  const [userSearch, setUserSearch] = useState('');
+  useEffect(() => {
+    if (isAdmin) adminRefresh();
+  }, [isAdmin, adminRefresh]);
 
-  // Balance adjustment modal state
-  const [selectedUserForAdjust, setSelectedUserForAdjust] = useState<User | null>(null);
-  const [adjustUsdt, setAdjustUsdt] = useState<number>(0);
-  const [adjustDust, setAdjustDust] = useState<number>(0);
-
-  // New Package Form State
-  const [isCreatingPackage, setIsCreatingPackage] = useState(false);
-  const [newPkgName, setNewPkgName] = useState('');
-  const [newPkgSubtitle, setNewPkgSubtitle] = useState('');
-  const [newPkgPlanetId, setNewPkgPlanetId] = useState(1);
-  const [newPkgTier, setNewPkgTier] = useState<'bronze' | 'silver' | 'gold' | 'neon' | 'quantum'>('silver');
-  const [newPkgPrice, setNewPkgPrice] = useState(100);
-  const [newPkgCoverDays, setNewPkgCoverDays] = useState(180); // ~6 months
-  const [newPkgDurabilityDecay, setNewPkgDurabilityDecay] = useState(1.4);
-  const [newPkgBadge, setNewPkgBadge] = useState('YENİ');
-  const [newPkgIcon, setNewPkgIcon] = useState('Bot');
-  const [newPkgDescription, setNewPkgDescription] = useState('');
-
-  // Settings form local state
-  const [announcementInput, setAnnouncementInput] = useState(adminSettings.announcementText);
-  const [minWithdrawalInput, setMinWithdrawalInput] = useState(adminSettings.minWithdrawal);
-  const [feePercentInput, setFeePercentInput] = useState(adminSettings.withdrawalFeePercent);
-  const [autoApproveInput, setAutoApproveInput] = useState(adminSettings.autoApproveWithdrawalsUnder);
-  const [repairCostInput, setRepairCostInput] = useState(adminSettings.repairCostPerPercent);
-  const [maintenanceInput, setMaintenanceInput] = useState(adminSettings.maintenanceMode);
-
-  // In-Flight Voyage Rewards, Penalties & Mechanics State
-  const defaultVoyage = {
-    starPoints: 15,
-    crystalPoints: 50,
-    asteroidPoints: 25,
-    asteroidShieldDamage: 25,
-    asteroidHullDecayPercent: 2,
-    asteroidPointPenalty: 0,
-    pirateBountyPoints: 500,
-    spawnIntervalSeconds: 1.5,
-    warpSpeedMultiplier: 1.8,
-    applyPlanetMultiplier: true,
-  };
-  const activeVoyage = adminSettings.voyageSettings || defaultVoyage;
-
-  const [starPointsInput, setStarPointsInput] = useState<number>(activeVoyage.starPoints);
-  const [crystalPointsInput, setCrystalPointsInput] = useState<number>(activeVoyage.crystalPoints);
-  const [asteroidPointsInput, setAsteroidPointsInput] = useState<number>(activeVoyage.asteroidPoints);
-  const [shieldDamageInput, setShieldDamageInput] = useState<number>(activeVoyage.asteroidShieldDamage);
-  const [hullDecayInput, setHullDecayInput] = useState<number>(activeVoyage.asteroidHullDecayPercent);
-  const [pointPenaltyInput, setPointPenaltyInput] = useState<number>(activeVoyage.asteroidPointPenalty || 0);
-  const [pirateBountyInput, setPirateBountyInput] = useState<number>(activeVoyage.pirateBountyPoints);
-  const [spawnIntervalInput, setSpawnIntervalInput] = useState<number>(activeVoyage.spawnIntervalSeconds);
-  const [warpMultiplierInput, setWarpMultiplierInput] = useState<number>(activeVoyage.warpSpeedMultiplier);
-  const [applyMultiplierInput, setApplyMultiplierInput] = useState<boolean>(activeVoyage.applyPlanetMultiplier);
-  const [voyageToastMessage, setVoyageToastMessage] = useState<string | null>(null);
-
-  // Calculations for overview stats
-  const totalDeposited = transactions
-    .filter((t) => t.type === 'deposit' && t.status === 'completed')
-    .reduce((acc, t) => acc + t.amount, 0);
-
-  const totalWithdrawn = transactions
-    .filter((t) => t.type === 'withdraw' && t.status === 'completed')
-    .reduce((acc, t) => acc + t.amount, 0);
-
-  const systemReserve = totalDeposited - totalWithdrawn;
-  const pendingWithdrawals = transactions.filter((t) => t.type === 'withdraw' && t.status === 'pending');
-
-  const filteredUsers = users.filter(
-    (u) =>
-      u.telegramUsername.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.telegramId.includes(userSearch) ||
-      u.walletAddress.toLowerCase().includes(userSearch.toLowerCase())
-  );
-
-  const handleAdjustSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedUserForAdjust) return;
-    adminAdjustBalance(selectedUserForAdjust.id, adjustUsdt, adjustDust);
-    alert(`Bakiye başarıyla güncellendi!`);
-    setSelectedUserForAdjust(null);
-    setAdjustUsdt(0);
-    setAdjustDust(0);
-  };
-
-  const handleCreatePackageSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPkgName || newPkgPrice <= 0) {
-      alert('Lütfen geçerli paket bilgileri girin.');
-      return;
-    }
-
-    // Daily return based on cover days: 100 / coverDays %
-    const dailyReturnPercent = Number((100 / newPkgCoverDays).toFixed(2));
-    const dailyProduction = Number(((newPkgPrice * dailyReturnPercent) / 100).toFixed(2));
-
-    adminCreatePackage({
-      name: newPkgName,
-      subtitle: newPkgSubtitle || `${newPkgCoverDays} Gün Amorti Süreli Uzay Madencisi`,
-      planetId: Number(newPkgPlanetId),
-      tier: newPkgTier,
-      price: Number(newPkgPrice),
-      dailyReturnPercent,
-      coverDays: Number(newPkgCoverDays),
-      lifespanDays: 360,
-      durabilityDecayPerDay: Number(newPkgDurabilityDecay),
-      dailyProduction,
-      description: newPkgDescription || `${newPkgName} uzay aracı ile günlük sabit $${dailyProduction} KRD kazanın.`,
-      iconName: newPkgIcon,
-      badge: newPkgBadge,
-      isActive: true,
+  useEffect(() => {
+    if (!adminState) return;
+    const c = adminState.config;
+    setForm({
+      announcementText: String(c.announcementText ?? ''),
+      telegramChannelUrl: String(c.telegramChannelUrl ?? ''),
+      telegramSupportUrl: String(c.telegramSupportUrl ?? ''),
+      krdPerTon: String(c.krdPerTon ?? 20),
+      minTon: String(c.minTon ?? 0.5),
+      repairCostPerPct: String(c.repairCostPerPct ?? 0.0008),
+      stRepairCostPerPct: String(c.stRepairCostPerPct ?? 0.05),
+      wheelCost: String(c.wheelCost ?? 100),
+      dailyStardust: String(c.dailyStardust ?? 50),
+      stPerKrd: String(c.stPerKrd ?? 500),
+      planetUnlock: (c.planetUnlock || []).join(', '),
+      planetMult: (c.planetMult || []).join(', '),
+      requiredLevel: (c.requiredLevel || []).join(', '),
+      dailyFaucet: (c.dailyFaucet || []).join(', '),
     });
+    setCatEdit(
+      Object.fromEntries(
+        Object.entries(adminState.catalog).map(([id, p]) => [
+          id,
+          {
+            name: p.name,
+            price: String(p.price),
+            daily: String(Number((p.daily * 100).toFixed(3))),
+            decay: String(p.decay),
+            active: p.active !== false,
+          },
+        ])
+      )
+    );
+  }, [adminState]);
 
-    confetti({ particleCount: 50, spread: 60 });
-    alert('Yeni madenci paketi başarıyla oluşturuldu ve mağazada yayına alındı!');
-    setIsCreatingPackage(false);
-    setNewPkgName('');
+  const flash = (ok: boolean, text: string) => {
+    setMsg({ ok, text });
+    setTimeout(() => setMsg(null), 3500);
   };
 
-  const handleSaveSettings = () => {
-    adminUpdateSettings({
-      announcementText: announcementInput,
-      showAnnouncement: true,
-      minWithdrawal: Number(minWithdrawalInput),
-      withdrawalFeePercent: Number(feePercentInput),
-      autoApproveWithdrawalsUnder: Number(autoApproveInput),
-      repairCostPerPercent: Number(repairCostInput),
-      maintenanceMode: maintenanceInput,
-    });
-    alert('Sistem ve ekonomi parametreleri güncellendi!');
+  const saveSettings = async (patch: Record<string, unknown>, label = 'Ayarlar kaydedildi.') => {
+    if (saving) return;
+    setSaving(true);
+    const err = await adminUpdateSettings(patch);
+    setSaving(false);
+    flash(!err, err || label);
   };
 
-  const handleSaveVoyageSettings = () => {
-    sounds.playUpgrade();
-    adminUpdateSettings({
-      voyageSettings: {
-        starPoints: Number(starPointsInput) || 0,
-        crystalPoints: Number(crystalPointsInput) || 0,
-        asteroidPoints: Number(asteroidPointsInput) || 0,
-        asteroidShieldDamage: Number(shieldDamageInput) || 0,
-        asteroidHullDecayPercent: Number(hullDecayInput) || 0,
-        asteroidPointPenalty: Number(pointPenaltyInput) || 0,
-        pirateBountyPoints: Number(pirateBountyInput) || 0,
-        spawnIntervalSeconds: Number(spawnIntervalInput) || 1.5,
-        warpSpeedMultiplier: Number(warpMultiplierInput) || 1.8,
-        applyPlanetMultiplier: applyMultiplierInput,
+  const saveGeneral = () =>
+    saveSettings(
+      {
+        announcementText: form.announcementText,
+        telegramChannelUrl: form.telegramChannelUrl,
+        telegramSupportUrl: form.telegramSupportUrl,
+        showAnnouncement: adminState?.config.showAnnouncement,
+        maintenanceMode: adminState?.config.maintenanceMode,
       },
+      'Duyuru ve bakım ayarları kaydedildi.'
+    );
+
+  const saveEconomy = () =>
+    saveSettings(
+      {
+        krdPerTon: num(form.krdPerTon, 20),
+        minTon: num(form.minTon, 0.5),
+        repairCostPerPct: num(form.repairCostPerPct, 0.0008),
+        stRepairCostPerPct: num(form.stRepairCostPerPct, 0.05),
+        wheelCost: num(form.wheelCost, 100),
+        dailyStardust: num(form.dailyStardust, 50),
+        stPerKrd: num(form.stPerKrd, 500),
+      },
+      'Ekonomi ayarları kaydedildi.'
+    );
+
+  const savePlanets = () =>
+    saveSettings(
+      {
+        planetUnlock: parseList(form.planetUnlock, 6, [0, 30, 100, 250, 600, 1500]),
+        planetMult: parseList(form.planetMult, 6, [1, 1.1, 1.25, 1.45, 1.7, 2]),
+        requiredLevel: parseList(form.requiredLevel, 6, [1, 2, 4, 7, 11, 16]),
+        dailyFaucet: parseList(form.dailyFaucet, 7, [2, 2, 3, 3, 4, 4, 6]),
+      },
+      'Gezegen ve günlük ödül ayarları kaydedildi.'
+    );
+
+  const savePackage = async (id: string) => {
+    const e = catEdit[id];
+    if (!e) return;
+    setSaving(true);
+    const err = await adminUpdateCatalog({
+      id,
+      name: e.name,
+      price: num(e.price, 0),
+      daily: num(e.daily, 0) / 100,
+      decay: num(e.decay, 1),
+      active: e.active,
     });
-    confetti({ particleCount: 40, spread: 60 });
-    setVoyageToastMessage('🚀 Uzay yolculuğu ödül ve zarar parametreleri başarıyla güncellendi!');
-    setTimeout(() => setVoyageToastMessage(null), 3500);
+    setSaving(false);
+    flash(!err, err || 'Paket güncellendi.');
   };
 
-  const handleResetVoyageSettings = () => {
-    sounds.playClick();
-    setStarPointsInput(defaultVoyage.starPoints);
-    setCrystalPointsInput(defaultVoyage.crystalPoints);
-    setAsteroidPointsInput(defaultVoyage.asteroidPoints);
-    setShieldDamageInput(defaultVoyage.asteroidShieldDamage);
-    setHullDecayInput(defaultVoyage.asteroidHullDecayPercent);
-    setPointPenaltyInput(defaultVoyage.asteroidPointPenalty);
-    setPirateBountyInput(defaultVoyage.pirateBountyPoints);
-    setSpawnIntervalInput(defaultVoyage.spawnIntervalSeconds);
-    setWarpMultiplierInput(defaultVoyage.warpSpeedMultiplier);
-    setApplyMultiplierInput(defaultVoyage.applyPlanetMultiplier);
-    adminUpdateSettings({ voyageSettings: defaultVoyage });
-    setVoyageToastMessage('🔄 Uçuş parametreleri varsayılan fabrika ayarlarına döndürüldü.');
-    setTimeout(() => setVoyageToastMessage(null), 3000);
-  };
+  const players = useMemo(() => {
+    if (!adminState) return [];
+    const q = search.trim().toLowerCase();
+    if (!q) return adminState.players;
+    return adminState.players.filter(
+      (p) => String(p.id).includes(q) || (p.name || '').toLowerCase().includes(q) || (p.wallet || '').toLowerCase().includes(q)
+    );
+  }, [adminState, search]);
+
+  if (!isAdmin) {
+    return (
+      <div className="bg-rose-950/40 border border-rose-500/40 rounded-2xl p-6 text-center">
+        <ShieldAlert className="w-8 h-8 text-rose-300 mx-auto mb-2" />
+        <h2 className="text-base font-black text-white">Yönetim paneline erişim yok</h2>
+        <p className="text-xs text-rose-200/70 mt-1">
+          Sunucuda ADMIN_IDS ortam değişkenine kendi Telegram ID'ni ekle.
+        </p>
+      </div>
+    );
+  }
+
+  if (!adminState) {
+    return (
+      <div className="bg-[#083444]/90 border border-cyan-400/35 rounded-2xl p-6 text-center">
+        <RefreshCw className="w-6 h-6 text-cyan-300 mx-auto mb-2 animate-spin" />
+        <p className="text-xs text-teal-200/70">Yönetim verileri yükleniyor…</p>
+        <button
+          onClick={() => adminRefresh()}
+          className="mt-3 px-3 py-1.5 rounded-lg bg-cyan-400 text-slate-950 text-xs font-bold"
+        >
+          Tekrar Dene
+        </button>
+      </div>
+    );
+  }
+
+  const c = adminState.config;
 
   return (
-    <div className="space-y-6 pb-24">
-      {/* Top Admin Header Bar */}
-      <div className="bg-gradient-to-r from-[#0c3e4f] via-[#093343] to-[#072734] border border-cyan-400/40 rounded-2xl p-4 sm:p-5 shadow-xl shadow-cyan-950/40">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-cyan-400/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shrink-0 shadow-inner">
-              <ShieldAlert className="w-6 h-6 animate-pulse" />
+    <div className="space-y-4 pb-24">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[#2a0f2e] via-[#0d3f4f] to-[#0a3b4a] border border-rose-400/40 rounded-2xl p-4 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-rose-300 uppercase tracking-wider">
+              <ShieldAlert className="w-4 h-4" />
+              <span>Sunucu Yönetim Paneli</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider font-mono">
-                  SÜPER YÖNETİCİ KONSOLU
-                </span>
-                <span className="bg-emerald-400/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-400/40">
-                  TAM YETKİ
-                </span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white font-display mt-0.5">
-                Kozmik Madenci Yönetim Paneli
-              </h2>
-              <p className="text-xs text-teal-100/70">
-                Kullanıcıları denetleyin, paket ekleyin, çekim onaylayın ve ekonomi parametrelerini yönetin.
-              </p>
-            </div>
+            <h2 className="text-xl font-black text-white font-display">Kozmik Kontrol Merkezi</h2>
+            <p className="text-[11px] text-teal-100/70">
+              Yönetici ID: {adminState.adminId} · Kasa: {adminState.treasury ? `${adminState.treasury.slice(0, 6)}…${adminState.treasury.slice(-4)}` : 'tanımsız'}
+            </p>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsAdminMode(false)}
-              className="bg-[#05222d] hover:bg-[#08303e] text-teal-200 border border-teal-500/30 text-xs font-bold px-3 py-2 rounded-xl transition"
-            >
-              Oyuncu Moduna Dön
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              sounds.playClick();
+              adminRefresh();
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#07303f] border border-cyan-400/40 text-cyan-200 text-xs font-bold"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Yenile
+          </button>
         </div>
 
-        {/* Admin Navigation Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto mt-4 pt-3 border-t border-teal-500/20 no-scrollbar">
-          {[
-            { id: 'overview', label: 'Genel Bakış & Kasa', icon: TrendingUp },
-            { id: 'users', label: `Kullanıcılar (${users.length})`, icon: Users },
-            { id: 'packages', label: `Paketler (${packages.length})`, icon: PackagePlus },
-            {
-              id: 'withdrawals',
-              label: `Çekim Kuyruğu (${pendingWithdrawals.length})`,
-              icon: Coins,
-              badge: pendingWithdrawals.length,
-            },
-            { id: 'planets', label: `Gezegen Çarpanları`, icon: Globe2 },
-            { id: 'voyage', label: '🚀 Uzay Uçuşu & Puanlar', icon: Rocket },
-            { id: 'settings', label: 'Ekonomi Ayarları', icon: Settings },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = currentAdminTab === tab.id;
-
+        <div className="flex items-center gap-1.5 overflow-x-auto mt-3 pt-3 border-t border-cyan-500/25 no-scrollbar">
+          {TABS.map((t) => {
+            const Icon = t.icon;
             return (
               <button
-                key={tab.id}
+                key={t.id}
                 onClick={() => {
                   sounds.playClick();
-                  setCurrentAdminTab(tab.id as typeof currentAdminTab);
+                  setTab(t.id);
                 }}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
-                  isActive
-                    ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black shadow-md'
-                    : 'bg-[#05222d] hover:bg-[#08303f] text-teal-200/80 border border-teal-500/20'
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition ${
+                  tab === t.id
+                    ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md'
+                    : 'bg-[#07303f] text-teal-200/80 border border-teal-500/25'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
-                {tab.badge ? (
-                  <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-1.5 rounded-full animate-bounce">
-                    {tab.badge}
-                  </span>
-                ) : null}
+                <Icon className="w-3.5 h-3.5" /> {t.label}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* TAB 1: OVERVIEW & CASHFLOW */}
-      {currentAdminTab === 'overview' && (
-        <div className="space-y-4">
+      {msg && (
+        <div
+          className={`rounded-xl p-3 text-xs flex items-center gap-2 border ${
+            msg.ok
+              ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+              : 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+          }`}
+        >
+          {msg.ok ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          <span>{msg.text}</span>
+        </div>
+      )}
+
+      {/* OVERVIEW */}
+      {tab === 'overview' && (
+        <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="bg-[#07303e]/90 border border-teal-500/30 rounded-2xl p-4">
-              <div className="text-xs text-slate-400 font-medium">Toplam Kayıtlı Madenci</div>
-              <div className="text-2xl font-black text-white font-mono mt-1">
-                {users.length}
-              </div>
-              <div className="text-[11px] text-emerald-400 font-mono mt-1">
-                {users.filter((u) => !u.isBanned).length} Aktif • {users.filter((u) => u.isBanned).length} Banlı
+            <div className="bg-[#083444]/90 border border-emerald-400/35 rounded-2xl p-3">
+              <div className="text-[10px] text-emerald-300 font-bold uppercase">Toplam KRD</div>
+              <div className="text-lg font-black text-emerald-300 font-mono">
+                {adminState.totals.krd.toFixed(0)}
               </div>
             </div>
-
-            <div className="bg-[#07303e]/90 border border-teal-500/30 rounded-2xl p-4">
-              <div className="text-xs text-slate-400 font-medium">Toplam Yatırım (Deposits)</div>
-              <div className="text-2xl font-black text-emerald-400 font-mono mt-1">
-                ${totalDeposited.toFixed(2)}
+            <div className="bg-[#083444]/90 border border-cyan-400/35 rounded-2xl p-3">
+              <div className="text-[10px] text-cyan-300 font-bold uppercase">Toplam Toz</div>
+              <div className="text-lg font-black text-cyan-200 font-mono">
+                {adminState.totals.stardust.toFixed(0)}
               </div>
-              <div className="text-[11px] text-slate-500 font-mono mt-1">Sisteme Giren KRD</div>
             </div>
-
-            <div className="bg-[#07303e]/90 border border-teal-500/30 rounded-2xl p-4">
-              <div className="text-xs text-slate-400 font-medium">Toplam Ödenen Çekim</div>
-              <div className="text-2xl font-black text-cyan-400 font-mono mt-1">
-                ${totalWithdrawn.toFixed(2)}
-              </div>
-              <div className="text-[11px] text-slate-500 font-mono mt-1">Kullanıcılara Aktarılan</div>
+            <div className="bg-[#083444]/90 border border-teal-400/35 rounded-2xl p-3">
+              <div className="text-[10px] text-teal-300 font-bold uppercase">Oyuncu</div>
+              <div className="text-lg font-black text-white font-mono">{adminState.totals.players}</div>
             </div>
-
-            <div className="bg-slate-900/80 border border-emerald-500/40 rounded-2xl p-4 bg-emerald-950/20">
-              <div className="text-xs text-emerald-300 font-semibold">Net Rezerv / Kasa</div>
-              <div className="text-2xl font-black text-amber-300 font-mono mt-1">
-                ${systemReserve.toFixed(2)}
-              </div>
-              <div className="text-[11px] text-emerald-400 font-mono mt-1">Sağlıklı Likidite</div>
+            <div className="bg-[#083444]/90 border border-amber-400/35 rounded-2xl p-3">
+              <div className="text-[10px] text-amber-300 font-bold uppercase">Kur</div>
+              <div className="text-lg font-black text-amber-300 font-mono">{c.krdPerTon} KRD/TON</div>
             </div>
           </div>
 
-          {/* Quick Pending Alert if any */}
-          {pendingWithdrawals.length > 0 && (
-            <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
-                <div>
-                  <div className="text-xs font-bold text-amber-300">
-                    Bekleyen {pendingWithdrawals.length} Çekim Talebi Bulunuyor!
-                  </div>
-                  <div className="text-[11px] text-slate-300">
-                    Kullanıcıların çekim taleplerini onaylamak veya reddetmek için Çekim Kuyruğu sekmesine geçin.
-                  </div>
+          <Card title="Hızlı Durum" icon={Settings}>
+            <div className="grid grid-cols-2 gap-2 text-[11px] text-teal-100">
+              <div className="bg-[#05222d] rounded-xl p-2.5">
+                <div className="text-teal-300/60">Duyuru</div>
+                <div className="font-bold">{c.showAnnouncement ? 'Açık' : 'Kapalı'}</div>
+              </div>
+              <div className="bg-[#05222d] rounded-xl p-2.5">
+                <div className="text-teal-300/60">Bakım modu</div>
+                <div className={`font-bold ${c.maintenanceMode ? 'text-rose-300' : 'text-emerald-300'}`}>
+                  {c.maintenanceMode ? 'AÇIK' : 'Kapalı'}
                 </div>
               </div>
-
-              <button
-                onClick={() => setCurrentAdminTab('withdrawals')}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-xl shrink-0"
-              >
-                Kuyruğu Aç
-              </button>
+              <div className="bg-[#05222d] rounded-xl p-2.5">
+                <div className="text-teal-300/60">Çark maliyeti</div>
+                <div className="font-bold">{c.wheelCost} Toz</div>
+              </div>
+              <div className="bg-[#05222d] rounded-xl p-2.5">
+                <div className="text-teal-300/60">Toz → KRD</div>
+                <div className="font-bold">{c.stPerKrd} Toz = 1 KRD</div>
+              </div>
             </div>
-          )}
-        </div>
+          </Card>
+
+          <Card title="Ekonomi Özeti" icon={Coins} desc="Paket fiyatına göre tam kondisyonda günlük üretim.">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="text-teal-300/70 text-left">
+                    <th className="py-1">Paket</th>
+                    <th>Fiyat</th>
+                    <th>Günlük</th>
+                    <th>Amorti</th>
+                  </tr>
+                </thead>
+                <tbody className="text-teal-100">
+                  {Object.entries(adminState.catalog).map(([id, p]) => (
+                    <tr key={id} className="border-t border-teal-500/15">
+                      <td className="py-1.5 pr-2">{p.name}</td>
+                      <td className="font-mono">{p.price}</td>
+                      <td className="font-mono text-emerald-300">{(p.daily * 100).toFixed(2)}%</td>
+                      <td className="font-mono text-amber-300">~{Math.round(1 / Math.max(0.0001, p.daily))} gün</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
       )}
 
-      {/* TAB 2: USERS MANAGEMENT */}
-      {currentAdminTab === 'users' && (
-        <div className="space-y-4">
-          {/* Search bar */}
-          <div className="flex items-center gap-2 bg-[#07303e]/90 border border-teal-500/30 rounded-xl px-3 py-2">
-            <Search className="w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Telegram Kullanıcı Adı, ID veya Cüzdan ile ara..."
-              value={userSearch}
-              onChange={(e) => setUserSearch(e.target.value)}
-              className="bg-transparent text-xs text-white outline-none w-full placeholder-slate-500 font-mono"
+      {/* GENERAL */}
+      {tab === 'general' && (
+        <Card title="Duyuru & Bakım" icon={Megaphone} desc="Tüm oyunculara gösterilen mesaj ve bakım durumu.">
+          <Toggle
+            label="Duyuru şeridini göster"
+            desc="Kullanıcı kapatana kadar üstte görünür."
+            value={!!c.showAnnouncement}
+            onChange={(v) => saveSettings({ showAnnouncement: v }, v ? 'Duyuru açıldı.' : 'Duyuru kapatıldı.')}
+          />
+          <Toggle
+            label="Bakım modu"
+            desc="Açıkken oyuncular bakım ekranı görür; adminler girebilir."
+            value={!!c.maintenanceMode}
+            onChange={(v) => saveSettings({ maintenanceMode: v }, v ? 'Bakım modu açıldı.' : 'Bakım modu kapatıldı.')}
+          />
+          <label className="block">
+            <span className="text-[11px] font-semibold text-teal-200/80">Duyuru metni</span>
+            <textarea
+              value={form.announcementText || ''}
+              onChange={(e) => setForm((f) => ({ ...f, announcementText: e.target.value }))}
+              rows={3}
+              className="mt-1 w-full bg-[#05222d] border border-teal-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400/70"
             />
-          </div>
-
-          {/* Users Table */}
-          <div className="bg-[#062937]/90 border border-teal-500/30 rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#041d27]/90 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
-                  <tr>
-                    <th className="py-3 px-3">Kullanıcı</th>
-                    <th className="py-3 px-3">Cüzdan</th>
-                    <th className="py-3 px-3">KRD / Toz Bakiye</th>
-                    <th className="py-3 px-3">Yatırım / Çekim</th>
-                    <th className="py-3 px-3">Durum</th>
-                    <th className="py-3 px-3 text-right">İşlemler</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/80">
-                  {filteredUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-800/30 transition">
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{u.avatar}</span>
-                          <div>
-                            <div className="font-bold text-slate-200">
-                              @{u.telegramUsername}
-                            </div>
-                            <div className="text-[10px] text-slate-500 font-mono">
-                              ID: {u.telegramId} • Lv.{u.level}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="py-3 px-3 font-mono text-[11px] text-cyan-300">
-                        {u.walletAddress ? u.walletAddress.substring(0, 10) + '...' : 'Bağlı Değil'}
-                      </td>
-
-                      <td className="py-3 px-3 font-mono">
-                        <div className="font-bold text-emerald-400">
-                          ${u.usdtBalance.toFixed(2)} KRD
-                        </div>
-                        <div className="text-[10px] text-purple-300">
-                          {u.stardustBalance} Toz
-                        </div>
-                      </td>
-
-                      <td className="py-3 px-3 font-mono text-[11px]">
-                        <span className="text-emerald-400">+${u.totalDeposited.toFixed(0)}</span> /{' '}
-                        <span className="text-rose-400">-${u.totalWithdrawn.toFixed(0)}</span>
-                      </td>
-
-                      <td className="py-3 px-3">
-                        {u.isBanned ? (
-                          <span className="bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold px-2 py-0.5 rounded font-mono">
-                            BANLI
-                          </span>
-                        ) : (
-                          <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold px-2 py-0.5 rounded font-mono">
-                            AKTİF
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="py-3 px-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* Balance Adjust Button */}
-                          <button
-                            onClick={() => {
-                              setSelectedUserForAdjust(u);
-                              setAdjustUsdt(0);
-                              setAdjustDust(0);
-                            }}
-                            className="p-1.5 rounded-lg bg-indigo-950/60 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/30 transition"
-                            title="Bakiye Düzenle"
-                          >
-                            <DollarSign className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Ban / Unban Button */}
-                          <button
-                            onClick={() => adminToggleBanUser(u.id)}
-                            className={`p-1.5 rounded-lg border transition ${
-                              u.isBanned
-                                ? 'bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border-emerald-500/30'
-                                : 'bg-rose-950/60 hover:bg-rose-900 text-rose-300 border-rose-500/30'
-                            }`}
-                            title={u.isBanned ? 'Ban Kaldır' : 'Kullanıcıyı Banla'}
-                          >
-                            {u.isBanned ? <UserCheck className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Balance Adjustment Modal */}
-          {selectedUserForAdjust && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-              <div className="bg-slate-900 border border-indigo-500/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative">
-                <h3 className="text-base font-bold text-white font-display mb-1">
-                  Bakiye Düzenleme: @{selectedUserForAdjust.telegramUsername}
-                </h3>
-                <p className="text-xs text-slate-400 mb-3">
-                  Pozitif değer ekler (+), negatif değer çıkarır (-).
-                </p>
-
-                <form onSubmit={handleAdjustSubmit} className="space-y-3">
-                  <div>
-                    <label className="text-xs text-slate-300 mb-1 block">KRD Değişimi:</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={adjustUsdt}
-                      onChange={(e) => setAdjustUsdt(Number(e.target.value))}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-slate-300 mb-1 block">Yıldız Tozu Değişimi:</label>
-                    <input
-                      type="number"
-                      step="1"
-                      value={adjustDust}
-                      onChange={(e) => setAdjustDust(Number(e.target.value))}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedUserForAdjust(null)}
-                      className="flex-1 py-2 rounded-xl bg-slate-800 text-slate-400 text-xs font-bold"
-                    >
-                      İptal
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold"
-                    >
-                      Değişikliği Kaydet
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-        </div>
+          </label>
+          <Field
+            label="Telegram kanal linki"
+            value={form.telegramChannelUrl || ''}
+            onChange={(v) => setForm((f) => ({ ...f, telegramChannelUrl: v }))}
+          />
+          <Field
+            label="Destek linki"
+            value={form.telegramSupportUrl || ''}
+            onChange={(v) => setForm((f) => ({ ...f, telegramSupportUrl: v }))}
+          />
+          <button
+            onClick={saveGeneral}
+            disabled={saving}
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" /> Kaydet
+          </button>
+        </Card>
       )}
 
-      {/* TAB 3: PACKAGES MANAGEMENT */}
-      {currentAdminTab === 'packages' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-white font-display">
-              Mevcut Madenci Paketleri ({packages.length})
-            </h3>
-
-            <button
-              onClick={() => setIsCreatingPackage(!isCreatingPackage)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Yeni Paket Oluştur</span>
-            </button>
+      {/* ECONOMY */}
+      {tab === 'economy' && (
+        <Card title="Ekonomi Ayarları" icon={Coins} desc="Tüm değerler sunucuda anında geçerli olur.">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="1 TON kaç KRD?" type="number" step="0.1" value={form.krdPerTon || ''} onChange={(v) => setForm((f) => ({ ...f, krdPerTon: v }))} />
+            <Field label="Minimum TON" type="number" step="0.1" value={form.minTon || ''} onChange={(v) => setForm((f) => ({ ...f, minTon: v }))} />
+            <Field
+              label="KRD tamir maliyeti (paket fiyatı × % / 1%)"
+              type="number"
+              step="0.0001"
+              value={form.repairCostPerPct || ''}
+              onChange={(v) => setForm((f) => ({ ...f, repairCostPerPct: v }))}
+              hint="0.0008 = fiyatın %0.08'i her %1 kondisyon için"
+            />
+            <Field
+              label="Toz tamir maliyeti (paket fiyatı × / 1%)"
+              type="number"
+              step="0.01"
+              value={form.stRepairCostPerPct || ''}
+              onChange={(v) => setForm((f) => ({ ...f, stRepairCostPerPct: v }))}
+              hint="0.05 = fiyatın %5'i her %1 kondisyon için"
+            />
+            <Field label="Çark maliyeti (Toz)" type="number" value={form.wheelCost || ''} onChange={(v) => setForm((f) => ({ ...f, wheelCost: v }))} />
+            <Field label="Günlük ödül Tozu" type="number" value={form.dailyStardust || ''} onChange={(v) => setForm((f) => ({ ...f, dailyStardust: v }))} />
+            <Field label="Kaç Toz = 1 KRD?" type="number" value={form.stPerKrd || ''} onChange={(v) => setForm((f) => ({ ...f, stPerKrd: v }))} />
           </div>
+          <button
+            onClick={saveEconomy}
+            disabled={saving}
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" /> Ekonomiyi Kaydet
+          </button>
+          <div className="bg-[#05222d] border border-amber-500/30 rounded-xl p-2.5 text-[10px] text-amber-200/80">
+            Uyarı: Değerleri değiştirmek tüm oyuncuları etkiler. Önce simülasyonla test etmek için
+            <code className="mx-1 text-amber-300">node server/sim.js</code> çalıştır.
+          </div>
+        </Card>
+      )}
 
-          {/* New Package Creation Wizard Form */}
-          {isCreatingPackage && (
-            <form
-              onSubmit={handleCreatePackageSubmit}
-              className="bg-slate-900 border border-emerald-500/50 rounded-2xl p-4 sm:p-5 space-y-4 glow-emerald"
-            >
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <h4 className="text-sm font-bold text-white font-display flex items-center gap-2">
-                  <PackagePlus className="w-4 h-4 text-emerald-400" />
-                  <span>Yeni Madencilik Paketi Sihirbazı</span>
-                </h4>
-                <button
-                  type="button"
-                  onClick={() => setIsCreatingPackage(false)}
-                  className="text-xs text-slate-400 hover:text-white"
-                >
-                  ✕ Kapat
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs text-slate-300 mb-1 block">Paket Adı:</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Örn: Kuasar Plazma Kruvazörü"
-                    value={newPkgName}
-                    onChange={(e) => setNewPkgName(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs outline-none font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs text-slate-300 mb-1 block">Alt Başlık / Rozet:</label>
-                  <input
-                    type="text"
-                    placeholder="Örn: YÜKSEK GETİRİ / VIP"
-                    value={newPkgBadge}
-                    onChange={(e) => setNewPkgBadge(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs text-slate-300 mb-1 block">Sektör / Gezegen:</label>
-                  <select
-                    value={newPkgPlanetId}
-                    onChange={(e) => setNewPkgPlanetId(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs outline-none"
+      {/* PACKAGES */}
+      {tab === 'packages' && (
+        <Card title="Paket Kataloğu" icon={PackageCheck} desc="Fiyat, günlük oran (%), aşınma ve aktiflik.">
+          <div className="space-y-3">
+            {Object.entries(catEdit).map(([id, p]) => (
+              <div key={id} className="bg-[#05222d] border border-teal-500/25 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-[11px] font-bold text-white truncate">{p.name || id}</div>
+                  <button
+                    onClick={() => setCatEdit((s) => ({ ...s, [id]: { ...s[id], active: !s[id].active } }))}
+                    className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                      p.active
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                    }`}
                   >
-                    {planets.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        Sektör {p.id}: {p.name}
-                      </option>
-                    ))}
-                  </select>
+                    {p.active ? 'AKTİF' : 'KAPALI'}
+                  </button>
                 </div>
-
-                <div>
-                  <label className="text-xs text-slate-300 mb-1 block">Fiyat ($ KRD):</label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    value={newPkgPrice}
-                    onChange={(e) => setNewPkgPrice(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs text-slate-300 mb-1 block">
-                    Amorti (Cover) Süresi (Gün):
-                  </label>
-                  <input
-                    type="number"
-                    min="30"
-                    max="365"
-                    value={newPkgCoverDays}
-                    onChange={(e) => setNewPkgCoverDays(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none"
-                  />
-                  <span className="text-[10px] text-emerald-400 font-mono mt-0.5 block">
-                    Günlük Getiri: %{(100 / newPkgCoverDays).toFixed(2)} ($
-                    {((newPkgPrice * (100 / newPkgCoverDays)) / 100).toFixed(2)}/gün)
-                  </span>
-                </div>
-
-                <div>
-                  <label className="text-xs text-slate-300 mb-1 block">Günlük Aşınma Oranı (%):</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={newPkgDurabilityDecay}
-                    onChange={(e) => setNewPkgDurabilityDecay(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-300 mb-1 block">Açıklama:</label>
                 <input
-                  type="text"
-                  placeholder="Madencinin çalışma mantığı ve getiri potansiyeli..."
-                  value={newPkgDescription}
-                  onChange={(e) => setNewPkgDescription(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs outline-none"
+                  value={p.name}
+                  onChange={(e) => setCatEdit((s) => ({ ...s, [id]: { ...s[id], name: e.target.value } }))}
+                  className="w-full bg-[#041c25] border border-teal-500/25 rounded-lg px-2 py-1.5 text-[11px] text-white outline-none focus:border-cyan-400/60"
                 />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCreatingPackage(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold"
-                >
-                  Vazgeç
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs font-display uppercase tracking-wider"
-                >
-                  Paketi Yayınla
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Existing Packages Table */}
-          <div className="bg-[#062937]/90 border border-teal-500/30 rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#041d27]/90 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
-                  <tr>
-                    <th className="py-3 px-3">Paket Adı</th>
-                    <th className="py-3 px-3">Gezegen</th>
-                    <th className="py-3 px-3">Fiyat</th>
-                    <th className="py-3 px-3">Günlük Getiri</th>
-                    <th className="py-3 px-3">Amorti (Cover)</th>
-                    <th className="py-3 px-3">Satış</th>
-                    <th className="py-3 px-3">Durum</th>
-                    <th className="py-3 px-3 text-right">İşlemler</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/80">
-                  {packages.map((pkg) => (
-                    <tr key={pkg.id} className="hover:bg-slate-800/30 transition">
-                      <td className="py-3 px-3">
-                        <div className="font-bold text-white">{pkg.name}</div>
-                        <div className="text-[10px] text-slate-400">{pkg.badge}</div>
-                      </td>
-
-                      <td className="py-3 px-3 text-cyan-300 font-mono">
-                        Sektör #{pkg.planetId}
-                      </td>
-
-                      <td className="py-3 px-3 font-bold text-white font-mono">
-                        ${pkg.price} KRD
-                      </td>
-
-                      <td className="py-3 px-3 font-mono text-emerald-400">
-                        +${pkg.dailyProduction.toFixed(2)} (%{pkg.dailyReturnPercent})
-                      </td>
-
-                      <td className="py-3 px-3 font-mono text-amber-300">
-                        ~{pkg.coverDays} Gün
-                      </td>
-
-                      <td className="py-3 px-3 font-mono text-slate-400">
-                        {pkg.totalPurchased} adet
-                      </td>
-
-                      <td className="py-3 px-3">
-                        <button
-                          onClick={() => adminUpdatePackage({ ...pkg, isActive: !pkg.isActive })}
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${
-                            pkg.isActive
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : 'bg-slate-800 text-slate-500 border border-slate-700'
-                          }`}
-                        >
-                          {pkg.isActive ? 'YAYINDA' : 'PASİF'}
-                        </button>
-                      </td>
-
-                      <td className="py-3 px-3 text-right">
-                        <button
-                          onClick={() => {
-                            if (confirm(`"${pkg.name}" paketini silmek istediğinize emin misiniz?`)) {
-                              adminDeletePackage(pkg.id);
-                            }
-                          }}
-                          className="p-1.5 rounded-lg bg-rose-950/50 hover:bg-rose-900 text-rose-400 border border-rose-500/30 transition"
-                          title="Paketi Sil"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 4: WITHDRAWALS QUEUE */}
-      {currentAdminTab === 'withdrawals' && (
-        <div className="space-y-4">
-          <h3 className="text-base font-bold text-white font-display">
-            Bekleyen ve Tamamlanan Çekim Talepleri
-          </h3>
-
-          {transactions.filter((t) => t.type === 'withdraw').length === 0 ? (
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-8 text-center text-xs text-slate-400">
-              Henüz çekim talebi bulunmuyor.
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {transactions
-                .filter((t) => t.type === 'withdraw')
-                .map((tx) => {
-                  const isPending = tx.status === 'pending';
-
-                  return (
-                    <div
-                      key={tx.id}
-                      className={`p-3.5 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                        isPending
-                          ? 'bg-amber-950/20 border-amber-500/50'
-                          : tx.status === 'completed'
-                          ? 'bg-slate-900/60 border-slate-800'
-                          : 'bg-rose-950/20 border-rose-900/50'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-white text-xs">
-                            @{tx.userName}
-                          </span>
-                          <span
-                            className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-mono uppercase ${
-                              isPending
-                                ? 'bg-amber-500 text-slate-950'
-                                : tx.status === 'completed'
-                                ? 'bg-emerald-500/20 text-emerald-300'
-                                : 'bg-rose-500/20 text-rose-300'
-                            }`}
-                          >
-                            {tx.status}
-                          </span>
-                        </div>
-
-                        <div className="text-[11px] font-mono text-slate-400 mt-0.5 truncate max-w-md">
-                          Hedef Cüzdan: <strong className="text-cyan-300">{tx.address}</strong>
-                        </div>
-
-                        <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                          Tarih: {new Date(tx.timestamp).toLocaleString('tr-TR')} • {tx.note}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <div className="text-base font-black text-emerald-400 font-mono">
-                            ${tx.amount.toFixed(2)} KRD
-                          </div>
-                          <div className="text-[10px] text-slate-400">Net Ödeme</div>
-                        </div>
-
-                        {isPending && (
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() => {
-                                sounds.playCoin();
-                                adminApproveWithdrawal(tx.id);
-                              }}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1"
-                            >
-                              <CheckCircle className="w-3.5 h-3.5" />
-                              <span>Onayla</span>
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                sounds.playLaser();
-                                adminRejectWithdrawal(tx.id);
-                              }}
-                              className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition flex items-center gap-1"
-                            >
-                              <XCircle className="w-3.5 h-3.5" />
-                              <span>Reddet</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 5: PLANETS MULTIPLIERS */}
-      {currentAdminTab === 'planets' && (
-        <div className="space-y-4">
-          <h3 className="text-base font-bold text-white font-display">
-            Gezegen Madencilik Çarpanları & Kilitleri
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {planets.map((planet) => (
-              <div
-                key={planet.id}
-                className="bg-[#07303e]/90 border border-teal-500/30 rounded-xl p-4 flex items-center justify-between"
-              >
-                <div>
-                  <div className="font-bold text-white text-sm">
-                    Sektör {planet.id}: {planet.name}
-                  </div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    Gereken Seviye: {planet.requiredLevel} • Kilit: ${planet.unlockCostKRD} KRD
-                  </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <Field label="Fiyat" type="number" value={p.price} onChange={(v) => setCatEdit((s) => ({ ...s, [id]: { ...s[id], price: v } }))} />
+                  <Field label="Günlük %" type="number" step="0.01" value={p.daily} onChange={(v) => setCatEdit((s) => ({ ...s, [id]: { ...s[id], daily: v } }))} />
+                  <Field label="Aşınma/gün" type="number" step="0.1" value={p.decay} onChange={(v) => setCatEdit((s) => ({ ...s, [id]: { ...s[id], decay: v } }))} />
                 </div>
-
-                <div className="text-right">
-                  <span className="text-sm font-bold text-emerald-400 font-mono bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-lg">
-                    x{planet.miningMultiplier.toFixed(2)} Kat
-                  </span>
-                </div>
+                <button
+                  onClick={() => savePackage(id)}
+                  disabled={saving}
+                  className="w-full py-1.5 rounded-lg bg-[#0a394a] border border-cyan-400/40 text-cyan-200 text-[11px] font-bold flex items-center justify-center gap-1 disabled:opacity-50"
+                >
+                  <Save className="w-3 h-3" /> Kaydet
+                </button>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
-      {/* TAB 5.5: IN-FLIGHT VOYAGE MECHANICS & REWARDS */}
-      {currentAdminTab === 'voyage' && (
-        <div className="space-y-5">
-          {/* Toast alert banner */}
-          {voyageToastMessage && (
-            <div className="bg-emerald-950/90 border border-emerald-500/70 p-3.5 rounded-2xl flex items-center justify-between shadow-lg animate-bounce text-emerald-200 text-xs font-bold font-mono">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
-                <span>{voyageToastMessage}</span>
-              </div>
-              <button
-                onClick={() => setVoyageToastMessage(null)}
-                className="text-slate-400 hover:text-white text-xs px-2 py-0.5"
-              >
-                ✕
-              </button>
-            </div>
-          )}
+      {/* PLANETS */}
+      {tab === 'planets' && (
+        <Card title="Gezegen Ayarları" icon={Globe2} desc="Virgülle ayrılmış 6 değer girin (1. gezegen dahil).">
+          <Field
+            label="Kilit maliyeti (KRD)"
+            value={form.planetUnlock || ''}
+            onChange={(v) => setForm((f) => ({ ...f, planetUnlock: v }))}
+            hint="Örnek: 0, 30, 100, 250, 600, 1500"
+          />
+          <Field
+            label="Üretim çarpanı"
+            value={form.planetMult || ''}
+            onChange={(v) => setForm((f) => ({ ...f, planetMult: v }))}
+            hint="Örnek: 1, 1.1, 1.25, 1.45, 1.7, 2"
+          />
+          <Field
+            label="Gerekli seviye"
+            value={form.requiredLevel || ''}
+            onChange={(v) => setForm((f) => ({ ...f, requiredLevel: v }))}
+            hint="Örnek: 1, 2, 4, 7, 11, 16"
+          />
+          <Field
+            label="7 günlük ödül serisi (KRD)"
+            value={form.dailyFaucet || ''}
+            onChange={(v) => setForm((f) => ({ ...f, dailyFaucet: v }))}
+            hint="Örnek: 2, 2, 3, 3, 4, 4, 6"
+          />
+          <button
+            onClick={savePlanets}
+            disabled={saving}
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" /> Gezegenleri Kaydet
+          </button>
+        </Card>
+      )}
 
-          {/* Voyage Header Card */}
-          <div className="bg-gradient-to-r from-orange-950/80 via-slate-900 to-amber-950/80 border border-orange-500/40 rounded-2xl p-5 shadow-xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400 shrink-0">
-                  <Rocket className="w-6 h-6 animate-pulse" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-orange-400 uppercase tracking-wider font-mono">
-                      UZAY UÇUŞU & ÖDÜL/ZARAR MEKANİZMASI
-                    </span>
-                    <span className="bg-amber-400/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-400/40">
-                      CANLI DİNAMİK
-                    </span>
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-black text-white font-display mt-0.5">
-                    Sanal Rota Ödülleri & Göktaşı Hasarları
-                  </h3>
-                  <p className="text-xs text-slate-300 max-w-2xl mt-1">
-                    Ana ekrandaki sanal uçuşta toplanan yıldızlar, kırılan meteorlar ve korsan avlarından kazanılan tüm ödüller{' '}
-                    <strong className="text-amber-300">dolar yerine puan</strong> olarak işlenir. Buradaki tüm parametreleri anlık düzenleyebilirsiniz.
-                  </p>
-                </div>
+      {/* MARKET STOCK */}
+      {tab === 'market' && (
+        <Card title="Pazar Stoğu" icon={Store} desc="Ürün stoğu 0 olduğunda satın alınamaz.">
+          {INITIAL_MARKET_ITEMS.map((item) => (
+            <div key={item.id} className="bg-[#05222d] border border-teal-500/25 rounded-xl p-3 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="text-[11px] font-bold text-white truncate">{item.title}</div>
+                <div className="text-[10px] text-teal-300/60">{item.price} KRD</div>
               </div>
-
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
-                  onClick={handleResetVoyageSettings}
-                  className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5"
+                  onClick={() => adminUpdateStock(item.id, Math.max(0, (adminState.stock[item.id] ?? 0) - 1))}
+                  className="w-7 h-7 rounded-lg bg-[#0a2c38] border border-teal-500/30 text-teal-200 text-sm font-black"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Varsayılanlar</span>
+                  −
+                </button>
+                <span className="w-10 text-center font-mono text-xs text-cyan-200">{adminState.stock[item.id] ?? 0}</span>
+                <button
+                  onClick={() => adminUpdateStock(item.id, (adminState.stock[item.id] ?? 0) + 1)}
+                  className="w-7 h-7 rounded-lg bg-[#0a2c38] border border-teal-500/30 text-teal-200 text-sm font-black"
+                >
+                  +
                 </button>
                 <button
-                  onClick={handleSaveVoyageSettings}
-                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 text-xs font-black px-4 py-2 rounded-xl transition shadow-lg active:scale-95 flex items-center gap-1.5"
+                  onClick={() => adminUpdateStock(item.id, 50)}
+                  className="px-2 h-7 rounded-lg bg-[#0a394a] border border-cyan-400/40 text-cyan-200 text-[10px] font-bold"
                 >
-                  <Rocket className="w-3.5 h-3.5" />
-                  <span>Ayarları Kaydet</span>
+                  50
                 </button>
               </div>
             </div>
+          ))}
+        </Card>
+      )}
+
+      {/* PLAYERS */}
+      {tab === 'players' && (
+        <Card title={`Oyuncular (${players.length})`} icon={Users} desc="Bakiye düzenle, banla veya sıfırla.">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-teal-300/60 absolute left-3 top-2.5" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ID, isim veya cüzdan ara…"
+              className="w-full bg-[#05222d] border border-teal-500/30 rounded-xl pl-8 pr-3 py-2 text-xs text-white outline-none focus:border-cyan-400/70"
+            />
           </div>
 
-          {/* Form Grids */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* BOX 1: REWARD MECHANISM (POZİTİF KAZANIM PUANLARI) */}
-            <div className="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-5 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm">
-                    ⭐
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-black text-white font-display">
-                      Ödül & Puan Mekanizması (Pozitif)
-                    </h4>
-                    <p className="text-[11px] text-slate-400">
-                      Toplanan nesnelerin kullanıcıya kazandıracağı puan miktarları
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-mono text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                  PUAN BAZLI
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {/* Star reward */}
-                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-amber-400">⭐</span>
-                      <label className="text-xs font-bold text-white">Yıldız Toplama Ödülü</label>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Roket veya lazerle yakalanan standart sarı yıldız puanı
-                    </p>
-                  </div>
-                  <div className="w-28 shrink-0 flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="1"
-                      value={starPointsInput}
-                      onChange={(e) => setStarPointsInput(Math.max(1, Number(e.target.value)))}
-                      className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 text-amber-300 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
-                    />
-                    <span className="text-[10px] text-slate-400 font-mono">Puan</span>
-                  </div>
-                </div>
-
-                {/* Crystal reward */}
-                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-cyan-400">💎</span>
-                      <label className="text-xs font-bold text-white">Kozmik Kristal Ödülü</label>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Nadir geçen mavi kozmik kristallerden elde edilen puan
-                    </p>
-                  </div>
-                  <div className="w-28 shrink-0 flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="1"
-                      value={crystalPointsInput}
-                      onChange={(e) => setCrystalPointsInput(Math.max(1, Number(e.target.value)))}
-                      className="w-full bg-slate-900 border border-slate-700 focus:border-cyan-400 text-cyan-300 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
-                    />
-                    <span className="text-[10px] text-slate-400 font-mono">Puan</span>
-                  </div>
-                </div>
-
-                {/* Asteroid destroy reward */}
-                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-orange-400">💥</span>
-                      <label className="text-xs font-bold text-white">Göktaşı İmha Cevher Puanı</label>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Meteor roket lazeri veya dokunuşla patlatıldığında kazanılan puan
-                    </p>
-                  </div>
-                  <div className="w-28 shrink-0 flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="1"
-                      value={asteroidPointsInput}
-                      onChange={(e) => setAsteroidPointsInput(Math.max(1, Number(e.target.value)))}
-                      className="w-full bg-slate-900 border border-slate-700 focus:border-orange-400 text-orange-300 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
-                    />
-                    <span className="text-[10px] text-slate-400 font-mono">Puan</span>
-                  </div>
-                </div>
-
-                {/* Pirate boss bounty */}
-                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-rose-400">⚔️</span>
-                      <label className="text-xs font-bold text-white">Korsan Avı / Zafer Puanı</label>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Baskın yapan korsan fırkateyni yok edildiğinde verilen büyük ödül
-                    </p>
-                  </div>
-                  <div className="w-28 shrink-0 flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="10"
-                      value={pirateBountyInput}
-                      onChange={(e) => setPirateBountyInput(Math.max(10, Number(e.target.value)))}
-                      className="w-full bg-slate-900 border border-slate-700 focus:border-rose-400 text-rose-300 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
-                    />
-                    <span className="text-[10px] text-slate-400 font-mono">Puan</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* BOX 2: PENALTY & DAMAGE MECHANISM (HASAR & ZARAR) */}
-            <div className="bg-slate-900/90 border border-rose-500/30 rounded-2xl p-5 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-sm">
-                    🛡️
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-black text-white font-display">
-                      Hasar & Zarar Mekanizması (Negatif)
-                    </h4>
-                    <p className="text-[11px] text-slate-400">
-                      Göktaşı çarpışmalarında kalkan, gövde ve puan kesintileri
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-mono text-rose-400 bg-rose-950/60 border border-rose-500/30 px-2 py-0.5 rounded-full">
-                  HASAR & CEZA
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {/* Shield damage */}
-                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <Shield className="w-4 h-4 text-cyan-400" />
-                      <label className="text-xs font-bold text-white">Kalkan Hasar Puanı</label>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Göktaşı kalkana çarptığında kalkandan düşen puan (%100 üzerinden)
-                    </p>
-                  </div>
-                  <div className="w-28 shrink-0 flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="5"
-                      max="100"
-                      value={shieldDamageInput}
-                      onChange={(e) => setShieldDamageInput(Math.min(100, Math.max(5, Number(e.target.value))))}
-                      className="w-full bg-slate-900 border border-slate-700 focus:border-cyan-400 text-cyan-300 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
-                    />
-                    <span className="text-[10px] text-slate-400 font-mono">Puan</span>
-                  </div>
-                </div>
-
-                {/* Hull decay % */}
-                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <AlertTriangle className="w-4 h-4 text-rose-400" />
-                      <label className="text-xs font-bold text-white">Gövde Aşınma Zararı (%)</label>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Kalkan bittiğinde madenci araçlarına verilen kalıcı aşınma hasarı
-                    </p>
-                  </div>
-                  <div className="w-28 shrink-0 flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="0.5"
-                      max="20"
-                      step="0.5"
-                      value={hullDecayInput}
-                      onChange={(e) => setHullDecayInput(Math.max(0.1, Number(e.target.value)))}
-                      className="w-full bg-slate-900 border border-slate-700 focus:border-rose-400 text-rose-400 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
-                    />
-                    <span className="text-[10px] text-slate-400 font-mono">% Hasar</span>
-                  </div>
-                </div>
-
-                {/* Point penalty on crash */}
-                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-rose-500 font-bold">🔻</span>
-                      <label className="text-xs font-bold text-white">Çarpışma Puan Cezası</label>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Kalkan yokken çarpmada kullanıcı bakiyesinden silinecek puan (0 ise puan silinmez)
-                    </p>
-                  </div>
-                  <div className="w-28 shrink-0 flex items-center gap-1">
-                    <input
-                      type="number"
-                      min="0"
-                      value={pointPenaltyInput}
-                      onChange={(e) => setPointPenaltyInput(Math.max(0, Number(e.target.value)))}
-                      className="w-full bg-slate-900 border border-slate-700 focus:border-rose-400 text-rose-300 font-mono font-bold text-xs text-right px-2.5 py-1.5 rounded-lg outline-none"
-                    />
-                    <span className="text-[10px] text-slate-400 font-mono">Puan</span>
-                  </div>
-                </div>
-
-                {/* Planet multiplier toggle */}
-                <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <Globe2 className="w-4 h-4 text-emerald-400" />
-                      <label htmlFor="planetMult" className="text-xs font-bold text-white cursor-pointer">
-                        Gezegen Çarpanı Etkisi
-                      </label>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      İleri sektörlerdeki (Mars, Jüpiter vb.) çarpanlar uçuş puanlarına uygulansın
-                    </p>
-                  </div>
-                  <div className="shrink-0 flex items-center">
-                    <input
-                      type="checkbox"
-                      id="planetMult"
-                      checked={applyMultiplierInput}
-                      onChange={(e) => setApplyMultiplierInput(e.target.checked)}
-                      className="w-5 h-5 rounded text-amber-500 focus:ring-0 cursor-pointer"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* BOX 3: SPEED & SPAWN MECHANICS */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4">
-            <h4 className="text-sm font-black text-white font-display flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-indigo-400" />
-              <span>Uçuş Akışı & Spawn Hız Parametreleri</span>
-            </h4>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-xl">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <span>⏱️ Nesne Doğma Sıklığı (Göz Yormayan Akış)</span>
-                  </label>
-                  <span className="text-amber-400 font-mono font-bold text-xs">{spawnIntervalInput} Saniye</span>
-                </div>
-                <input
-                  type="range"
-                  min="2.0"
-                  max="10.0"
-                  step="0.5"
-                  value={spawnIntervalInput}
-                  onChange={(e) => setSpawnIntervalInput(Number(e.target.value))}
-                  className="w-full accent-amber-400 cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                  <span>Hızlı (2.0s)</span>
-                  <span className="text-amber-300 font-bold">Önerilen Sakin (4.5s - 6.0s)</span>
-                  <span>Çok Seyrek (10.0s)</span>
-                </div>
-              </div>
-
-              <div className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-xl">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <span>⚡ Warp Hızlandırıcı Çarpanı</span>
-                  </label>
-                  <span className="text-cyan-400 font-mono font-bold text-xs">x{warpMultiplierInput} Kat</span>
-                </div>
-                <input
-                  type="range"
-                  min="1.2"
-                  max="3.5"
-                  step="0.1"
-                  value={warpMultiplierInput}
-                  onChange={(e) => setWarpMultiplierInput(Number(e.target.value))}
-                  className="w-full accent-cyan-400 cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                  <span>Düşük (1.2x)</span>
-                  <span>Standart (1.8x)</span>
-                  <span>Ultra Hızlı (3.5x)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* BOX 4: INTERACTIVE PLANET SIMULATOR PREVIEW */}
-          <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono flex items-center gap-2">
-                <span>📊 Canlı Gezegen Puan Önizlemesi</span>
-                <span className="text-[10px] text-amber-400 bg-amber-950/50 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                  {applyMultiplierInput ? 'Gezegen Çarpanı Açık' : 'Sabit Puan (Çarpan Kapalı)'}
-                </span>
-              </h4>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-              {planets.map((planet) => {
-                const mult = applyMultiplierInput ? planet.miningMultiplier : 1;
-                const starReward = Math.max(1, Math.round(starPointsInput * mult));
-                const crystalReward = Math.max(1, Math.round(crystalPointsInput * mult));
-                const asteroidReward = Math.max(1, Math.round(asteroidPointsInput * mult));
-
-                return (
-                  <div
-                    key={planet.id}
-                    className="bg-[#07303e]/90 border border-teal-500/30 rounded-xl p-2.5 text-center space-y-1"
-                  >
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+            {players.length === 0 && (
+              <p className="text-xs text-teal-300/60 text-center py-6">Oyuncu bulunamadı.</p>
+            )}
+            {players.map((p) => (
+              <div key={p.id} className="bg-[#05222d] border border-teal-500/25 rounded-xl p-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
                     <div className="text-[11px] font-bold text-white truncate">
-                      {planet.name.split(' ')[0]}
+                      {p.name || 'İsimsiz'} <span className="text-teal-400/60 font-mono">#{p.id}</span>
+                      {p.banned && <span className="ml-1 text-rose-400 text-[9px] font-black">BAN</span>}
                     </div>
-                    <div className="text-[10px] font-mono text-emerald-400">
-                      x{planet.miningMultiplier.toFixed(2)} Kat
-                    </div>
-                    <div className="text-[10px] text-amber-300 font-mono">
-                      ⭐ +{starReward} Puan
-                    </div>
-                    <div className="text-[10px] text-cyan-300 font-mono">
-                      💎 +{crystalReward} Puan
-                    </div>
-                    <div className="text-[10px] text-orange-300 font-mono">
-                      💥 +{asteroidReward} Puan
+                    <div className="text-[10px] text-teal-300/60 font-mono">
+                      {p.krd} KRD · {p.stardust} Toz · Sv.{p.level} · {p.miners} madenci · Gez.{p.planet}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                  <button
+                    onClick={() => {
+                      setOpenPlayer(openPlayer === p.id ? null : p.id);
+                      setAdjust({ krd: '0', stardust: '0' });
+                    }}
+                    className="text-[10px] font-bold px-2 py-1 rounded-lg bg-[#0a394a] border border-cyan-400/40 text-cyan-200 shrink-0"
+                  >
+                    {openPlayer === p.id ? 'Kapat' : 'Düzenle'}
+                  </button>
+                </div>
 
-          {/* Bottom Save Action Button */}
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              onClick={handleResetVoyageSettings}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 py-2.5 rounded-xl transition"
-            >
-              Fabrika Ayarlarına Dön
-            </button>
-            <button
-              onClick={handleSaveVoyageSettings}
-              className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black text-xs px-6 py-2.5 rounded-xl transition shadow-xl active:scale-95 flex items-center gap-2"
-            >
-              <Rocket className="w-4 h-4" />
-              <span>Ayarları Kaydet ve Canlı Uygula</span>
-            </button>
+                {openPlayer === p.id && (
+                  <div className="mt-2 pt-2 border-t border-teal-500/20 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Field label="KRD değişimi (+/−)" type="number" value={adjust.krd} onChange={(v) => setAdjust((a) => ({ ...a, krd: v }))} />
+                      <Field label="Toz değişimi (+/−)" type="number" value={adjust.stardust} onChange={(v) => setAdjust((a) => ({ ...a, stardust: v }))} />
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        onClick={async () => {
+                          const err = await adminUpdatePlayer(p.id, {
+                            action: 'adjust',
+                            krd: num(adjust.krd, 0),
+                            stardust: num(adjust.stardust, 0),
+                          });
+                          flash(!err, err || 'Bakiye güncellendi.');
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-emerald-400 text-slate-950 text-[10px] font-black"
+                      >
+                        Bakiyeyi Uygula
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const err = await adminUpdatePlayer(p.id, { action: 'ban', banned: !p.banned });
+                          flash(!err, err || (p.banned ? 'Ban kaldırıldı.' : 'Oyuncu banlandı.'));
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 border border-rose-400/40 text-rose-200 text-[10px] font-bold flex items-center gap-1"
+                      >
+                        <Ban className="w-3 h-3" /> {p.banned ? 'Banı Kaldır' : 'Banla'}
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`${p.name || p.id} oyuncusunun tüm ilerlemesi sıfırlansın mı?`)) return;
+                          const err = await adminUpdatePlayer(p.id, { action: 'reset' });
+                          flash(!err, err || 'Oyuncu sıfırlandı.');
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-200 text-[10px] font-bold flex items-center gap-1"
+                      >
+                        <RotateCcw className="w-3 h-3" /> Sıfırla
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        </div>
+        </Card>
       )}
 
-      {/* TAB 6: SETTINGS & PARAMETERS */}
-      {currentAdminTab === 'settings' && (
-        <div className="space-y-5">
-          <div className="bg-[#07303e]/90 border border-teal-500/30 rounded-2xl p-5 space-y-4">
-            <h3 className="text-base font-bold text-white font-display flex items-center gap-2">
-              <Settings className="w-5 h-5 text-indigo-400" />
-              <span>Sistem ve Finans Parametreleri</span>
-            </h3>
+      <div className="bg-[#06222d] border border-teal-500/25 rounded-2xl p-3 flex items-start gap-2">
+        <Wrench className="w-4 h-4 text-cyan-300 shrink-0 mt-0.5" />
+        <p className="text-[10px] text-teal-100/60">
+          Tüm değişiklikler sunucuda saklanır ve tüm oyunculara yansır. KRD ve Yıldız Tozu oyun içi para birimidir;
+          nakit değeri yoktur, çekim yapılamaz.
+        </p>
+      </div>
 
-            {/* Announcement text */}
-            <div>
-              <label className="text-xs text-slate-300 font-semibold mb-1 block">
-                Genel Telegram / Sistem Duyuru Bandı:
-              </label>
-              <textarea
-                rows={2}
-                value={announcementInput}
-                onChange={(e) => setAnnouncementInput(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs text-slate-300 mb-1 block">Min. Çekim Tutarı ($ KRD):</label>
-                <input
-                  type="number"
-                  value={minWithdrawalInput}
-                  onChange={(e) => setMinWithdrawalInput(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-300 mb-1 block">Çekim Komisyonu (%):</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={feePercentInput}
-                  onChange={(e) => setFeePercentInput(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-300 mb-1 block">Otomatik Onay Limiti ($ KRD):</label>
-                <input
-                  type="number"
-                  value={autoApproveInput}
-                  onChange={(e) => setAutoApproveInput(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-300 mb-1 block">
-                  Tamir Masrafı (1% aşınma = $):
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={repairCostInput}
-                  onChange={(e) => setRepairCostInput(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none"
-                />
-              </div>
-
-              <div className="flex items-center gap-3 pt-4">
-                <input
-                  type="checkbox"
-                  id="maint"
-                  checked={maintenanceInput}
-                  onChange={(e) => setMaintenanceInput(e.target.checked)}
-                  className="w-4 h-4 rounded text-rose-600 focus:ring-0"
-                />
-                <label htmlFor="maint" className="text-xs font-bold text-rose-400 cursor-pointer">
-                  🚨 Bakım Modunu Aktif Et (Madenciliği Durdurur)
-                </label>
-              </div>
-            </div>
-
-            <button
-              onClick={handleSaveSettings}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition"
-            >
-              Ayarları Kaydet ve Uygula
-            </button>
-          </div>
-
-          {/* Reset Factory Danger Zone */}
-          <div className="bg-rose-950/20 border border-rose-900/50 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div className="text-xs font-bold text-rose-300">Fabrika Ayarlarına Sıfırla</div>
-              <div className="text-[11px] text-slate-400">
-                Tüm mock kullanıcıları, paketleri ve işlem geçmişini başlangıç durumuna sıfırlar.
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                if (confirm('Tüm veritabanını fabrika ayarlarına sıfırlamak istediğinize emin misiniz?')) {
-                  resetToDefaults();
-                  alert('Sistem başlangıç verilerine sıfırlandı.');
-                }
-              }}
-              className="bg-rose-950 hover:bg-rose-900 border border-rose-600 text-rose-300 font-bold text-xs px-4 py-2 rounded-xl transition shrink-0"
-            >
-              Verileri Sıfırla
-            </button>
-          </div>
-        </div>
-      )}
+      <div className="flex items-center justify-center gap-2 text-[10px] text-teal-300/40 pb-4">
+        <Sparkles className="w-3 h-3" /> Kozmik Yolculuk Yönetim v2
+      </div>
     </div>
   );
 };

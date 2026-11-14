@@ -5,10 +5,6 @@ import { sounds } from '../utils/audio';
 import { MiningPackage } from '../types';
 import {
   PackageCheck,
-  Zap,
-  TrendingUp,
-  Clock,
-  ShieldCheck,
   Wrench,
   Bot,
   Radio,
@@ -18,8 +14,8 @@ import {
   Rocket,
   Atom,
   Sparkles,
-  Calculator,
   Lock,
+  Info,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -38,7 +34,8 @@ export const PackagesShop: React.FC = () => {
   const { user, planets, packages, buyPackage, setActiveTab, setIsDepositModalOpen } = useGame();
 
   const [selectedPlanetFilter, setSelectedPlanetFilter] = useState<number | 'all'>('all');
-  const [calcInvestment, setCalcInvestment] = useState<number>(100);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
 
   const filteredPackages = packages.filter((pkg) => {
     if (!pkg.isActive) return false;
@@ -46,8 +43,12 @@ export const PackagesShop: React.FC = () => {
     return pkg.planetId === selectedPlanetFilter;
   });
 
-  const handleBuy = (pkg: MiningPackage) => {
-    const res = buyPackage(pkg);
+  const handleBuy = async (pkg: MiningPackage) => {
+    if (busyId) return;
+    setBusyId(pkg.id);
+    setMsg(null);
+    const res = await buyPackage(pkg);
+    setBusyId(null);
     if (res.success) {
       confetti({
         particleCount: 60,
@@ -55,23 +56,14 @@ export const PackagesShop: React.FC = () => {
         origin: { y: 0.7 },
         colors: ['#06b6d4', '#10b981', '#f59e0b', '#ec4899'],
       });
-      alert(res.message);
+      setMsg(res.message);
     } else {
-      if (res.message.includes('Yetersiz KRD')) {
-        if (confirm(`${res.message}\n\nHemen cüzdanınızdan bakiye yüklemek ister misiniz?`)) {
-          setIsDepositModalOpen(true);
-        }
-      } else {
-        alert(res.message);
+      setMsg(res.message);
+      if (res.message.includes('Yetersiz KRD') && confirm(`${res.message}\n\nTON ile KRD yüklemek ister misin?`)) {
+        setIsDepositModalOpen(true);
       }
     }
   };
-
-  // ROI Calculator projection
-  const estimatedDaily = (calcInvestment * 0.58) / 100;
-  const estimatedMonthly = estimatedDaily * 30;
-  const estimated6Months = estimatedDaily * 180; // ~104% ROI (Full cover)
-  const estimatedYearly = estimatedDaily * 365;  // ~210% ROI
 
   return (
     <div className="space-y-6 pb-24 w-full max-w-full overflow-hidden">
@@ -87,14 +79,15 @@ export const PackagesShop: React.FC = () => {
               Madenci Ekipmanları
             </h2>
             <p className="text-xs text-teal-100/90 mt-1 max-w-xl">
-              Ekipmanlar oyun içi Kredi (KRD) ve Yıldız Tozu üretir. KRD gerçek paraya çevrilemez; yalnızca oyun içinde harcanır. Üretim miktarları garanti veya yatırım getirisi değildir.
+              Ekipmanlar KRD üretir. KRD oyun içi para birimidir, nakde çevrilemez; yalnızca oyunda harcanır.
+              Üretim bir yatırım getirisi veya kazanç garantisi değildir.
             </p>
           </div>
 
           <div className="bg-[#052632] border border-emerald-400/60 rounded-2xl p-3 shrink-0 shadow-md">
-            <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider">Cüzdan KRD Bakiyeniz</div>
+            <div className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider">KRD Bakiyen</div>
             <div className="text-2xl font-black text-emerald-300 font-mono">
-              ${user.usdtBalance.toFixed(2)}
+              {user.krdBalance.toFixed(2)}
             </div>
           </div>
         </div>
@@ -112,11 +105,11 @@ export const PackagesShop: React.FC = () => {
                 : 'bg-[#07303e] hover:bg-[#0b3c4e] text-teal-200 border border-teal-500/30'
             }`}
           >
-            Tüm Gezegenler ({packages.length})
+            Tüm Gezegenler ({packages.filter((p) => p.isActive).length})
           </button>
 
           {planets.map((planet) => {
-            const count = packages.filter((p) => p.planetId === planet.id).length;
+            const count = packages.filter((p) => p.planetId === planet.id && p.isActive).length;
             const isUnlocked = user.unlockedPlanetIds.includes(planet.id);
 
             return (
@@ -141,8 +134,22 @@ export const PackagesShop: React.FC = () => {
         </div>
       </div>
 
-
       <UpgradesCard />
+
+      {/* Economy disclosure */}
+      <div className="bg-[#06222d] border border-teal-500/30 rounded-2xl p-3 flex items-start gap-2">
+        <Info className="w-4 h-4 text-cyan-300 shrink-0 mt-0.5" />
+        <p className="text-[11px] text-teal-100/80 leading-relaxed">
+          <strong className="text-cyan-200">Ekonomi özeti:</strong> Ekipman tam kondisyonda günde yaklaşık
+          <strong className="text-emerald-300"> %0.6</strong> üretir (gezegen çarpanı hariç). Dayanıklılık her gün azalır;
+          üretim düştükçe KRD veya Yıldız Tozu ile tamir edebilirsin. Madencinin ömrü 240 gündür.
+          Bu bir yatırım aracı değildir; KRD ve Yıldız Tozu'nun nakit değeri yoktur.
+        </p>
+      </div>
+
+      {msg && (
+        <div className="bg-[#062e3c] border border-cyan-400/50 rounded-xl p-3 text-xs text-cyan-200">{msg}</div>
+      )}
 
       {/* Packages Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -150,6 +157,8 @@ export const PackagesShop: React.FC = () => {
           const Icon = ICON_MAP[pkg.iconName] || Bot;
           const planet = planets.find((p) => p.id === pkg.planetId);
           const isPlanetLocked = planet ? !user.unlockedPlanetIds.includes(planet.id) : false;
+          const levelLocked = planet ? user.level < planet.requiredLevel : false;
+          const affordable = user.krdBalance >= pkg.price;
 
           return (
             <div
@@ -164,7 +173,6 @@ export const PackagesShop: React.FC = () => {
                   : 'border-cyan-500/35 bg-gradient-to-br from-[#0b3848] via-[#082d3a] to-[#06232e] hover:border-cyan-400/60 shadow-md'
               }`}
             >
-              {/* Badge */}
               <div className="p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
@@ -179,13 +187,15 @@ export const PackagesShop: React.FC = () => {
                           : 'bg-orange-500/25 text-orange-300 border border-orange-500/50 shadow-orange-500/20'
                       }`}
                     >
-                      <Icon className="w-6 h-6 animate-pulse" />
+                      <Icon className="w-6 h-6" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-500/20 text-amber-300 border border-orange-500/30 font-mono">
-                          {pkg.badge}
-                        </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {pkg.badge && (
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-500/20 text-amber-300 border border-orange-500/30 font-mono">
+                            {pkg.badge}
+                          </span>
+                        )}
                         {planet && (
                           <span className="text-[10px] text-amber-200/70 font-mono">
                             🪐 {planet.name.split(' ')[0]}
@@ -200,55 +210,46 @@ export const PackagesShop: React.FC = () => {
 
                   <div className="text-right">
                     <div className="text-xl sm:text-2xl font-black text-amber-300 font-mono leading-none">
-                      ${pkg.price}
+                      {pkg.price.toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-orange-400 font-bold font-mono">
-                      KRD Fiyatı
-                    </div>
+                    <div className="text-[10px] text-orange-400 font-bold font-mono">KRD</div>
                   </div>
                 </div>
 
-                <p className="text-xs text-teal-100/80 mt-3 line-clamp-2">
-                  {pkg.description}
-                </p>
+                <p className="text-xs text-teal-100/80 mt-3 line-clamp-2">{pkg.description}</p>
 
-                {/* Key Metrics Matrix */}
                 <div className="grid grid-cols-3 gap-2 mt-4 text-center">
                   <div className="bg-[#052430]/90 border border-teal-500/25 rounded-xl p-2">
                     <div className="text-[10px] text-teal-300/70">Günlük Üretim</div>
                     <div className="text-xs font-bold text-emerald-300 font-mono mt-0.5">
-                      +${pkg.dailyProduction.toFixed(2)}
+                      +{pkg.dailyProduction.toFixed(2)} KRD
                     </div>
                   </div>
 
                   <div className="bg-[#052430]/90 border border-teal-500/25 rounded-xl p-2">
-                    <div className="text-[10px] text-cyan-300/80">Amorti Süresi</div>
-                    <div className="text-xs font-black text-amber-300 font-mono mt-0.5">
-                      ~{pkg.coverDays} Gün
+                    <div className="text-[10px] text-cyan-300/80">Günlük Oran</div>
+                    <div className="text-xs font-black text-cyan-200 font-mono mt-0.5">
+                      %{(pkg.dailyRate * 100).toFixed(2)}
                     </div>
                   </div>
 
                   <div className="bg-[#052430]/90 border border-teal-500/25 rounded-xl p-2">
-                    <div className="text-[10px] text-teal-300/70">Günlük Oran</div>
+                    <div className="text-[10px] text-teal-300/70">Gezegen Çarpanı</div>
                     <div className="text-xs font-bold text-teal-200 font-mono mt-0.5">
-                      %{pkg.dailyReturnPercent}
+                      ×{pkg.planetMultiplier.toFixed(2)}
                     </div>
                   </div>
                 </div>
 
-                {/* Durability info */}
                 <div className="flex items-center justify-between text-[11px] text-teal-200/70 mt-3 pt-2.5 border-t border-cyan-500/20">
                   <span className="flex items-center gap-1">
                     <Wrench className="w-3.5 h-3.5 text-amber-300" />
-                    Aşınma: %{pkg.durabilityDecayPerDay}/gün (Tamir Edilebilir)
+                    Aşınma: %{pkg.durabilityDecayPerDay.toFixed(1)}/gün
                   </span>
-                  <span className="font-mono text-cyan-200 font-bold">
-                    {pkg.totalPurchased} Madenci Aktif
-                  </span>
+                  <span className="font-mono text-cyan-200 font-bold">Ömür: {pkg.lifespanDays} gün</span>
                 </div>
               </div>
 
-              {/* Purchase Action Button */}
               <div className="p-4 bg-[#05202a]/95 border-t border-cyan-500/25">
                 {isPlanetLocked ? (
                   <button
@@ -256,15 +257,30 @@ export const PackagesShop: React.FC = () => {
                     className="w-full py-2.5 rounded-xl text-xs font-bold bg-[#093240] border border-cyan-500/40 text-cyan-200 hover:bg-[#0c3e50] transition flex items-center justify-center gap-1.5"
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Önce Bu Gezegenin Kilidini Açın</span>
+                    <span>Önce bu gezegeni aç</span>
                   </button>
+                ) : levelLocked ? (
+                  <div className="w-full py-2.5 rounded-xl text-xs font-bold bg-[#093240] border border-amber-500/40 text-amber-200 text-center">
+                    Seviye {planet?.requiredLevel} gerekli (şu an {user.level})
+                  </div>
                 ) : (
                   <button
                     onClick={() => handleBuy(pkg)}
-                    className="w-full py-2.5 rounded-xl text-xs font-display tracking-wider transition shadow-lg active:scale-95 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-black shadow-teal-500/30"
+                    disabled={busyId === pkg.id}
+                    className={`w-full py-2.5 rounded-xl text-xs font-display tracking-wider transition shadow-lg active:scale-95 flex items-center justify-center gap-2 font-black ${
+                      affordable
+                        ? 'bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 shadow-teal-500/30'
+                        : 'bg-[#093240] border border-emerald-500/40 text-emerald-200'
+                    } disabled:opacity-50`}
                   >
                     <PackageCheck className="w-4 h-4" />
-                    <span>Hemen Filoya Kat (${pkg.price} KRD)</span>
+                    <span>
+                      {busyId === pkg.id
+                        ? 'Ekleniyor…'
+                        : affordable
+                        ? `Filoya Kat (${pkg.price.toLocaleString()} KRD)`
+                        : `KRD Yükle (${pkg.price.toLocaleString()} KRD)`}
+                    </span>
                   </button>
                 )}
               </div>

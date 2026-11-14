@@ -1,74 +1,82 @@
 {
- "pkg-scout-drone": {
-  "name": "Luna Scout Keşif Dronu",
-  "planetId": 1,
-  "tier": "bronze",
-  "price": 25.0,
-  "daily": 0.005600000000000001,
-  "decay": 1.2,
-  "iconName": "Bot"
- },
- "pkg-orbital-harvester": {
-  "name": "Orbital Harvester X-1",
-  "planetId": 1,
-  "tier": "silver",
-  "price": 75.0,
-  "daily": 0.005699999999999999,
-  "decay": 1.3,
-  "iconName": "Radio"
- },
- "pkg-mars-crawler": {
-  "name": "Mars Vulcan Crawler",
-  "planetId": 2,
-  "tier": "silver",
-  "price": 150.0,
-  "daily": 0.0058,
-  "decay": 1.4,
-  "iconName": "Truck"
- },
- "pkg-ares-magma-forge": {
-  "name": "Ares Magma Sondaj Kulesi",
-  "planetId": 2,
-  "tier": "gold",
-  "price": 350.0,
-  "daily": 0.006,
-  "decay": 1.5,
-  "iconName": "Cpu"
- },
- "pkg-cryo-submersible": {
-  "name": "Cryo-Nautic Derin Dalış Ünitesi",
-  "planetId": 3,
-  "tier": "gold",
-  "price": 750.0,
-  "daily": 0.0062,
-  "decay": 1.6,
-  "iconName": "Compass"
- },
- "pkg-ring-dreadnought": {
-  "name": "Chronos Halka Dreadnought",
-  "planetId": 4,
-  "tier": "neon",
-  "price": 1500.0,
-  "daily": 0.006500000000000001,
-  "decay": 1.7,
-  "iconName": "Rocket"
- },
- "pkg-nebula-quantum-refinery": {
-  "name": "Nebula Kuantum Reaktörü",
-  "planetId": 5,
-  "tier": "neon",
-  "price": 3000.0,
-  "daily": 0.0068000000000000005,
-  "decay": 1.8,
-  "iconName": "Atom"
- },
- "pkg-singularity-starforge": {
-  "name": "Omega Kuasar Starforge",
-  "planetId": 6,
-  "tier": "quantum",
-  "price": 6000.0,
-  "daily": 0.0072,
-  "decay": 2.0,
-  "iconName": "Sparkles"
- }
+  "pkg-scout-drone": {
+    "name": "Luna Scout Keşif Dronu",
+    "planetId": 1,
+    "tier": "bronze",
+    "price": 25.0,
+    "daily": 0.006,
+    "decay": 1.0,
+    "iconName": "Bot",
+    "active": true
+  },
+  "pkg-orbital-harvester": {
+    "name": "Orbital Harvester X-1",
+    "planetId": 1,
+    "tier": "silver",
+    "price": 75.0,
+    "daily": 0.006,
+    "decay": 1.1,
+    "iconName": "Radio",
+    "active": true
+  },
+  "pkg-mars-crawler": {
+    "name": "Mars Vulcan Crawler",
+    "planetId": 2,
+    "tier": "silver",
+    "price": 150.0,
+    "daily": 0.006,
+    "decay": 1.2,
+    "iconName": "Truck",
+    "active": true
+  },
+  "pkg-ares-magma-forge": {
+    "name": "Ares Magma Sondaj Kulesi",
+    "planetId": 2,
+    "tier": "gold",
+    "price": 350.0,
+    "daily": 0.006,
+    "decay": 1.3,
+    "iconName": "Cpu",
+    "active": true
+  },
+  "pkg-cryo-submersible": {
+    "name": "Cryo-Nautic Derin Dalış Ünitesi",
+    "planetId": 3,
+    "tier": "gold",
+    "price": 750.0,
+    "daily": 0.006,
+    "decay": 1.4,
+    "iconName": "Compass",
+    "active": true
+  },
+  "pkg-ring-dreadnought": {
+    "name": "Chronos Halka Dreadnought",
+    "planetId": 4,
+    "tier": "neon",
+    "price": 1500.0,
+    "daily": 0.006,
+    "decay": 1.5,
+    "iconName": "Rocket",
+    "active": true
+  },
+  "pkg-nebula-quantum-refinery": {
+    "name": "Nebula Kuantum Reaktörü",
+    "planetId": 5,
+    "tier": "neon",
+    "price": 3000.0,
+    "daily": 0.006,
+    "decay": 1.6,
+    "iconName": "Atom",
+    "active": true
+  },
+  "pkg-singularity-starforge": {
+    "name": "Omega Kuasar Starforge",
+    "planetId": 6,
+    "tier": "quantum",
+    "price": 6000.0,
+    "daily": 0.006,
+    "decay": 1.7,
+    "iconName": "Sparkles",
+    "active": true
+  }
 }

@@ -12,52 +12,19 @@ import {
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { activeTab, setActiveTab, userMiners, isAdminMode, setIsAdminMode } = useGame();
+  const { activeTab, setActiveTab, userMiners, isAdmin, isAdminMode, setIsAdminMode } = useGame();
 
   const unclaimedCount = userMiners.filter((m) => m.unclaimedYield > 0.005).length;
   const damagedCount = userMiners.filter((m) => m.durability < 40).length;
 
   const tabs = [
-    {
-      id: 'mining',
-      label: 'Madencilik',
-      icon: Pickaxe,
-      badge: unclaimedCount > 0 ? `${unclaimedCount}` : undefined,
-      badgeColor: 'bg-emerald-500',
-    },
-    {
-      id: 'planets',
-      label: 'Gezegenler',
-      icon: Globe2,
-    },
-    {
-      id: 'packages',
-      label: 'Paketler',
-      icon: PackageCheck,
-      highlight: true,
-    },
-    {
-      id: 'luck',
-      label: 'Şans & Çark',
-      icon: Disc3,
-      accent: true,
-    },
-    {
-      id: 'market',
-      label: 'Pazar',
-      icon: ShoppingBag,
-    },
-    {
-      id: 'wallet',
-      label: 'Cüzdan',
-      icon: Wallet,
-    },
-    {
-      id: 'admin',
-      label: 'Yönetim',
-      icon: ShieldAlert,
-      isAdminTab: true,
-    },
+    { id: 'mining', label: 'Madencilik', icon: Pickaxe, badge: unclaimedCount > 0 ? `${unclaimedCount}` : undefined, badgeColor: 'bg-emerald-500' },
+    { id: 'planets', label: 'Gezegenler', icon: Globe2 },
+    { id: 'packages', label: 'Paketler', icon: PackageCheck, highlight: true },
+    { id: 'luck', label: 'Şans', icon: Disc3, accent: true },
+    { id: 'market', label: 'Pazar', icon: ShoppingBag },
+    { id: 'wallet', label: 'Cüzdan', icon: Wallet },
+    ...(isAdmin ? [{ id: 'admin', label: 'Yönetim', icon: ShieldAlert, isAdminTab: true }] : []),
   ];
 
   return (
@@ -82,9 +49,7 @@ export const Navbar: React.FC = () => {
                 }
               }}
               className={`relative flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition duration-200 group ${
-                isActive
-                  ? 'text-cyan-300 font-bold'
-                  : 'text-teal-200/60 hover:text-cyan-100'
+                isActive ? 'text-cyan-300 font-bold' : 'text-teal-200/60 hover:text-cyan-100'
               }`}
             >
               <div className="relative">
@@ -102,11 +67,8 @@ export const Navbar: React.FC = () => {
                   />
                 </div>
 
-                {/* Badge for unclaimed or alert */}
                 {tab.badge && (
-                  <span
-                    className={`absolute -top-1 -right-1 text-[9px] font-black text-slate-950 px-1 rounded-full ${tab.badgeColor} animate-bounce`}
-                  >
+                  <span className={`absolute -top-1 -right-1 text-[9px] font-black text-slate-950 px-1 rounded-full ${tab.badgeColor} animate-bounce`}>
                     {tab.badge}
                   </span>
                 )}

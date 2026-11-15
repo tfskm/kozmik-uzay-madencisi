@@ -1340,9 +1340,9 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         {/* ESCORT DRONES - filodan, roketin etrafında görsel eşlikçiler */}
         {userMiners.slice(0, 3).map((miner, i) => {
           const offsets = [
-            { left: '27%', y: -18, label: 'SAĞ-ÜST' },
-            { left: '27%', y: 18, label: 'SAĞ-ALT' },
-            { left: '13%', y: -22, label: 'SOL-ÜST' },
+            { left: '31%', y: -26, label: 'SAĞ-ÜST' },
+            { left: '31%', y: 26, label: 'SAĞ-ALT' },
+            { left: '8%', y: -16, label: 'SOL-ÜST' },
           ];
           const off = offsets[i] || offsets[0];
           const style = DRONE_STYLES[i % DRONE_STYLES.length];

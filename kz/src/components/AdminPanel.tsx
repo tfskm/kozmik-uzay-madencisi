@@ -22,9 +22,10 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowUpRight,
+  BookOpen,
 } from 'lucide-react';
 
-type Tab = 'overview' | 'general' | 'economy' | 'packages' | 'planets' | 'market' | 'withdrawals' | 'players';
+type Tab = 'overview' | 'general' | 'economy' | 'packages' | 'planets' | 'market' | 'withdrawals' | 'players' | 'guide';
 
 const TABS: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
   { id: 'overview', label: 'Genel Bakış', icon: LayoutDashboard },
@@ -35,6 +36,7 @@ const TABS: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
   { id: 'market', label: 'Pazar Stoğu', icon: Store },
   { id: 'withdrawals', label: 'Çekimler', icon: ArrowUpRight },
   { id: 'players', label: 'Oyuncular', icon: Users },
+  { id: 'guide', label: 'İşleyiş & Kullanım', icon: BookOpen },
 ];
 
 const num = (v: string, fallback = 0) => {
@@ -813,11 +815,222 @@ export const AdminPanel: React.FC = () => {
         </Card>
       )}
 
+      {tab === 'guide' && (() => {
+        const repairPct = num(form.repairCostPerPct || String(c.repairCostPerPct ?? 0.0006), 0.0006);
+        const stRepairPct = num(form.stRepairCostPerPct || String(c.stRepairCostPerPct ?? 0.04), 0.04);
+        const faucet = parseList(form.dailyFaucet || (c.dailyFaucet || []).join(','), 7, [1,1,2,2,2,3,3]);
+        const dailySt = num(form.dailyStardust || String(c.dailyStardust ?? 30), 30);
+        const stPerKrd = Math.max(1, num(form.stPerKrd || String(c.stPerKrd ?? 600), 600));
+        const mults = parseList(form.planetMult || (c.planetMult || []).join(','), 6, [1,1.12,1.3,1.55,1.85,2.2]);
+        const unlocks = parseList(form.planetUnlock || (c.planetUnlock || []).join(','), 6, [0,30,100,250,600,1500]);
+        const reqLv = parseList(form.requiredLevel || (c.requiredLevel || []).join(','), 6, [1,2,4,7,11,16]);
+        const krdPerTon = num(form.krdPerTon || String(c.krdPerTon ?? 20), 20);
+        const wRate = num(form.withdrawRateKrdPerTon || String((c as any).withdrawRateKrdPerTon ?? 100), 100);
+        const wMin = num(form.minWithdrawKrd || String((c as any).minWithdrawKrd ?? 200), 200);
+        const wCap = num(form.weeklyWithdrawCapKrd || String((c as any).weeklyWithdrawCapKrd ?? 500), 500);
+        const wCd = num(form.withdrawCooldownHours || String((c as any).withdrawCooldownHours ?? 72), 72);
+        const wAge = num(form.minWithdrawAccountAgeDays || String((c as any).minWithdrawAccountAgeDays ?? 7), 7);
+        const wLv = num(form.minWithdrawLevel || String((c as any).minWithdrawLevel ?? 3), 3);
+        const wOn = String(form.withdrawEnabled ?? (c as any).withdrawEnabled ?? true);
+        const pkgs = Object.entries(adminState.catalog || {}).map(([id,p]: any)=>({id,...p})).sort((a:any,b:any)=> (a.price||0)-(b.price||0));
+        const weeklyKrd = faucet.reduce((s,n)=>s+n,0);
+        const monthlyFreeKrd = weeklyKrd * 4.345 + (dailySt / stPerKrd) * 30;
+        const marketByType = (t: string) => INITIAL_MARKET_ITEMS.filter((i) => i.type === t);
+        const weapons = marketByType('weapon').sort((a,b)=>a.price-b.price);
+        const shields = marketByType('shield').sort((a,b)=>a.price-b.price);
+        const rockets = marketByType('rocket').sort((a,b)=>a.price-b.price);
+        const bundles = marketByType('bundle').sort((a,b)=>a.price-b.price);
+        const consum = INITIAL_MARKET_ITEMS.filter(i=>['repair_kit','ore_bundle','overclock_chip','cosmic_pass'].includes(i.type));
+        const planetNames = ['Terra Nova (Luna)', 'Mars', 'Europa', 'Satürn Halkası', 'Siber Nebula', 'Kozmik Tekillik'];
+        return (
+          <div className="space-y-4">
+            <Card title="İşleyiş & Kullanım Talimatı" icon={BookOpen} desc="Oyunun tüm akışı, para kaynakları, alımların etkisi ve kazanç/çekim senaryoları. Değerler mevcut ayar/kataloğa göre gösterilir.">
+              <div className="text-[11px] text-teal-100/90 space-y-2">
+                <p><b className="text-white">Özet:</b> Oyuncu TON cüzdanını bağlayarak girer. Madenci paketleri kurup pasif üretim yapar, günlük/arena/çark ile ek gelir elde eder, KRD/Toz’u ekipman ve yükseltmeye harcar. Belirli şartları sağlayan oyuncular kazandığı KRD’yi admin onayıyla TON (Gram) olarak çekebilir.</p>
+              </div>
+            </Card>
+
+            <Card title="1) Giriş, Cüzdan ve Para Birimleri" icon={Coins}>
+              <div className="space-y-2 text-[11px] text-teal-100">
+                <div className="bg-[#05222d] rounded-xl p-2.5 space-y-1">
+                  <div><b className="text-cyan-300">TON (Gram):</b> Gerçek para birimi. Oyuncu TON ile KRD yükler (deposit) ve uygun olursa KRD’yi TON’a çekim talep eder. Admin manuel TON gönderir.</div>
+                  <div><b className="text-emerald-300">KRD:</b> Ana oyun parası. <u>Nereden gelir:</u> TON yatırma ({krdPerTon} KRD/TON), madenci hasılatı (topla), günlük seri ödülü, arena/aktivite ödülleri (saatlik sınırla), çark/kutu, Toz→KRD dönüşümü ({stPerKrd} Toz = 1 KRD), admin düzeltmesi. <u>Nereye gider:</u> madenci paketi alımı, gezegen açma, reaktör/matkap yükseltme, tamir (KRD ile), pazar/silah/kalkan/roket/paket alımı, kutu açma, çekim talebi (KRD rezerve edilir).</div>
+                  <div><b className="text-amber-300">Yıldız Tozu (ST):</b> Yardımcı para. <u>Nereden gelir:</u> günlük ödül (+{dailySt}/gün), çark/kutu/pazar (cevher paketi). <u>Nereye gider:</u> çark çevirme (ücret), tamir (Toz ile), Toz→KRD takası.</div>
+                </div>
+                <ul className="list-disc pl-4 space-y-1 text-teal-200/80">
+                  <li><b>Oyuna giriş:</b> TON cüzdanı bağlı olmalı (bağlı değilse oyun kilitlenir/giriş engellenir). Cüzdan koparsa tekrar bağlanması gerekir.</li>
+                  <li><b>TON yatırma:</b> Oyuncu belirtilen adrese TON gönderir → sistem/akış ile KRD bakiyesine yansır (kur: 1 TON = {krdPerTon} KRD).</li>
+                </ul>
+              </div>
+            </Card>
+
+            <Card title="2) Adım Adım Oynanış (Temel Döngü)" icon={LayoutDashboard}>
+              <ol className="list-decimal pl-4 space-y-1.5 text-[11px] text-teal-100">
+                <li><b>Başlangıç:</b> Yeni oyuncu temel bakiye ile başlar, Gezegen 1 açık, başlangıç roketi (Sev.1) vardır.</li>
+                <li><b>Madenci satın al:</b> Uygun gezegende katalogdan paket al (fiyat + aktif madenci sayısına göre artış olabilir). Paket filoya eklenir, kondisyon %100, üretim başlar.</li>
+                <li><b>Üretim biriktir:</b> Madenciler zamanla KRD üretir (paket fiyatı × günlük oran × kondisyon × gezegen çarpanı × reaktör/matkap × boost). Üretim “bekleyen/hasılat” olarak birikir.</li>
+                <li><b>Topla (Claim):</b> Bekleyen hasılatı KRD bakiyesine al. Madenci/gezegen bazlı veya toplu toplanabilir (ekran akışına göre).</li>
+                <li><b>Bakım/Tamir:</b> Kondisyon aşınır (decay/gün). Tamir: KRD (fiyat×{repairPct}×%) veya Toz (fiyat×{stRepairPct}×%). Kondisyon düşerse üretim azalır; 0 olursa üretim durur (ömür/yenileme gerekir).</li>
+                <li><b>Yükselt:</b> <b>Reaktör</b> ve <b>Matkap</b> seviyelerini artır → tüm üretime kalıcı % bonus (artan maliyetle). Gelecekte daha verimli kazanç sağlar.</li>
+                <li><b>Gezegen aç & seyahat:</b> Kilit ücreti (KRD), gerekli seviye ve önceki gezegen şartı sağlanırsa açılır. Daha yüksek gezegen = daha yüksek üretim çarpanı (aynı pakette daha çok brüt).</li>
+                <li><b>Günlük ödül:</b> Her gün seri ödülü al (7 günlük dizi) + Toz. Seri bozulmadan devam etmek toplamı artırır.</li>
+                <li><b>Arena / Yolculuk:</b> Uçuşta yıldız/kristal/öğe topla, asteroit/korsan ile etkileş. Ödüller aktivite havuzuna tabidir (saatlik sınırlar) — madencilik dışı ek ama sınırlı gelir.</li>
+                <li><b>Pazar & Ekipman:</b> Sarf malzemesi (tamir kiti, toz bataryası, hız/overclock, warp yakıtı) ve silah/kalkan/roket/paket al. Stok biten ürün alınamaz.</li>
+                <li><b>Çark & Kutu:</b> Toz/hak ile çark; KRD ile gizem kutusu aç → rastgele oyun içi ödül (KRD/Toz/çark/tamir/boost).</li>
+                <li><b>Çekim (uygunsa):</b> Şartlar sağlanırsa KRD’yi TON çekim talebi oluştur → admin onayı ve manuel ödeme.</li>
+              </ol>
+            </Card>
+
+            <Card title="3) Gezegenler (Açılış, Seviye, Çarpan)" icon={Globe2}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[10px] min-w-[420px]">
+                  <thead><tr className="text-teal-300/70 text-left"><th className="py-1">Gezegen</th><th>Açılış (KRD)</th><th>Gerekli Sv.</th><th>Üretim Çarpanı</th></tr></thead>
+                  <tbody className="text-teal-100">
+                    {planetNames.map((n,i)=> (
+                      <tr key={i} className="border-t border-teal-500/15"><td className="py-1.5">{i+1}. {n}</td><td className="font-mono">{unlocks[i] ?? 0}</td><td className="font-mono">{reqLv[i] ?? 1}</td><td className="font-mono text-emerald-300">x{(mults[i] ?? 1).toFixed(2)}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="text-[10px] text-teal-300/60 mt-1">Daha yüksek gezegen = daha yüksek brüt üretim; tamir maliyeti paket fiyatına bağlıdır. İlerlemek için seviye ve KRD gerekir.</div>
+            </Card>
+
+            <Card title="4) Madenci Paketleri — Maliyet, Kazanç ve Amorti" icon={PackageCheck}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[10px] min-w-[620px]">
+                  <thead><tr className="text-teal-300/70 text-left"><th className="py-1">Paket</th><th>Gez.</th><th>Fiyat</th><th>Günlük%</th><th>Aşınma</th><th>Brüt/gün</th><th>Tamir/gün</th><th>Net/gün</th><th>Amorti (P1)</th><th>Amorti (en iyi)</th></tr></thead>
+                  <tbody className="text-teal-100">
+                    {pkgs.map((p:any)=>{
+                      const price=Number(p.price)||0; const daily=Number(p.daily)||0; const decay=Number(p.decay)||1; const planetId=p.planetId||1;
+                      const gross=price*daily; const repair=price*repairPct*decay; const net=gross-repair;
+                      const bestMult=Math.max(...mults); const netB=gross*bestMult-repair;
+                      const days=net>0?(price/net):Infinity; const daysB=netB>0?(price/netB):Infinity;
+                      return (<tr key={p.id} className="border-t border-teal-500/15"><td className="py-1.5">{p.name}</td><td>{planetId}</td><td className="font-mono">{price}</td><td className="font-mono">{(daily*100).toFixed(2)}%</td><td className="font-mono">{decay}</td><td className="font-mono text-emerald-300">{gross.toFixed(3)}</td><td className="font-mono text-rose-300">{repair.toFixed(3)}</td><td className="font-mono text-cyan-300">{net.toFixed(3)}</td><td className="font-mono text-amber-300">{isFinite(days)?Math.round(days)+'g':'∞'}</td><td className="font-mono text-amber-200">{isFinite(daysB)?Math.round(daysB)+'g':'∞'}</td></tr>);
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="text-[10px] text-teal-300/60 mt-1">Brüt = fiyat×günlük oran (tam kondisyon, P1). Tamir/gün ≈ fiyat×tamir%×aşınma. “En iyi” brütüne en yüksek gezegen çarpanı uygulanır (tamir sabit kabul). Gerçek sonuç: ortalama kondisyon, reaktör/matkap, boost, bakım disiplini ve slot/gezegen durumuna göre değişir.</div>
+            </Card>
+
+            <Card title="5) Arena / Savaş (Ekipman Kuralları)" icon={ShieldAlert}>
+              <div className="text-[11px] text-teal-100 space-y-1.5">
+                <ul className="list-disc pl-4 space-y-1">
+                  <li><b>Roket:</b> 5 seviye (görünüm/dayanım). Başlangıçta Sev.1 roket verilir. Yükseltmek görsel ve ilerleme hissi sağlar.</li>
+                  <li><b>Silah:</b> 5 seviye. <b>Sev.N silah, en fazla Sev.N göktaşını/taşı kırar.</b> Yetersiz silah taşı kıramaz (geri bildirim verilir). Güç arttıkça atış tipi (ışın → alev/plazma vb.) güçlenir.</li>
+                  <li><b>Kalkan:</b> 5 seviye. <b>Sev.N kalkan, en fazla Sev.N taşı engeller.</b> Çarpışma/koruma kalkanın <u>dış halkasında</u> gerçekleşir (cisim içeri girmemeli). Engellenen hasar gösterilir, kalkan bloklaması ekstra puan kazandırmaz. Yetersiz kalkan hasar aldırır/etkisiz kalır.</li>
+                  <li><b>Göktaşları/öğeler:</b> 5 kademe taş/tehdit; uygun ekipman gerekir. Dış halka temasında patlama/toplama kuralları uygulanır. Asteroit çarpması ekipman/hasar etkisi yaratabilir.</li>
+                  <li><b>Filodaki dronlar:</b> Sadece görsel eşlikçi (gameplay etkisi yok), filoyu temsil eder.</li>
+                </ul>
+              </div>
+              <div className="mt-2 overflow-x-auto">
+                <table className="w-full text-[10px] min-w-[520px]">
+                  <thead><tr className="text-teal-300/70 text-left"><th className="py-1">Silah</th><th>Fiyat</th><th>Etkisi</th><th className="pl-2">Kalkan</th><th>Fiyat</th><th>Etkisi</th></tr></thead>
+                  <tbody className="text-teal-100">
+                    {Array.from({length: Math.max(weapons.length, shields.length)}).map((_,i)=>{
+                      const w=weapons[i]; const s=shields[i];
+                      return (<tr key={i} className="border-t border-teal-500/15"><td className="py-1">{w?.title||'-'}</td><td className="font-mono">{w?w.price:'-'}</td><td className="text-teal-200/70">{w?.effectDescription||'-'}</td><td className="pl-2">{s?.title||'-'}</td><td className="font-mono">{s?s.price:'-'}</td><td className="text-teal-200/70">{s?.effectDescription||'-'}</td></tr>);
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-2 overflow-x-auto">
+                <table className="w-full text-[10px]">
+                  <thead><tr className="text-teal-300/70 text-left"><th className="py-1">Roket</th><th>Fiyat</th><th>Etkisi</th></tr></thead>
+                  <tbody className="text-teal-100">{rockets.map(r=>(<tr key={r.id} className="border-t border-teal-500/15"><td className="py-1">{r.title}</td><td className="font-mono">{r.price}</td><td className="text-teal-200/70">{r.effectDescription}</td></tr>))}</tbody>
+                </table>
+              </div>
+            </Card>
+
+            <Card title="6) Pazar: Sarf, Setler ve Ne İşe Yarar" icon={Store}>
+              <div className="text-[11px] text-teal-100 space-y-2">
+                <div>
+                  <div className="font-bold text-white mb-1">Sarf Malzemeleri</div>
+                  <table className="w-full text-[10px]"><thead><tr className="text-teal-300/70 text-left"><th className="py-1">Ürün</th><th>Fiyat</th><th>Ne olur?</th></tr></thead><tbody className="text-teal-100">{consum.map(it=>(<tr key={it.id} className="border-t border-teal-500/15"><td className="py-1">{it.title}</td><td className="font-mono">{it.price} {it.currency}</td><td className="text-teal-200/70">{it.effectDescription} — {it.description}</td></tr>))}</tbody></table>
+                </div>
+                <div>
+                  <div className="font-bold text-white mb-1">Paketler (Set)</div>
+                  <table className="w-full text-[10px]"><thead><tr className="text-teal-300/70 text-left"><th className="py-1">Set</th><th>Fiyat</th><th>İçerik/Etkisi</th></tr></thead><tbody className="text-teal-100">{bundles.map(it=>(<tr key={it.id} className="border-t border-teal-500/15"><td className="py-1">{it.title}</td><td className="font-mono">{it.price} KRD</td><td className="text-teal-200/70">{it.description} ({it.effectDescription})</td></tr>))}</tbody></table>
+                </div>
+                <div className="text-[10px] text-teal-300/60">Stok 0 ise alınamaz (Yönetim → Pazar Stoğu). Fiyat/etki listesi istemci tanımlıdır; ekonomi parametreleri sunucu ayarlarından gelir.</div>
+              </div>
+            </Card>
+
+            <Card title="7) Günlük, Çark, Kutu ve Toz Dönüşümü" icon={Sparkles}>
+              <div className="text-[11px] text-teal-100 space-y-1.5">
+                <ul className="list-disc pl-4 space-y-1">
+                  <li><b>Günlük seri (7 gün):</b> {faucet.join(' - ')} KRD (toplam {weeklyKrd}/hafta) + her gün {dailySt} Toz. Seri düzenli girişle sürer.</li>
+                  <li><b>Toz → KRD:</b> {stPerKrd} Toz = 1 KRD (oyuncu takas edebilir). Günlük tozun KRD karşılığı ~{(dailySt/stPerKrd).toFixed(3)} KRD/gün.</li>
+                  <li><b>Çark:</b> Toz/çevirme hakkı ile döner; rastgele oyun içi ödül (Toz, KRD, tamir, çevirme, boost vb.). Aktivite/ödül mantığı saatlik sınırlarla dengelenir.</li>
+                  <li><b>Gizem Kutusu:</b> KRD ile açılır; içinden rastgele KRD/Toz/çevirme çıkar (paket türüne göre aralık değişir).</li>
+                  <li><b>Aktivite sınırı:</b> Olay/savaş/arena gibi aktivitelerden gelen ödüller saatlik limitlere tabidir (suistimali önlemek için).</li>
+                </ul>
+              </div>
+            </Card>
+
+            <Card title="8) Kazanç ve Senaryolar (Tahmini)" icon={Coins}>
+              <div className="space-y-3 text-[11px] text-teal-100">
+                <div className="bg-[#05222d] rounded-xl p-2.5">
+                  <div className="font-bold text-white mb-1">Yatırımsız (Free-to-play)</div>
+                  <ul className="list-disc pl-4 space-y-0.5 text-teal-200/85">
+                    <li>Günlük seri: ~{(weeklyKrd*4.345).toFixed(1)} KRD/ay, Toz dönüşümü: ~{((dailySt*30)/stPerKrd).toFixed(1)} KRD/ay → toplam ~<b className="text-amber-300">{monthlyFreeKrd.toFixed(1)} KRD/ay</b> (arena hariç, ortalama).</li>
+                    <li>Çekime ulaşmak mümkündür ama <b>yavaştır</b>; düzenli giriş ve birikim gerekir. Hedef: küçük ama sürdürülebilir kazanım.</li>
+                  </ul>
+                </div>
+                <div className="bg-[#05222d] rounded-xl p-2.5">
+                  <div className="font-bold text-white mb-1">Verimli Oyuncu (Aktif + Yatırım)</div>
+                  <ul className="list-disc pl-4 space-y-0.5 text-teal-200/85">
+                    <li>Madenci alır, düzenli toplar ve tamir eder; reaktör/matkap yükseltir; uygun gezegene geçer → net üretim artar.</li>
+                    <li>Amorti hedefi (denge tasarımı): verimli oyunla ~<b className="text-emerald-300">6 ay</b> civarı (paket/gezegen/kondisyon ve yükseltmeye göre değişir). “Paketler” tablosundaki amorti kolonlarına bak.</li>
+                    <li>Daha yüksek paket/gezegen daha yüksek sermaye ister; kötü bakım veya yanlış seçim amortiyi uzatır.</li>
+                  </ul>
+                </div>
+                <div className="bg-[#05222d] rounded-xl p-2.5">
+                  <div className="font-bold text-white mb-1">Kısa Senaryo Özetleri</div>
+                  <div className="text-[10px] text-teal-200/80 space-y-1">
+                    <div>• <b>Yeni oyuncu:</b> Günlük ödül + ilk paket → hasılatı topla, kondisyonu koru, küçük ekipman al.</div>
+                    <div>• <b>Orta seviye:</b> 2+ madenci, gezegen aç, reaktör/matkap yükselt, Sev.2-3 silah/kalkan ile arena verimini artır.</div>
+                    <div>• <b>İleri/çekim odaklı:</b> Şartları doldur (seviye/hesap yaşı), minimumu ve limiti gözet, düzenli talep oluştur; admin onayı bekle.</div>
+                  </div>
+                </div>
+                <div className="text-[10px] text-teal-300/60">Not: Tüm kazançlar tahminidir; oranlar/ayarlar değiştikçe sonuç değişir. “Ekonomi” sekmesindeki hesap özeti anlık form değerleriyle simüle eder.</div>
+              </div>
+            </Card>
+
+            <Card title="9) Çekim (KRD → TON/Gram) — Şartlar ve Akış" icon={ArrowUpRight}>
+              <div className="text-[11px] text-teal-100 space-y-1.5">
+                <div className="bg-[#05222d] rounded-xl p-2.5 space-y-1">
+                  <div><b>Durum:</b> Çekim {String(wOn) === 'false' ? <span className="text-rose-300">KAPALI</span> : <span className="text-emerald-300">AÇIK</span>} • Kur: <b>{wRate} KRD = 1 TON</b> • Min: <b>{wMin} KRD</b> • Bekleme: {wCd} saat • Haftalık limit: {wCap} KRD • Min hesap yaşı: {wAge} gün • Min seviye: {wLv}</div>
+                </div>
+                <ol className="list-decimal pl-4 space-y-1">
+                  <li><b>Uygunluk:</b> Cüzdan bağlı, çekim açık, seviye/hesap yaşı yeterli, bakiye ≥ minimum, bekleme süresi ve haftalık limit aşılmamış olmalı.</li>
+                  <li><b>Talep oluştur:</b> Oyuncu çekmek istediği KRD miktarını girer → KRD bakiyeden rezerve edilir ve talep “beklemede” olur.</li>
+                  <li><b>Admin işlemi:</b> Yönetim → Çekimler’den talep incelenir. <b>Onayla</b> (uygun), <b>Ödendi</b> (TON manuel gönderildi, işlem tamam), <b>Reddet</b> (KRD oyuncuya iade edilir).</li>
+                  <li><b>Sonuç:</b> Ödeme manuel TON transferidir; durum geçmişte izlenir.</li>
+                </ol>
+                <div className="text-[10px] text-amber-200/80">Önemli: Çekim gerçek para transferi içerir; talepleri, cüzdan adresini ve limitleri kontrol et. Kötüye kullanımı önlemek için şart/limitleri kullan.</div>
+              </div>
+            </Card>
+
+            <Card title="10) Admin İçin Hızlı Rehber" icon={Wrench}>
+              <ul className="list-disc pl-4 space-y-1 text-[11px] text-teal-100">
+                <li><b>Duyuru & Bakım:</b> Duyuru metni/bağlantılar ve bakım modu (oyuncuları engeller, admin girebilir).</li>
+                <li><b>Ekonomi:</b> Kur, tamir maliyetleri, çark/günlük/toz ayarları, çekim parametreleri ve hesap özeti; değişiklik tüm oyuncuları etkiler (önce simülasyon önerilir).</li>
+                <li><b>Paketler/Gezegenler:</b> Fiyat, günlük %, aşınma, aktiflik; gezegen kilit/çarpan/seviye/günlük seri.</li>
+                <li><b>Pazar Stoğu:</b> Ürün stoğu 0 → satın alınamaz.</li>
+                <li><b>Çekimler:</b> Onayla/Ödendi/Reddet (redde iade) ve not/cüzdan takibi.</li>
+                <li><b>Oyuncular:</b> Bakiye düzelt (+/− KRD/Toz), banla/kaldır, sıfırla.</li>
+              </ul>
+            </Card>
+          </div>
+        );
+      })()}
+
       <div className="bg-[#06222d] border border-teal-500/25 rounded-2xl p-3 flex items-start gap-2">
         <Wrench className="w-4 h-4 text-cyan-300 shrink-0 mt-0.5" />
         <p className="text-[10px] text-teal-100/60">
           Tüm değişiklikler sunucuda saklanır ve tüm oyunculara yansır. KRD ve Yıldız Tozu oyun içi para birimidir;
-          nakit değeri yoktur, çekim yapılamaz.
+          uygun şartlar sağlandığında ve admin onayıyla TON (Gram) çekimi talep edilebilir.
         </p>
       </div>
 

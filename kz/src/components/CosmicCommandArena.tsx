@@ -575,8 +575,8 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     if (!rect) return;
     const pointerY = e.clientY - rect.top;
     const percentY = (pointerY / rect.height) * 100;
-    // Clamp rocket altitude - kalkan dahil HUD/menü yazılarına girmesin, hareket alanı geniş
-    const clampedY = Math.max(24, Math.min(74, percentY));
+    // Clamp rocket altitude - kalkan dahil üst HUD ve alt kontrol barına girmesin
+    const clampedY = Math.max(30, Math.min(80, percentY));
     setTargetRocketY(clampedY);
   };
 
@@ -785,32 +785,32 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         </div>
 
         {/* TOP FLIGHT TELEMETRY HUD BAR */}
-        <div className="absolute top-2.5 left-2.5 right-2.5 z-20 flex items-center justify-between pointer-events-none gap-2">
+        <div className="absolute top-1.5 left-1.5 right-1.5 z-20 flex flex-wrap items-center justify-between pointer-events-none gap-1 pb-1 border-b border-orange-500/25">
           {/* Sector & Telemetry badge */}
-          <div className="flex items-center gap-2 bg-[#120722]/90 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-orange-500/40 pointer-events-auto shadow-md">
-            <span className="w-2.5 h-2.5 rounded-full bg-orange-400 animate-ping" />
+          <div className="flex items-center gap-1.5 bg-[#120722]/90 backdrop-blur-md px-2 py-1 rounded-lg border border-orange-500/40 pointer-events-auto shadow-md">
+            <span className="w-2 h-2 rounded-full bg-orange-400 animate-ping" />
             <div className="text-left">
-              <div className="text-[11px] font-black text-white font-display tracking-wider uppercase flex items-center gap-1">
-                  <span className="text-amber-400 font-mono text-[10px]">
+              <div className="text-[9px] font-black text-white font-display tracking-wider uppercase flex items-center gap-1">
+                  <span className="text-amber-400 font-mono text-[9px]">
                     WARP {warpSpeed.toFixed(1)}
                   </span>
               </div>
-              <div className="text-[9px] text-amber-200/70 font-mono">
+              <div className="text-[8px] text-amber-200/70 font-mono leading-none">
                 {distanceKm.toLocaleString()} KM • x{currentPlanet.miningMultiplier.toFixed(2)}
               </div>
             </div>
           </div>
 
           {/* Defense, Battles & Fullscreen Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="bg-[#120722]/90 backdrop-blur-md px-2 py-1 rounded-xl border border-cyan-500/40 flex items-center gap-1.5 pointer-events-auto shadow-md">
-              <Shield className="w-3.5 h-3.5 text-cyan-400" />
+          <div className="flex items-center gap-1 flex-wrap justify-end">
+            <div className="bg-[#120722]/90 backdrop-blur-md px-1.5 py-0.5 rounded-lg border border-cyan-500/40 flex items-center gap-1 pointer-events-auto shadow-md">
+              <Shield className="w-3 h-3 text-cyan-400" />
               <div className="text-right">
-                <div className="text-[9px] text-slate-300 font-bold uppercase font-display">
+                <div className="text-[8px] text-slate-300 font-bold uppercase font-display leading-none">
                   KALKAN {user.equippedShield ? `S${SHIELDS[user.equippedShield]?.tier || 0}` : ''}
                 </div>
                 <div
-                  className={`text-[10px] font-black font-mono leading-none ${
+                  className={`text-[9px] font-black font-mono leading-none ${
                     shieldHealth > 0 ? 'text-cyan-300' : 'text-rose-400'
                   }`}
                 >
@@ -819,21 +819,21 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
               </div>
             </div>
 
-            <div className="bg-[#120722]/90 backdrop-blur-md px-2 py-1 rounded-xl border border-orange-500/40 flex items-center gap-1.5 pointer-events-auto shadow-md">
-              <Crosshair className="w-3.5 h-3.5 text-orange-400" />
+            <div className="bg-[#120722]/90 backdrop-blur-md px-1.5 py-0.5 rounded-lg border border-orange-500/40 flex items-center gap-1 pointer-events-auto shadow-md">
+              <Crosshair className="w-3 h-3 text-orange-400" />
               <div className="text-right">
-                <div className="text-[9px] text-slate-300 font-bold uppercase font-display">SİLAH</div>
-                <div className="text-[10px] font-black font-mono leading-none text-orange-300">
+                <div className="text-[8px] text-slate-300 font-bold uppercase font-display leading-none">SİLAH</div>
+                <div className="text-[9px] font-black font-mono leading-none text-orange-300">
                   {user.equippedWeapon ? `Sev.${WEAPONS[user.equippedWeapon]?.tier || 0}` : 'YOK'}
                 </div>
               </div>
             </div>
 
-            <div className="bg-[#120722]/90 backdrop-blur-md px-2 py-1 rounded-xl border border-emerald-500/40 flex items-center gap-1.5 pointer-events-auto shadow-md">
-              <Rocket className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="bg-[#120722]/90 backdrop-blur-md px-1.5 py-0.5 rounded-lg border border-emerald-500/40 flex items-center gap-1 pointer-events-auto shadow-md">
+              <Rocket className="w-3 h-3 text-emerald-400" />
               <div className="text-right">
-                <div className="text-[9px] text-slate-300 font-bold uppercase font-display">ROKET</div>
-                <div className="text-[10px] font-black font-mono leading-none text-emerald-300">
+                <div className="text-[8px] text-slate-300 font-bold uppercase font-display leading-none">ROKET</div>
+                <div className="text-[9px] font-black font-mono leading-none text-emerald-300">
                   Sev.{ROCKETS[user.equippedRocket || 'rkt-1']?.tier || 1}
                 </div>
               </div>
@@ -846,16 +846,16 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
                   e.stopPropagation();
                   startBattle();
                 }}
-                className="pointer-events-auto flex items-center gap-1 bg-gradient-to-r from-orange-500 via-amber-500 to-rose-600 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black font-display uppercase tracking-wider text-[11px] px-2.5 py-1.5 rounded-xl shadow-lg transition active:scale-95 animate-pulse"
+                className="pointer-events-auto flex items-center gap-1 bg-gradient-to-r from-orange-500 via-amber-500 to-rose-600 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-black font-display uppercase tracking-wider text-[9px] px-2 py-1 rounded-lg shadow-lg transition active:scale-95 animate-pulse"
               >
-                <Swords className="w-3.5 h-3.5" />
+                <Swords className="w-3 h-3" />
                 <span className="hidden sm:inline">Korsan Avı</span>
                 <span className="sm:hidden">Korsan</span>
               </button>
             ) : (
-              <div className="bg-rose-950/90 border border-rose-500/70 px-2 py-1 rounded-xl flex items-center gap-1 animate-bounce pointer-events-auto">
-                <ShieldAlert className="w-3.5 h-3.5 text-rose-400 animate-spin" />
-                <span className="text-[10px] sm:text-[11px] font-black text-rose-300 font-display">
+              <div className="bg-rose-950/90 border border-rose-500/70 px-1.5 py-0.5 rounded-lg flex items-center gap-1 animate-bounce pointer-events-auto">
+                <ShieldAlert className="w-3 h-3 text-rose-400 animate-spin" />
+                <span className="text-[9px] font-black text-rose-300 font-display">
                   BASKIN! ({currentBattle.timeRemainingSeconds}s)
                 </span>
               </div>
@@ -868,7 +868,7 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
                 sounds.playClick();
                 setIsFullscreen((prev) => !prev);
               }}
-              className={`pointer-events-auto flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold font-display uppercase tracking-wider transition active:scale-95 shadow-md border ${
+              className={`pointer-events-auto flex items-center gap-1 px-1.5 py-1 rounded-lg text-[9px] font-bold font-display uppercase tracking-wider transition active:scale-95 shadow-md border ${
                 isFullscreen
                   ? 'bg-rose-500/30 border-rose-500/60 text-rose-200 hover:bg-rose-500/50'
                   : 'bg-[#120722]/90 border-amber-500/50 text-amber-300 hover:border-amber-400 hover:bg-[#1c0c32]'
@@ -877,12 +877,12 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
             >
               {isFullscreen ? (
                 <>
-                  <Minimize2 className="w-3.5 h-3.5 text-rose-400" />
+                  <Minimize2 className="w-3 h-3 text-rose-400" />
                   <span className="hidden sm:inline">Küçült</span>
                 </>
               ) : (
                 <>
-                  <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+                  <Maximize2 className="w-3 h-3 text-amber-400" />
                   <span className="hidden sm:inline">Tam Ekran</span>
                 </>
               )}
@@ -897,10 +897,10 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
               e.stopPropagation();
               handleArenaClick(e);
             }}
-            className="absolute top-12 left-1/2 -translate-x-1/2 z-30 cursor-pointer group transition-transform active:scale-95 w-[92%] max-w-sm pointer-events-auto"
+            className="absolute top-[4.5rem] left-1/2 -translate-x-1/2 z-30 cursor-pointer group transition-transform active:scale-95 w-[88%] max-w-[280px] pointer-events-auto"
           >
-            <div className="bg-slate-950/95 border border-rose-500/80 p-2.5 rounded-2xl flex items-center gap-2.5 shadow-2xl glow-rose">
-              <div className="w-12 h-12 rounded-xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-2xl shrink-0 group-hover:scale-110 transition animate-bounce">
+            <div className="bg-slate-950/95 border border-rose-500/80 p-2 rounded-xl flex items-center gap-2 shadow-2xl glow-rose">
+              <div className="w-9 h-9 rounded-lg bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-lg shrink-0 group-hover:scale-110 transition animate-bounce">
                 {currentBattle.avatar}
               </div>
 
@@ -1371,8 +1371,8 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         ))}
 
         {/* BOTTOM VOYAGE CONTROLS & FLIGHT STATS BAR */}
-        <div className="absolute bottom-2.5 left-2.5 right-2.5 z-20 flex items-center justify-between gap-2 pointer-events-none">
-          <div className="flex items-center gap-1.5 bg-[#120722]/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-orange-500/30 text-[10px] text-amber-200/90 font-mono pointer-events-auto">
+        <div className="absolute bottom-1.5 left-1.5 right-1.5 z-20 flex items-center justify-between gap-2 pointer-events-none pt-1 border-t border-orange-500/25">
+          <div className="flex items-center gap-1 bg-[#120722]/85 backdrop-blur-md px-2 py-0.5 rounded-lg border border-orange-500/30 text-[9px] text-amber-200/90 font-mono pointer-events-auto">
             <span>⭐ Topla</span>
             <span className="text-orange-400">•</span>
             <span>☄️ Vur</span>
@@ -1400,7 +1400,7 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
                   e.stopPropagation();
                   onOpenFleetDrawer();
                 }}
-                className="flex items-center gap-1 bg-[#120722]/90 hover:bg-[#1e0e33] border border-orange-500/40 text-amber-300 text-[10px] sm:text-[11px] font-bold font-display px-2.5 py-1.5 rounded-xl transition shadow-md active:scale-95"
+                className="flex items-center gap-1 bg-[#120722]/90 hover:bg-[#1e0e33] border border-orange-500/40 text-amber-300 text-[9px] font-bold font-display px-2 py-1 rounded-lg transition shadow-md active:scale-95"
                 title="Filo Birimlerini ve Madencileri İncele"
               >
                 <Bot className="w-3 h-3 text-orange-400" />
@@ -1428,7 +1428,7 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
                 }, 4000);
               }}
               disabled={isWarpBoosting}
-              className={`flex items-center gap-1 text-[10px] sm:text-[11px] font-black uppercase font-display px-2.5 sm:px-3 py-1.5 rounded-xl transition shadow-lg active:scale-95 ${
+              className={`flex items-center gap-1 text-[9px] font-black uppercase font-display px-2 py-1 rounded-lg transition shadow-lg active:scale-95 ${
                 isWarpBoosting
                   ? 'bg-cyan-500 text-slate-950 shadow-cyan-500/50 animate-pulse'
                   : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 shadow-orange-500/30'

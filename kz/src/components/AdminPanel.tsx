@@ -21,6 +21,7 @@ import {
   Search,
   CheckCircle2,
   AlertCircle,
+  ArrowUpRight,
 } from 'lucide-react';
 
 type Tab = 'overview' | 'general' | 'economy' | 'packages' | 'planets' | 'market' | 'withdrawals' | 'players';

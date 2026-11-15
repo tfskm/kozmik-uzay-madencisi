@@ -1337,16 +1337,17 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
           </div>
         </div>
 
-        {/* ESCORT DRONES - filodan, roketin etrafında görsel eşlikçiler */}
-        {userMiners.slice(0, 3).map((miner, i) => {
+        {/* ESCORT DRONES - roketin gövdesinin üstünde/altında, gövdeden biraz uzakta */}
+        {userMiners.slice(0, 4).map((miner, i) => {
           const offsets = [
-            { left: '12%', y: -44, label: 'ÜST' },
-            { left: '12%', y: 44, label: 'ALT' },
-            { left: '3%', y: 0, label: 'ARKA' },
+            { left: '16%', y: -62 },
+            { left: '24%', y: -42 },
+            { left: '16%', y: 62 },
+            { left: '24%', y: 42 },
           ];
           const off = offsets[i] || offsets[0];
           const style = DRONE_STYLES[i % DRONE_STYLES.length];
-          const Icon = DRONE_ICONS[miner.iconName] || [Bot, Cpu, Atom][i] || Bot;
+          const Icon = DRONE_ICONS[miner.iconName] || [Bot, Cpu, Atom, Radio][i] || Bot;
           return (
             <div
               key={miner.instanceId}

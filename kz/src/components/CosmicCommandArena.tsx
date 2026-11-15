@@ -368,9 +368,10 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
 
         // Çarpışma: kalkan varsa dış çizgisinde, yoksa roket gövdesinde
         const shieldActive = shieldHealthRef.current > 0 && !!user.equippedShield;
-        const hitRadiusX = shieldActive ? 10 : 6;
-        const hitRadiusY = shieldActive ? 18 : 14;
-        const isAtRocketX = newX <= rocketXPos + hitRadiusX && newX >= rocketXPos - 6;
+        // Dış halkaya temas: kalkan aktifken nesneler dış halkada yakalanır/patlar
+        const hitRadiusX = shieldActive ? 13 : 6;
+        const hitRadiusY = shieldActive ? 16 : 14;
+        const isAtRocketX = newX <= rocketXPos + hitRadiusX && newX >= rocketXPos - 8;
         const isAtRocketY = Math.abs(ent.y - currentRocketY) < hitRadiusY;
 
         if (isAtRocketX && isAtRocketY) {
@@ -574,8 +575,8 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
     if (!rect) return;
     const pointerY = e.clientY - rect.top;
     const percentY = (pointerY / rect.height) * 100;
-    // Clamp rocket altitude - üst/alt HUD ve yazı alanlarına girmesin
-    const clampedY = Math.max(32, Math.min(76, percentY));
+    // Clamp rocket altitude - kalkan dahil HUD/menü yazılarına girmesin, hareket alanı geniş
+    const clampedY = Math.max(24, Math.min(74, percentY));
     setTargetRocketY(clampedY);
   };
 

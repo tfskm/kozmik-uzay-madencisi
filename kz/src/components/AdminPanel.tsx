@@ -496,6 +496,70 @@ export const AdminPanel: React.FC = () => {
             <Field label="Kaç Toz = 1 KRD?" type="number" value={form.stPerKrd || ''} onChange={(v) => setForm((f) => ({ ...f, stPerKrd: v }))} />
           </div>
           <div className="border-t border-teal-500/25 pt-3 mt-2">
+            <div className="text-[11px] font-bold text-cyan-200 mb-2">Kazanç Matematiği (Hesap Özeti)</div>
+            <div className="text-[10px] text-teal-200/70 mb-2">Mevcut form/katalog değerlerine göre tahmini hesap. Değerleri değiştirip kaydettikten sonra etkisini buradan takip edebilirsin (garanti değil, tahmindir).</div>
+            {(() => {
+              const repairPct = num(form.repairCostPerPct || '0.0006', 0.0006);
+              const stRepairPct = num(form.stRepairCostPerPct || '0.04', 0.04);
+              const faucet = parseList(form.dailyFaucet || '1,1,2,2,2,3,3', 7, [1,1,2,2,2,3,3]);
+              const dailySt = num(form.dailyStardust || '30', 30);
+              const stPerKrd = Math.max(1, num(form.stPerKrd || '600', 600));
+              const mults = parseList(form.planetMult || '1,1.12,1.3,1.55,1.85,2.2', 6, [1,1.12,1.3,1.55,1.85,2.2]);
+              const upBonus = 0.06, drillBonus = 0.05; // varsayılan seviye başı
+              const pkgs = Object.entries(adminState.catalog || {}).map(([id,p]: any)=>({id,...p})).sort((a:any,b:any)=> (a.price||0)-(b.price||0));
+              const weeklyKrd = faucet.reduce((s,n)=>s+n,0);
+              const monthlyFreeKrd = weeklyKrd * 4.345 + (dailySt / stPerKrd) * 30;
+              return (
+                <div className="space-y-3">
+                  <div className="bg-[#05222d] border border-teal-500/25 rounded-xl p-2.5">
+                    <div className="text-[11px] font-bold text-white mb-1">Yatırımsız (Free) Tahmini</div>
+                    <div className="grid grid-cols-2 gap-2 text-[10px] text-teal-100">
+                      <div>7 gün seri KRD: <b className="text-emerald-300">{weeklyKrd.toFixed(1)}</b></div>
+                      <div>Aylık seri ~KRD: <b className="text-emerald-300">{(weeklyKrd*4.345).toFixed(1)}</b></div>
+                      <div>Günlük Toz: <b className="text-cyan-300">{dailySt}</b> (~{(dailySt/stPerKrd).toFixed(3)} KRD)</div>
+                      <div>Aylık Toz→KRD ~: <b className="text-cyan-300">{((dailySt*30)/stPerKrd).toFixed(1)}</b></div>
+                      <div className="col-span-2">Toplam aylık (günlük+seri, arena hariç) ~ <b className="text-amber-300">{monthlyFreeKrd.toFixed(1)} KRD/ay</b> (çekime ulaşma yavaştır)</div>
+                    </div>
+                  </div>
+                  <div className="bg-[#05222d] border border-teal-500/25 rounded-xl p-2.5 overflow-x-auto">
+                    <div className="text-[11px] font-bold text-white mb-1">Madenci Paketleri (Verimli Oyuncu Tahmini)</div>
+                    <div className="text-[10px] text-teal-300/60 mb-2">Brüt = fiyat×günlük oran (tam kondisyon). Tamir/gün ≈ fiyat×tamir%×aşınma. Net ≈ brüt−tamir (ortalama kondisyon düşüşü hariç basit model). Amorti ≈ fiyat/net.</div>
+                    <table className="w-full text-[10px] min-w-[520px]">
+                      <thead><tr className="text-teal-300/70 text-left"><th className="py-1">Paket</th><th>Fiyat</th><th>Günlük%</th><th>Aşınma</th><th>Brüt/gün</th><th>Tamir/gün</th><th>Net/gün</th><th>Amorti (P1)</th><th>Amorti (en iyi gez.)</th></tr></thead>
+                      <tbody className="text-teal-100">
+                        {pkgs.map((p:any)=>{
+                          const price = Number(p.price)||0; const daily = Number(p.daily)||0; const decay = Number(p.decay)||1;
+                          const gross = price*daily; const repair = price*repairPct*decay; const net = gross-repair;
+                          const bestMult = Math.max(...mults); const grossB = gross*bestMult; const netB = grossB-repair; // tamir sabit varsayımı basit
+                          const days = net>0 ? (price/net) : Infinity; const daysB = netB>0 ? (price/netB) : Infinity;
+                          return (
+                            <tr key={p.id} className="border-t border-teal-500/15">
+                              <td className="py-1.5 pr-1">{p.name}</td>
+                              <td className="font-mono">{price}</td>
+                              <td className="font-mono">{(daily*100).toFixed(2)}%</td>
+                              <td className="font-mono">{decay}</td>
+                              <td className="font-mono text-emerald-300">{gross.toFixed(3)}</td>
+                              <td className="font-mono text-rose-300">{repair.toFixed(3)}</td>
+                              <td className="font-mono text-cyan-300">{net.toFixed(3)}</td>
+                              <td className="font-mono text-amber-300">{isFinite(days)?Math.round(days)+'g':'∞'}</td>
+                              <td className="font-mono text-amber-200">{isFinite(daysB)?Math.round(daysB)+'g':'∞'}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    <div className="text-[10px] text-teal-300/50 mt-1">Not: "En iyi gezegen" brüt üretime çarpan uygular (tamir maliyeti sabit kabul). Gerçekte ortalama kondisyon, yükseltmeler, gezegen/slot ve bakım sıklığı sonucu değiştirir; hedef ~180 gün civarıdır.</div>
+                  </div>
+                  <div className="bg-[#05222d] border border-teal-500/25 rounded-xl p-2.5 text-[10px] text-teal-100">
+                    <div className="font-bold text-white mb-1">Çekim Özeti</div>
+                    <div>Kur: <b>{form.withdrawRateKrdPerTon || 100} KRD = 1 TON</b> • Min: <b>{form.minWithdrawKrd || 200} KRD</b> • Bekleme: {form.withdrawCooldownHours || 72}s • Haftalık: {form.weeklyWithdrawCapKrd || 500} KRD • Min hesap: {form.minWithdrawAccountAgeDays || 7} gün • Min seviye: {form.minWithdrawLevel || 3}</div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div className="border-t border-teal-500/25 pt-3 mt-2">
             <div className="text-[11px] font-bold text-cyan-200 mb-2">Çekim (TON/Gram) Ayarları</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Çekim açık? (true/false)" value={form.withdrawEnabled || 'true'} onChange={(v) => setForm((f) => ({ ...f, withdrawEnabled: v }))} />

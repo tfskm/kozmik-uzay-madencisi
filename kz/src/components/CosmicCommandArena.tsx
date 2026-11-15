@@ -10,6 +10,12 @@ import {
   Flame,
   Wrench,
   Bot,
+  Radio,
+  Truck,
+  Cpu,
+  Compass,
+  Atom,
+  Sparkles,
   Rocket,
   Shield,
   Crosshair,
@@ -101,6 +107,13 @@ const ROCKETS: Record<string, { tier: number; name: string; hull: string; wing: 
 
 const ASTEROID_REWARDS = [0, 10, 20, 35, 55, 80]; // tier 1..5
 const ASTEROID_DAMAGE = [0, 6, 10, 15, 22, 30];  // gövde hasarı % (kalkan yok/yetersiz) tier 1..5
+const DRONE_ICONS: Record<string, React.ElementType> = { Bot, Radio, Truck, Cpu, Compass, Rocket, Atom, Sparkles };
+const DRONE_STYLES = [
+  { border: 'border-cyan-400/70', bg: 'bg-cyan-950/80', text: 'text-cyan-300', glow: 'shadow-[0_0_10px_rgba(34,211,238,0.5)]' },
+  { border: 'border-amber-400/70', bg: 'bg-amber-950/80', text: 'text-amber-300', glow: 'shadow-[0_0_10px_rgba(251,191,36,0.5)]' },
+  { border: 'border-fuchsia-400/70', bg: 'bg-fuchsia-950/80', text: 'text-fuchsia-300', glow: 'shadow-[0_0_10px_rgba(232,121,249,0.5)]' },
+];
+
 const SHIELD_CAPACITY = [0, 40, 60, 80, 100, 120]; // kalkan ömrü/kapasitesi tier 1..5
 
 export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
@@ -1325,6 +1338,33 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
           </div>
         </div>
 
+        {/* ESCORT DRONES - filodan, roketin etrafında görsel eşlikçiler */}
+        {userMiners.slice(0, 3).map((miner, i) => {
+          const offsets = [
+            { left: '27%', y: -18, label: 'SAĞ-ÜST' },
+            { left: '27%', y: 18, label: 'SAĞ-ALT' },
+            { left: '13%', y: -22, label: 'SOL-ÜST' },
+          ];
+          const off = offsets[i] || offsets[0];
+          const style = DRONE_STYLES[i % DRONE_STYLES.length];
+          const Icon = DRONE_ICONS[miner.iconName] || [Bot, Cpu, Atom][i] || Bot;
+          return (
+            <div
+              key={miner.instanceId}
+              className="absolute z-20 pointer-events-none transform -translate-x-1/2 -translate-y-1/2"
+              style={{ left: off.left, top: `calc(${rocketY}% + ${off.y}px)` }}
+              title={miner.packageName}
+            >
+              <div className={`relative flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg border ${style.border} ${style.bg} ${style.glow}`}>
+                <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${style.text}`} />
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 border border-slate-900 animate-pulse" />
+              </div>
+              <div className={`mt-0.5 text-[7px] sm:text-[8px] font-bold text-center ${style.text} whitespace-nowrap max-w-[56px] truncate px-0.5`}>
+                {miner.packageName?.split(' ').slice(0,2).join(' ') || 'Drone'}
+              </div>
+            </div>
+          );
+        })}
 
         {/* FLOATING DAMAGE / LOOT NUMBERS */}
         {floatingNumbers.map((item) => (

@@ -1325,35 +1325,6 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
           </div>
         </div>
 
-        {/* FLEET WINGMEN ESCORT DRONES (Reflecting User's Real Purchased Fleet!) */}
-        {userMiners.slice(0, 3).map((miner, i) => {
-          const offsets = [
-            { x: '10%', yOffset: -26 },
-            { x: '10%', yOffset: 26 },
-            { x: '5%', yOffset: 0 },
-          ];
-          const offset = offsets[i] || offsets[0];
-
-          return (
-            <div
-              key={miner.instanceId}
-              className="absolute z-20 pointer-events-none transform -translate-x-1/2 -translate-y-1/2 transition-all duration-300"
-              style={{
-                left: offset.x,
-                top: `calc(${rocketY}% + ${offset.yOffset}px)`,
-              }}
-            >
-              <div className="relative flex items-center">
-                {/* Mini Thruster Flame */}
-                <span className="w-4 h-1.5 rounded-l-full bg-gradient-to-l from-orange-400 to-transparent blur-[1px] animate-pulse" />
-                {/* Drone Body */}
-                <div className="p-1 rounded-lg bg-[#200e33]/90 border border-amber-400/70 text-amber-300 shadow-md flex items-center justify-center scale-90 sm:scale-100">
-                  <Bot className="w-3 h-3 text-orange-400" />
-                </div>
-              </div>
-            </div>
-          );
-        })}
 
         {/* FLOATING DAMAGE / LOOT NUMBERS */}
         {floatingNumbers.map((item) => (

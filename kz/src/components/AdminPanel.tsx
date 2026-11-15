@@ -23,7 +23,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-type Tab = 'overview' | 'general' | 'economy' | 'packages' | 'planets' | 'market' | 'players';
+type Tab = 'overview' | 'general' | 'economy' | 'packages' | 'planets' | 'market' | 'withdrawals' | 'players';
 
 const TABS: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
   { id: 'overview', label: 'Genel Bakış', icon: LayoutDashboard },
@@ -32,6 +32,7 @@ const TABS: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
   { id: 'packages', label: 'Paketler', icon: PackageCheck },
   { id: 'planets', label: 'Gezegenler', icon: Globe2 },
   { id: 'market', label: 'Pazar Stoğu', icon: Store },
+  { id: 'withdrawals', label: 'Çekimler', icon: ArrowUpRight },
   { id: 'players', label: 'Oyuncular', icon: Users },
 ];
 
@@ -122,6 +123,7 @@ export const AdminPanel: React.FC = () => {
     adminUpdateCatalog,
     adminUpdatePlayer,
     adminUpdateStock,
+    adminHandleWithdrawal,
     isAdmin,
   } = useGame();
 
@@ -151,7 +153,14 @@ export const AdminPanel: React.FC = () => {
       stRepairCostPerPct: String(c.stRepairCostPerPct ?? 0.05),
       wheelCost: String(c.wheelCost ?? 100),
       dailyStardust: String(c.dailyStardust ?? 50),
-      stPerKrd: String(c.stPerKrd ?? 500),
+      stPerKrd: String(c.stPerKrd ?? 600),
+      withdrawEnabled: String(c.withdrawEnabled ?? true),
+      withdrawRateKrdPerTon: String(c.withdrawRateKrdPerTon ?? 100),
+      minWithdrawKrd: String(c.minWithdrawKrd ?? 200),
+      withdrawCooldownHours: String(c.withdrawCooldownHours ?? 72),
+      minWithdrawAccountAgeDays: String(c.minWithdrawAccountAgeDays ?? 7),
+      minWithdrawLevel: String(c.minWithdrawLevel ?? 3),
+      weeklyWithdrawCapKrd: String(c.weeklyWithdrawCapKrd ?? 500),
       planetUnlock: (c.planetUnlock || []).join(', '),
       planetMult: (c.planetMult || []).join(', '),
       requiredLevel: (c.requiredLevel || []).join(', '),
@@ -485,12 +494,24 @@ export const AdminPanel: React.FC = () => {
             <Field label="Günlük ödül Tozu" type="number" value={form.dailyStardust || ''} onChange={(v) => setForm((f) => ({ ...f, dailyStardust: v }))} />
             <Field label="Kaç Toz = 1 KRD?" type="number" value={form.stPerKrd || ''} onChange={(v) => setForm((f) => ({ ...f, stPerKrd: v }))} />
           </div>
+          <div className="border-t border-teal-500/25 pt-3 mt-2">
+            <div className="text-[11px] font-bold text-cyan-200 mb-2">Çekim (TON/Gram) Ayarları</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Çekim açık? (true/false)" value={form.withdrawEnabled || 'true'} onChange={(v) => setForm((f) => ({ ...f, withdrawEnabled: v }))} />
+              <Field label="Çekim kuru (KRD/1 TON)" type="number" value={form.withdrawRateKrdPerTon || ''} onChange={(v) => setForm((f) => ({ ...f, withdrawRateKrdPerTon: v }))} />
+              <Field label="Min çekim (KRD)" type="number" value={form.minWithdrawKrd || ''} onChange={(v) => setForm((f) => ({ ...f, minWithdrawKrd: v }))} />
+              <Field label="Bekleme (saat)" type="number" value={form.withdrawCooldownHours || ''} onChange={(v) => setForm((f) => ({ ...f, withdrawCooldownHours: v }))} />
+              <Field label="Min hesap yaşı (gün)" type="number" value={form.minWithdrawAccountAgeDays || ''} onChange={(v) => setForm((f) => ({ ...f, minWithdrawAccountAgeDays: v }))} />
+              <Field label="Min seviye" type="number" value={form.minWithdrawLevel || ''} onChange={(v) => setForm((f) => ({ ...f, minWithdrawLevel: v }))} />
+              <Field label="Haftalık limit (KRD)" type="number" value={form.weeklyWithdrawCapKrd || ''} onChange={(v) => setForm((f) => ({ ...f, weeklyWithdrawCapKrd: v }))} />
+            </div>
+          </div>
           <button
             onClick={saveEconomy}
             disabled={saving}
             className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
           >
-            <Save className="w-4 h-4" /> Ekonomiyi Kaydet
+            <Save className="w-4 h-4" /> Ekonomi ve Çekimi Kaydet
           </button>
           <div className="bg-[#05222d] border border-amber-500/30 rounded-xl p-2.5 text-[10px] text-amber-200/80">
             Uyarı: Değerleri değiştirmek tüm oyuncuları etkiler. Önce simülasyonla test etmek için
@@ -613,7 +634,33 @@ export const AdminPanel: React.FC = () => {
         </Card>
       )}
 
-      {/* PLAYERS */}
+            {/* WITHDRAWALS */}
+      {tab === 'withdrawals' && (
+        <Card title="Çekim Talepleri" icon={ArrowUpRight} desc="Onayla/Ödendi/Reddet (redde KRD iade).">
+          <div className="space-y-2">
+            {((adminState as any).withdrawals || []).length === 0 && <p className="text-xs text-teal-300/60 text-center py-4">Çekim talebi yok.</p>}
+            {(((adminState as any).withdrawals || []) as any[]).map((w) => (
+              <div key={w.id} className="bg-[#05222d] border border-teal-500/25 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-bold text-white">#{w.id} • {w.name || w.user_id} ({w.user_id})</div>
+                    <div className="text-[10px] text-teal-200/70 font-mono">{Number(w.krd).toFixed(2)} KRD → {Number(w.ton).toFixed(4)} TON • kur {w.rate}</div>
+                    <div className="text-[10px] text-teal-300/60 break-all">{w.note || ''} • {w.user_wallet || ''}</div>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full font-black text-[10px] ${w.status==='paid'||w.status==='approved' ? 'bg-emerald-500/20 text-emerald-300' : w.status==='rejected' ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'}`}>{w.status}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <button disabled={saving} onClick={async()=>{setSaving(true); const err=await adminHandleWithdrawal(w.id,'approve'); setSaving(false); flash(!err, err||'Onaylandı.');}} className="px-2.5 py-1.5 rounded-lg bg-emerald-400 text-slate-950 text-[10px] font-black">Onayla</button>
+                  <button disabled={saving} onClick={async()=>{setSaving(true); const err=await adminHandleWithdrawal(w.id,'paid'); setSaving(false); flash(!err, err||'Ödendi.');}} className="px-2.5 py-1.5 rounded-lg bg-cyan-400 text-slate-950 text-[10px] font-black">Ödendi</button>
+                  <button disabled={saving} onClick={async()=>{setSaving(true); const err=await adminHandleWithdrawal(w.id,'reject'); setSaving(false); flash(!err, err||'Reddedildi, iade.');}} className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 border border-rose-400/40 text-rose-200 text-[10px] font-bold">Reddet</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+{/* PLAYERS */}
       {tab === 'players' && (
         <Card title={`Oyuncular (${players.length})`} icon={Users} desc="Bakiye düzenle, banla veya sıfırla.">
           <div className="relative">

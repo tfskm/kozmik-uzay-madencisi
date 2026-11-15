@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS deposits(hash TEXT PRIMARY KEY, user_id INTEGER, nano
 CREATE TABLE IF NOT EXISTS players(id INTEGER PRIMARY KEY, state TEXT);
 CREATE TABLE IF NOT EXISTS market_stock(id TEXT PRIMARY KEY, stock INTEGER);
 CREATE TABLE IF NOT EXISTS config(key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS withdrawals(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, krd REAL NOT NULL, ton REAL NOT NULL, rate REAL NOT NULL, status TEXT NOT NULL DEFAULT 'pending', note TEXT, admin_note TEXT, created INTEGER NOT NULL, decided INTEGER, paid INTEGER);
 `);
 
 // Eski veritabanlarına yeni kolonları güvenli şekilde ekle.
@@ -127,6 +128,13 @@ const CONFIG_DEFAULTS = {
   requiredLevel: [1, 2, 4, 7, 11, 16],
   dailyFaucet: [2, 2, 3, 3, 4, 4, 6],
   catalog: {},
+  withdrawEnabled: true,
+  withdrawRateKrdPerTon: 100,
+  minWithdrawKrd: 200,
+  withdrawCooldownHours: 72,
+  minWithdrawAccountAgeDays: 7,
+  minWithdrawLevel: 3,
+  weeklyWithdrawCapKrd: 500,
 };
 
 const loadConfig = () => {
@@ -156,6 +164,13 @@ const publicSettings = () => ({
   stRepairCostPerPct: CFG.stRepairCostPerPct,
   stPerKrd: CFG.stPerKrd,
   dailyStardust: CFG.dailyStardust,
+  withdrawEnabled: CFG.withdrawEnabled !== false,
+  withdrawRateKrdPerTon: CFG.withdrawRateKrdPerTon ?? 100,
+  minWithdrawKrd: CFG.minWithdrawKrd ?? 200,
+  withdrawCooldownHours: CFG.withdrawCooldownHours ?? 72,
+  minWithdrawAccountAgeDays: CFG.minWithdrawAccountAgeDays ?? 7,
+  minWithdrawLevel: CFG.minWithdrawLevel ?? 3,
+  weeklyWithdrawCapKrd: CFG.weeklyWithdrawCapKrd ?? 500,
 });
 
 // ---- TON ödeme tarayıcı: yorumu "UID:<id>" olan transferleri KRD'ye çevirir ----
@@ -403,6 +418,13 @@ const gview = (p, uid) => {
       minTon: CFG.minTon,
       stPerKrd: CFG.stPerKrd,
       buyGrowth: CFG.buyGrowth,
+      withdrawEnabled: CFG.withdrawEnabled !== false,
+      withdrawRateKrdPerTon: CFG.withdrawRateKrdPerTon ?? 100,
+      minWithdrawKrd: CFG.minWithdrawKrd ?? 200,
+      withdrawCooldownHours: CFG.withdrawCooldownHours ?? 72,
+      minWithdrawAccountAgeDays: CFG.minWithdrawAccountAgeDays ?? 7,
+      minWithdrawLevel: CFG.minWithdrawLevel ?? 3,
+      weeklyWithdrawCapKrd: CFG.weeklyWithdrawCapKrd ?? 500,
     },
   };
 };
@@ -484,6 +506,13 @@ app.post('/api/admin/settings', auth, adminOnly, (req, res) => {
     'planetMult',
     'requiredLevel',
     'dailyFaucet',
+    'withdrawEnabled',
+    'withdrawRateKrdPerTon',
+    'minWithdrawKrd',
+    'withdrawCooldownHours',
+    'minWithdrawAccountAgeDays',
+    'minWithdrawLevel',
+    'weeklyWithdrawCapKrd',
   ];
   const patch = {};
   for (const k of allowed) if (k in (req.body || {})) patch[k] = req.body[k];
@@ -541,6 +570,83 @@ app.post('/api/admin/stock', auth, adminOnly, (req, res) => {
   if (!(id in MARKET)) return res.status(400).json({ error: 'unknown item' });
   db.prepare('UPDATE market_stock SET stock=? WHERE id=?').run(Math.max(0, Math.floor(Number(stock) || 0)), id);
   res.json({ ok: true, stock: stockMap() });
+});
+
+
+// ---- Çekim (TON/Gram) ----
+const userWithdrawals = (uid) =>
+  db.prepare('SELECT * FROM withdrawals WHERE user_id=? ORDER BY created DESC LIMIT 30').all(uid);
+
+app.get('/api/withdrawals', auth, (req, res) => {
+  res.json({ items: userWithdrawals(req.uid) });
+});
+
+app.post('/api/withdraw', auth, (req, res) => {
+  if (CFG.withdrawEnabled === false) return res.json({ ok: false, error: 'Çekimler şu an kapalı.' });
+  const wallet = (userRow(req.uid).wallet || '').trim();
+  if (!wallet) return res.json({ ok: false, error: 'Önce TON cüzdanını bağlamalısın.' });
+  const amount = Math.floor(Number(req.body?.amountKrd) || 0);
+  if (!Number.isFinite(amount) || amount <= 0) return res.json({ ok: false, error: 'Geçersiz miktar.' });
+  if (amount < CFG.minWithdrawKrd) return res.json({ ok: false, error: `Minimum çekim ${CFG.minWithdrawKrd} KRD.` });
+  const p = accrue(loadP(req.uid));
+  absorb(req.uid, p);
+  const u = userRow(req.uid);
+  if (u.banned) { saveP(req.uid, p); return res.json({ ok: false, error: 'Hesap askıda.' }); }
+  const created = u.created || 0;
+  const ageDays = created ? (Date.now() - created) / DAY : 999;
+  if (ageDays < CFG.minWithdrawAccountAgeDays) { saveP(req.uid, p); return res.json({ ok: false, error: `Hesap en az ${CFG.minWithdrawAccountAgeDays} gün olmalı.` }); }
+  if (levelOf(p.exp || 0) < CFG.minWithdrawLevel) { saveP(req.uid, p); return res.json({ ok: false, error: `Seviye en az ${CFG.minWithdrawLevel} olmalı.` }); }
+  const last = db.prepare("SELECT created FROM withdrawals WHERE user_id=? ORDER BY created DESC LIMIT 1").get(req.uid);
+  if (last && Date.now() - last.created < CFG.withdrawCooldownHours * 3600e3) {
+    saveP(req.uid, p); return res.json({ ok: false, error: `Yeni talep için ${CFG.withdrawCooldownHours} saat beklemelisin.` });
+  }
+  const weekAgo = Date.now() - 7 * DAY;
+  const weekSum = db.prepare("SELECT COALESCE(SUM(krd),0) as s FROM withdrawals WHERE user_id=? AND created>? AND status!='rejected'").get(req.uid, weekAgo).s || 0;
+  if (weekSum + amount > CFG.weeklyWithdrawCapKrd) { saveP(req.uid, p); return res.json({ ok: false, error: `Haftalık çekim limiti ${CFG.weeklyWithdrawCapKrd} KRD.` }); }
+  if (p.krd < amount) { saveP(req.uid, p); return res.json({ ok: false, error: 'Yetersiz KRD.' }); }
+  const rate = CFG.withdrawRateKrdPerTon;
+  const ton = Number((amount / rate).toFixed(6));
+  db.transaction(() => {
+    p.krd -= amount;
+    p.ledger.sinks += amount;
+    pushHist(p, 'withdraw', amount, 'KRD', `Çekim talebi: ${ton} TON (onay bekliyor)`, 'pending');
+    saveP(req.uid, p);
+    db.prepare('INSERT INTO withdrawals(user_id,krd,ton,rate,status,note,created) VALUES(?,?,?,?,?,?,?)')
+      .run(req.uid, amount, ton, rate, 'pending', `Cüzdan: ${wallet}`, Date.now());
+  })();
+  res.json({ ok: true, ton, rate, items: userWithdrawals(req.uid) });
+});
+
+app.get('/api/admin/withdrawals', auth, adminOnly, (req, res) => {
+  const items = db.prepare('SELECT w.*, u.name, u.wallet as user_wallet FROM withdrawals w LEFT JOIN users u ON u.id=w.user_id ORDER BY w.created DESC LIMIT 100').all();
+  res.json({ items });
+});
+
+app.post('/api/admin/withdrawals', auth, adminOnly, (req, res) => {
+  const { id, action, adminNote } = req.body || {};
+  const wid = Number(id);
+  const w = db.prepare('SELECT * FROM withdrawals WHERE id=?').get(wid);
+  if (!w) return res.status(400).json({ error: 'not found' });
+  if (action === 'approve') {
+    if (w.status !== 'pending') return res.status(400).json({ error: 'bad status' });
+    db.prepare("UPDATE withdrawals SET status='approved', admin_note=?, decided=? WHERE id=?").run(String(adminNote||''), Date.now(), wid);
+  } else if (action === 'reject') {
+    if (w.status !== 'pending' && w.status !== 'approved') return res.status(400).json({ error: 'bad status' });
+    db.transaction(() => {
+      db.prepare("UPDATE withdrawals SET status='rejected', admin_note=?, decided=? WHERE id=?").run(String(adminNote||''), Date.now(), wid);
+      const p = loadP(w.user_id);
+      p.krd += Number(w.krd) || 0;
+      p.ledger.sources += Number(w.krd) || 0;
+      pushHist(p, 'withdraw', Number(w.krd) || 0, 'KRD', 'Çekim talebi reddedildi, KRD iade edildi', 'rejected');
+      saveP(w.user_id, p);
+    })();
+  } else if (action === 'paid') {
+    if (w.status !== 'approved' && w.status !== 'pending') return res.status(400).json({ error: 'bad status' });
+    db.prepare("UPDATE withdrawals SET status='paid', admin_note=?, decided=?, paid=? WHERE id=?").run(String(adminNote||''), w.decided || Date.now(), Date.now(), wid);
+  } else {
+    return res.status(400).json({ error: 'bad action' });
+  }
+  res.json({ ok: true });
 });
 
 // TON Connect manifest: domain her zaman isteğin geldiği adres olur.

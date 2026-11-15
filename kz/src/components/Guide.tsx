@@ -26,7 +26,7 @@ const Row: React.FC<{ label: string; value: string; accent?: string }> = ({ labe
 
 export const Guide: React.FC = () => {
   const { adminSettings, serverMeta } = useGame();
-  const dailyKrd = [2, 2, 3, 3, 4, 4, 6];
+  const dailyKrd = [1, 1, 2, 2, 2, 3, 3];
   const dailyToz = serverMeta?.dailyStardust ?? adminSettings.dailyStardust ?? 50;
 
   return (
@@ -42,9 +42,9 @@ export const Guide: React.FC = () => {
       </div>
 
       <Section icon={Info} title="1) Para Birimleri (Ne Neydir?)" tone="border-emerald-500/30">
-        <p><strong className="text-emerald-300">KRD:</strong> Oyun içi ana para birimidir. Madenciler üretir, markette ve paketlerde harcanır. <strong className="text-amber-300">Nakde/gerçek paraya çevrilemez.</strong></p>
+        <p><strong className="text-emerald-300">KRD:</strong> Oyun içi ana para birimidir. Madenciler üretir, markette ve paketlerde harcanır. Belirlenen limit ve kurallara ulaşan kazançlar, admin onayıyla <strong className="text-cyan-300">TON (Gram)</strong> olarak çekilebilir.</p>
         <p><strong className="text-amber-300">Yıldız Tozu (Toz):</strong> Oyun içi yardımcı para birimidir. Arenada (yıldız/kristal/taş) kazanılır, günlük ödülle gelir; tamirde veya çarkta kullanılabilir, KRD'ye çevrilebilir.</p>
-        <p><strong className="text-cyan-300">TON:</strong> Gerçek kripto varlıktır; yalnızca oyun içine KRD yüklemek için kullanılır.</p>
+        <p><strong className="text-cyan-300">TON (Gram):</strong> Gerçek kripto varlıktır. Oyun içine KRD yüklemek ve (uygun koşullarda) onaylı çekim almak için kullanılır.</p>
         <p><strong className="text-sky-300">Arenadaki "puan":</strong> Topladığın/kırdığın ödüller Yıldız Tozu olarak hesabına eklenir (aktivite limiti vardır).</p>
       </Section>
 
@@ -59,7 +59,7 @@ export const Guide: React.FC = () => {
 
       <Section icon={Users} title="3) Mürettebat / Filo (Madenciler) — KRD Üretimi" tone="border-teal-500/30">
         <p>Madencilik paketleri filona eklenen <strong>mürettebat/makine</strong> birimleridir; pasif olarak KRD üretirler.</p>
-        <Row label="Tam kondisyonda üretim" value="~%0.6 / gün (gezegen çarpanı hariç)" accent="text-emerald-300" />
+        <Row label="Tam kondisyonda üretim" value="~%0.9 / gün (gezegen çarpanı hariç)" accent="text-emerald-300" />
         <Row label="Dayanıklılık (aşınma)" value="Her gün azalır → üretim düşer" accent="text-amber-300" />
         <Row label="Ömür" value="240 gün" accent="text-cyan-300" />
         <Row label="Tamir" value="KRD veya Yıldız Tozu ile yapılır" accent="text-orange-300" />
@@ -85,7 +85,7 @@ export const Guide: React.FC = () => {
           <li><strong>Günlük ödül:</strong> KRD + Toz (7 günlük seri).</li>
           <li><strong>Arena:</strong> Yıldız/kristal toplama, taş kırma, kalkanla engelleme, korsan avı → Yıldız Tozu.</li>
           <li><strong>Şans:</strong> Çark ve sandıklardan KRD/Toz/ek ödüller çıkabilir.</li>
-          <li><strong>Dönüşüm:</strong> Yıldız Tozu → KRD (sabit kur, markette).</li>
+          <li><strong>Dönüşüm:</strong> Yıldız Tozu → KRD (kur: markette belirtilir).</li>`r`n          <li><strong>Çekim:</strong> Limit/koşulları sağlayan KRD, admin belirlediği kurla TON (Gram) olarak talep edilir; admin onayı gerekir.</li>
         </ul>
       </Section>
 
@@ -120,7 +120,7 @@ export const Guide: React.FC = () => {
       </Section>
 
       <Section icon={Gem} title="Hızlı Özet" tone="border-white/20">
-        <p><strong>KRD:</strong> üret & harca (nakit değil). <strong>Toz:</strong> arena/günlük kazan, dönüştür/harca. <strong>Mürettebat:</strong> madenciler KRD üretir ama aşınır. <strong>Arena:</strong> silahla kır, kalkanla engelle, yoksa kaç/topla.</p>
+        <p><strong>KRD:</strong> üret, harca; koşulları sağlayan kazanımı admin onayıyla TON (Gram) çekebilirsin. <strong>Toz:</strong> arena/günlük kazan, dönüştür/harca. <strong>Mürettebat:</strong> madenciler KRD üretir ama aşınır. <strong>Arena:</strong> silahla kır, kalkanla engelle, yoksa kaç/topla.</p>
       </Section>
     </div>
   );

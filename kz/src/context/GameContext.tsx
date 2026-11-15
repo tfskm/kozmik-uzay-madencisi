@@ -12,6 +12,7 @@ import {
   AdminSystemStats,
   SpaceBattle,
   AdminState,
+  WithdrawalRequest,
 } from '../types';
 import {
   INITIAL_PLANETS,
@@ -38,6 +39,13 @@ export interface ServerMeta {
   stRepairCostPerPct: number;
   wheelCost: number;
   dailyStardust: number;
+  withdrawEnabled: boolean;
+  withdrawRateKrdPerTon: number;
+  minWithdrawKrd: number;
+  withdrawCooldownHours: number;
+  minWithdrawAccountAgeDays: number;
+  minWithdrawLevel: number;
+  weeklyWithdrawCapKrd: number;
 }
 
 type ActionResult = { success: boolean; message: string };
@@ -91,6 +99,11 @@ interface GameContextType {
   buyMarketItem: (itemId: string) => Promise<ActionResult>;
   exchangeStardust: (amount: number) => Promise<ActionResult>;
 
+  // Withdrawals
+  withdrawals: WithdrawalRequest[];
+  refreshWithdrawals: () => Promise<void>;
+  requestWithdraw: (amountKrd: number) => Promise<ActionResult>;
+
   // Admin
   adminState: AdminState | null;
   adminRefresh: () => Promise<void>;
@@ -98,6 +111,7 @@ interface GameContextType {
   adminUpdateCatalog: (patch: Record<string, unknown>) => Promise<string | null>;
   adminUpdatePlayer: (id: number, body: Record<string, unknown>) => Promise<string | null>;
   adminUpdateStock: (id: string, stock: number) => Promise<string | null>;
+  adminHandleWithdrawal: (id: number, action: 'approve' | 'reject' | 'paid', adminNote?: string) => Promise<string | null>;
 
   // Battle & voyage mini-games
   currentPlanet: Planet;
@@ -146,6 +160,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [randomEvent, setRandomEvent] = useState<GameContextType['randomEvent']>(null);
   const [currentBattle, setCurrentBattle] = useState<SpaceBattle | null>(null);
   const [adminState, setAdminState] = useState<AdminState | null>(null);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
 
   const lastResultRef = useRef<Record<string, unknown> | null>(null);
   const readyRef = useRef(false);
@@ -256,6 +271,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       minTon: r.meta?.minTon ?? prev.minTon,
       stPerKrd: r.meta?.stPerKrd ?? prev.stPerKrd,
       dailyStardust: r.meta?.dailyStardust ?? prev.dailyStardust,
+      withdrawEnabled: r.meta?.withdrawEnabled ?? (s.withdrawEnabled !== false),
+      withdrawRateKrdPerTon: r.meta?.withdrawRateKrdPerTon ?? s.withdrawRateKrdPerTon ?? prev.withdrawRateKrdPerTon,
+      minWithdrawKrd: r.meta?.minWithdrawKrd ?? s.minWithdrawKrd ?? prev.minWithdrawKrd,
+      withdrawCooldownHours: r.meta?.withdrawCooldownHours ?? s.withdrawCooldownHours ?? prev.withdrawCooldownHours,
+      minWithdrawAccountAgeDays: r.meta?.minWithdrawAccountAgeDays ?? s.minWithdrawAccountAgeDays ?? prev.minWithdrawAccountAgeDays,
+      minWithdrawLevel: r.meta?.minWithdrawLevel ?? s.minWithdrawLevel ?? prev.minWithdrawLevel,
+      weeklyWithdrawCapKrd: r.meta?.weeklyWithdrawCapKrd ?? s.weeklyWithdrawCapKrd ?? prev.weeklyWithdrawCapKrd,
     }));
 
     const unlocks = (r.meta?.planetUnlock || []) as number[];
@@ -309,11 +331,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       maxMiners: r.maxMiners || r.meta?.maxMiners || 6,
       krdPerTon: r.meta?.krdPerTon ?? 20,
       minTon: r.meta?.minTon ?? 0.5,
-      stPerKrd: r.meta?.stPerKrd ?? 500,
-      repairCostPerPct: r.meta?.repairCostPerPct ?? 0.0008,
-      stRepairCostPerPct: r.meta?.stRepairCostPerPct ?? 0.05,
+      stPerKrd: r.meta?.stPerKrd ?? 600,
+      repairCostPerPct: r.meta?.repairCostPerPct ?? 0.0006,
+      stRepairCostPerPct: r.meta?.stRepairCostPerPct ?? 0.04,
       wheelCost: r.meta?.wheelCost ?? 100,
-      dailyStardust: r.meta?.dailyStardust ?? 50,
+      dailyStardust: r.meta?.dailyStardust ?? 30,
+      withdrawEnabled: r.meta?.withdrawEnabled !== false,
+      withdrawRateKrdPerTon: r.meta?.withdrawRateKrdPerTon ?? 100,
+      minWithdrawKrd: r.meta?.minWithdrawKrd ?? 200,
+      withdrawCooldownHours: r.meta?.withdrawCooldownHours ?? 72,
+      minWithdrawAccountAgeDays: r.meta?.minWithdrawAccountAgeDays ?? 7,
+      minWithdrawLevel: r.meta?.minWithdrawLevel ?? 3,
+      weeklyWithdrawCapKrd: r.meta?.weeklyWithdrawCapKrd ?? 500,
     });
   }, []);
 
@@ -496,11 +525,48 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     refreshServer();
   };
 
+
+  const refreshWithdrawals = useCallback(async () => {
+    try {
+      const r = await api<{ items: WithdrawalRequest[] }>('withdrawals');
+      setWithdrawals(r.items || []);
+    } catch {
+      setWithdrawals([]);
+    }
+  }, []);
+
+  const requestWithdraw = useCallback(async (amountKrd: number): Promise<ActionResult> => {
+    try {
+      const r = await api<any>('withdraw', { amountKrd });
+      if (r?.ok) {
+        setWithdrawals(r.items || []);
+        await refreshServer();
+        return { success: true, message: `Çekim talebi oluşturuldu: ${Number(r.ton).toFixed(4)} TON (onay bekliyor).` };
+      }
+      return { success: false, message: r?.error || 'Çekim talebi oluşturulamadı.' };
+    } catch {
+      return { success: false, message: 'Sunucuya ulaşılamadı.' };
+    }
+  }, [refreshServer]);
+
+  const adminHandleWithdrawal = useCallback(async (id: number, action: 'approve' | 'reject' | 'paid', adminNote?: string) => {
+    try {
+      await api('admin/withdrawals', { id, action, adminNote });
+      await adminRefresh();
+      return null;
+    } catch {
+      return 'Çekim işlemi güncellenemedi.';
+    }
+  }, [adminRefresh]);
+
   // ---- Admin ----
   const adminRefresh = async () => {
     try {
-      const r = await api<AdminState>('admin/state');
-      setAdminState(r);
+      const [r, w] = await Promise.all([
+        api<AdminState>('admin/state'),
+        api<{ items: WithdrawalRequest[] }>('admin/withdrawals').catch(() => ({ items: [] as WithdrawalRequest[] })),
+      ]);
+      setAdminState({ ...(r as any), withdrawals: w.items || [] } as any);
     } catch {
       setAdminState(null);
     }
@@ -721,12 +787,16 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         openMysteryBox,
         buyMarketItem,
         exchangeStardust,
+        withdrawals,
+        refreshWithdrawals,
+        requestWithdraw,
         adminState,
         adminRefresh,
         adminUpdateSettings,
         adminUpdateCatalog,
         adminUpdatePlayer,
         adminUpdateStock,
+        adminHandleWithdrawal,
         currentPlanet,
         currentBattle,
         startBattle,

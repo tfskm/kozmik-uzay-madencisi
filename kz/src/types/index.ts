@@ -178,6 +178,13 @@ export interface AdminSystemStats {
   minTon: number;
   stPerKrd: number;
   dailyStardust: number;
+  withdrawEnabled: boolean;
+  withdrawRateKrdPerTon: number;
+  minWithdrawKrd: number;
+  withdrawCooldownHours: number;
+  minWithdrawAccountAgeDays: number;
+  minWithdrawLevel: number;
+  weeklyWithdrawCapKrd: number;
   voyageSettings: VoyageSettings;
 }
 
@@ -194,6 +201,22 @@ export interface SpaceBattle {
   avatar: string;
 }
 
+
+export interface WithdrawalRequest {
+  id: number;
+  user_id: number;
+  krd: number;
+  ton: number;
+  rate: number;
+  status: 'pending' | 'approved' | 'rejected' | 'paid';
+  note?: string;
+  admin_note?: string;
+  created: number;
+  decided?: number;
+  paid?: number;
+  name?: string;
+  user_wallet?: string;
+}
 // Admin panelinin sunucudan aldığı tam durum
 export interface AdminState {
   config: Record<string, unknown> & {
@@ -213,6 +236,13 @@ export interface AdminState {
     planetMult: number[];
     requiredLevel: number[];
     dailyFaucet: number[];
+    withdrawEnabled?: boolean;
+    withdrawRateKrdPerTon?: number;
+    minWithdrawKrd?: number;
+    withdrawCooldownHours?: number;
+    minWithdrawAccountAgeDays?: number;
+    minWithdrawLevel?: number;
+    weeklyWithdrawCapKrd?: number;
   };
   catalog: Record<string, {
     name: string;
@@ -241,4 +271,5 @@ export interface AdminState {
   stock: Record<string, number>;
   treasury: string;
   adminId: number;
+  withdrawals?: WithdrawalRequest[];
 }

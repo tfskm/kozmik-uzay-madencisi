@@ -10,21 +10,29 @@ export const MINER_LIFESPAN_DAYS = 240;
 // ---- Ayarlanabilir ekonomi (admin panelinden değiştirilir) ----
 export const DEFAULT_CFG = {
   planetUnlock: [0, 30, 100, 250, 600, 1500],   // KRD
-  planetMult: [1, 1.1, 1.25, 1.45, 1.7, 2.0],
+  planetMult: [1, 1.12, 1.3, 1.55, 1.85, 2.2],
   requiredLevel: [1, 2, 4, 7, 11, 16],
-  repairCostPerPct: 0.0008,                       // paket fiyatının %0.08'i / 1% tamir (KRD)
-  stRepairCostPerPct: 0.05,                       // paket fiyatının %5'i / 1% tamir (Toz)
+  repairCostPerPct: 0.0006,                       // paket fiyatının %0.08'i / 1% tamir (KRD)
+  stRepairCostPerPct: 0.04,                       // paket fiyatının %5'i / 1% tamir (Toz)
   wheelCost: 100,                                 // Yıldız Tozu / çevirme
-  dailyFaucet: [2, 2, 3, 3, 4, 4, 6],             // 7 günlük seri (KRD)
-  dailyStardust: 50,
-  upBase: 40, upGrowth: 1.5, upBonus: 0.05,       // Reaktör
-  drillBase: 60, drillGrowth: 1.55, drillBonus: 0.04, // Matkap
+  dailyFaucet: [1, 1, 2, 2, 2, 3, 3],             // 7 günlük seri (KRD)
+  dailyStardust: 30,
+  upBase: 40, upGrowth: 1.5, upBonus: 0.06,       // Reaktör
+  drillBase: 60, drillGrowth: 1.55, drillBonus: 0.05, // Matkap
   buyGrowth: 1.06,                                // her aktif madenci için alım fiyatı artışı
   maxMinersBase: 6,
   maxMinersPerPlanet: 4,
   krdPerTon: 20,                                  // 1 TON = 20 KRD
   minTon: 0.5,
-  stPerKrd: 500,                                  // 500 Toz = 1 KRD (pazar bozdurma)
+  stPerKrd: 600,
+  // Çekim (TON/Gram) ayarları
+  withdrawEnabled: true,
+  withdrawRateKrdPerTon: 100,
+  minWithdrawKrd: 200,
+  withdrawCooldownHours: 72,
+  minWithdrawAccountAgeDays: 7,
+  minWithdrawLevel: 3,
+  weeklyWithdrawCapKrd: 500,
 };
 
 export const CFG = structuredClone(DEFAULT_CFG);
@@ -44,6 +52,13 @@ export function applyConfig(patch = {}) {
   CFG.dailyStardust = Math.max(0, Math.floor(CFG.dailyStardust));
   CFG.stPerKrd = Math.max(1, CFG.stPerKrd);
   CFG.buyGrowth = Math.max(1, CFG.buyGrowth);
+  CFG.withdrawRateKrdPerTon = Math.max(1, Number(CFG.withdrawRateKrdPerTon) || 100);
+  CFG.minWithdrawKrd = Math.max(1, Number(CFG.minWithdrawKrd) || 200);
+  CFG.withdrawCooldownHours = Math.max(0, Number(CFG.withdrawCooldownHours) || 72);
+  CFG.minWithdrawAccountAgeDays = Math.max(0, Number(CFG.minWithdrawAccountAgeDays) || 7);
+  CFG.minWithdrawLevel = Math.max(1, Math.floor(Number(CFG.minWithdrawLevel) || 3));
+  CFG.weeklyWithdrawCapKrd = Math.max(1, Number(CFG.weeklyWithdrawCapKrd) || 500);
+  CFG.withdrawEnabled = CFG.withdrawEnabled !== false;
   CFG.planetUnlock = CFG.planetUnlock.map((n) => Math.max(0, n));
   CFG.planetMult = CFG.planetMult.map((n) => Math.max(0, n));
   CFG.requiredLevel = CFG.requiredLevel.map((n) => Math.max(1, Math.floor(n)));

@@ -19,10 +19,10 @@ import { WalletModal } from './components/WalletModal';
 import { DepositModal } from './components/DepositModal';
 import { RepairModal } from './components/RepairModal';
 import { RandomEventPopup } from './components/RandomEventPopup';
-import { Rocket, RefreshCw, Wrench } from 'lucide-react';
+import { Rocket, RefreshCw, Wrench, Wallet } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
-  const { activeTab, isAdminMode, ready, error, refreshServer, adminSettings, isAdmin } = useGame();
+  const { activeTab, isAdminMode, ready, error, refreshServer, adminSettings, isAdmin, user, setIsWalletModalOpen } = useGame();
   const isMiningScreen = !isAdminMode && (activeTab === 'mining' || !activeTab);
 
   useEffect(() => {
@@ -118,6 +118,28 @@ const MainLayout: React.FC = () => {
     );
   }
 
+  
+  // Cüzdan zorunlu: bağlanmadan oyuna girilemez
+  if (!user.isConnected) {
+    return (
+      <div className="h-full w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 gap-4 px-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-400 via-teal-400 to-emerald-400 p-0.5 shadow-lg shadow-cyan-500/30">
+          <div className="w-full h-full bg-[#082834] rounded-[14px] flex items-center justify-center">
+            <Wallet className="w-7 h-7 text-cyan-300" />
+          </div>
+        </div>
+        <div>
+          <h2 className="text-lg font-black font-display">Cüzdanını Bağla</h2>
+          <p className="text-xs text-teal-200/70 mt-1 max-w-xs">Oyuna girmek için TON cüzdanını bağlaman gerekiyor. Bağladıktan sonra oyun açılacaktır.</p>
+        </div>
+        <button onClick={() => setIsWalletModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black text-sm active:scale-95 transition">
+          <Wallet className="w-4 h-4" /> Cüzdan Bağla
+        </button>
+        <p className="text-[10px] text-teal-200/50 max-w-xs">Bağlantı koparsa oyun güvenlik için tekrar kilitlenir.</p>
+        <WalletModal />
+      </div>
+    );
+  }
   return (
     <div className={`${isMiningScreen ? 'h-[100dvh] overflow-hidden' : 'min-h-screen overflow-x-hidden'} w-full max-w-[100vw] bg-gradient-to-b from-[#092b3a] via-[#083547] to-[#06202c] text-slate-100 flex flex-col relative selection:bg-cyan-500 selection:text-slate-950`}>
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">

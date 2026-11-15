@@ -1,15 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useGame } from '../context/GameContext';
+import { sounds } from '../utils/audio';
+import { UserMiner } from '../types';
 import {
-  useGame,
-  },
-  from,
-  '../context/GameContext';,
-  import,
-  {,
-  sounds,
-  '../utils/audio';,
-  UserMiner,
-  '../types';,
   Sparkles,
   Zap,
   Swords,

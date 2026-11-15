@@ -549,15 +549,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [refreshServer]);
 
-  const adminHandleWithdrawal = useCallback(async (id: number, action: 'approve' | 'reject' | 'paid', adminNote?: string) => {
-    try {
-      await api('admin/withdrawals', { id, action, adminNote });
-      await adminRefresh();
-      return null;
-    } catch {
-      return 'Çekim işlemi güncellenemedi.';
-    }
-  }, [adminRefresh]);
 
   // ---- Admin ----
   const adminRefresh = async () => {
@@ -571,6 +562,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setAdminState(null);
     }
   };
+
+
+  const adminHandleWithdrawal = useCallback(async (id: number, action: 'approve' | 'reject' | 'paid', adminNote?: string) => {
+    try {
+      await api('admin/withdrawals', { id, action, adminNote });
+      await adminRefresh();
+      return null;
+    } catch {
+      return 'Çekim işlemi güncellenemedi.';
+    }
+  }, [adminRefresh]);
 
   const adminUpdateSettings = async (patch: Record<string, unknown>) => {
     try {

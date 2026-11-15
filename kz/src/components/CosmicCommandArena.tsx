@@ -367,6 +367,7 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
       const currentEntities = entitiesRef.current;
       const next: InFlightEntity[] = [];
       const collectedBonuses: InFlightEntity[] = [];
+      const shieldPops: InFlightEntity[] = [];
       let asteroidHitEvent: InFlightEntity | null = null;
 
       const currentRocketY = rocketYRef.current;
@@ -380,7 +381,7 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
 
         // Çarpışma: kalkan varsa dış çizgisinde, yoksa roket gövdesinde
         const shieldActive = shieldHealthRef.current > 0 && !!user.equippedShield;
-        // Dış halkaya temas: kalkan aktifken nesneler dış halkada yakalanır/patlar
+        // Dış halkaya temas: kalkan aktifken nesneler dış halkada patlar
         const hitRadiusX = shieldActive ? 13 : 6;
         const hitRadiusY = shieldActive ? 16 : 14;
         const isAtRocketX = newX <= rocketXPos + hitRadiusX && newX >= rocketXPos - 8;
@@ -388,9 +389,14 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
 
         if (isAtRocketX && isAtRocketY) {
           if (ent.type === 'star' || ent.type === 'crystal') {
-            collectedBonuses.push({ ...ent, x: rocketXPos, y: currentRocketY });
+            if (shieldActive) {
+              // Dış kalkan çizgisine dokunan yıldız/kristal patlar, rokete ulaşmaz
+              shieldPops.push({ ...ent, x: rocketXPos, y: ent.y });
+            } else {
+              collectedBonuses.push({ ...ent, x: rocketXPos, y: currentRocketY });
+            }
           } else if (ent.type === 'asteroid') {
-            asteroidHitEvent = { ...ent, x: rocketXPos, y: currentRocketY };
+            asteroidHitEvent = { ...ent, x: rocketXPos, y: ent.y };
           }
           // Consumed
           continue;
@@ -418,7 +424,7 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         addFloatingNumber(
           rocketXPos + 5,
           item.y - 5,
-          item.type === 'crystal' ? `+${earnedPts} KRİSTAL PUANI 💎` : `+${earnedPts} PUAN ⭐`,
+          item.type === 'crystal' ? `+${earnedPts} KRİSTAL PUANI` : `+${earnedPts} PUAN`,
           '#fbbf24'
         );
         confetti({
@@ -429,6 +435,23 @@ export const CosmicCommandArena: React.FC<CosmicCommandArenaProps> = ({
         });
       }
 
+      for (const item of shieldPops) {
+        sounds.playExplosion();
+        sounds.triggerHaptic('light');
+        const shdColor = user.equippedShield ? (SHIELDS[user.equippedShield]?.color || '#38bdf8') : '#38bdf8';
+        confetti({
+          particleCount: 18,
+          spread: 55,
+          origin: { x: 0.22, y: item.y / 100 },
+          colors: [shdColor, '#fbbf24', '#ffffff'],
+        });
+        addFloatingNumber(
+          rocketXPos + 8,
+          item.y - 4,
+          item.type === 'crystal' ? 'KRİSTAL KALKANDA PATLADI' : 'YILDIZ KALKANDA PATLADI',
+          '#94a3b8'
+        );
+      }
       if (asteroidHitEvent) {
         setScreenShake(true);
         setCollisionFlash(true);
